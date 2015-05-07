@@ -1,0 +1,4 @@
+paths
+=====
+
+Typed paths
