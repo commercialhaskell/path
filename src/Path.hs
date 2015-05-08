@@ -23,6 +23,12 @@ module Path
   ,mkRelDir
   ,mkAbsFile
   ,mkRelFile
+  -- * Operations
+  ,(</>)
+  ,stripDir
+  ,isParentOf
+  ,parentAbs
+  ,filename
   -- * Conversion
   ,toFilePath
   )
@@ -32,6 +38,7 @@ import           Control.Exception (Exception)
 import           Control.Monad.Catch (MonadThrow(..))
 import           Data.Data
 import           Data.List
+import           Data.Maybe
 import           Language.Haskell.TH
 import           Path.Internal
 import qualified System.FilePath as FilePath
@@ -171,6 +178,82 @@ mkRelFile s =
 -- | Convert to a 'FilePath' type.
 toFilePath :: Path b t -> FilePath
 toFilePath (Path l) = l
+
+--------------------------------------------------------------------------------
+-- Operations
+
+-- | Append two paths.
+--
+-- The following cases are valid and the equalities hold:
+--
+-- @$(mkAbsDir x) \<\/> $(mkRelDir y) = $(mkAbsDir (x ++ \"/\" ++ y))@
+--
+-- @$(mkAbsDir x) \<\/> $(mkRelFile y) = $(mkAbsFile (x ++ \"/\" ++ y))@
+--
+-- @$(mkRelDir x) \<\/> $(mkRelDir y) = $(mkRelDir (x ++ \"/\" ++ y))@
+--
+-- @$(mkRelDir x) \<\/> $(mkRelFile y) = $(mkRelFile (x ++ \"/\" ++ y))@
+--
+-- The following are proven not possible to express:
+--
+-- @$(mkAbsFile …) \<\/> x@
+--
+-- @$(mkRelFile …) \<\/> x@
+--
+-- @x \<\/> $(mkAbsFile …)@
+--
+-- @x \<\/> $(mkAbsDir …)@
+--
+(</>) :: Path b Dir -> Path Rel t -> Path b t
+(</>) (Path a) (Path b) = Path (a ++ b)
+
+-- | Strip directory from path, making it relative to that directory.
+-- Returns 'Nothing' if directory is not a parent of the path.
+--
+-- The following properties hold:
+--
+-- @stripDir parent (parent <\/> child) = child@
+--
+-- Cases which are proven not possible:
+--
+-- @stripDir (a :: Path Abs …) (b :: Path Rel …)@
+--
+-- @stripDir (a :: Path Rel) (b :: Path Abs …)@
+--
+-- In other words the bases must match.
+--
+stripDir :: Path b Dir -> Path b t -> Maybe (Path Rel t)
+stripDir (Path p) (Path l) =
+  fmap Path (stripPrefix p l)
+
+-- | Is p a parent of the given location? Implemented in terms of
+-- 'stripDir'. The bases must match.
+isParentOf :: Path b Dir -> Path b t -> Bool
+isParentOf p l =
+  isJust (stripDir p l)
+
+-- | Take the absolute parent directory from the absolute path.
+--
+-- The following properties hold:
+--
+-- @parentAbs (parent \<\/> child) == parent@
+--
+-- On the root, getting the parent is idempotent:
+--
+-- @parentAbs (parentAbs \"\/\") = \"\/\"@
+--
+parentAbs :: Path Abs t -> Path Abs t
+parentAbs (Path fp) =
+  Path (normalizeDir (FilePath.takeDirectory (FilePath.dropTrailingPathSeparator fp)))
+
+-- | Extract the relative filename from a given location.
+--
+-- The following properties hold:
+--
+-- @filename (parent \<\/> filename a) == a@
+--
+filename :: Path b File -> Path Rel File
+filename (Path l) = Path (normalizeFile (FilePath.takeFileName l))
 
 --------------------------------------------------------------------------------
 -- Internal functions

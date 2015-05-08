@@ -1,11 +1,12 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 -- | Test suite.
 
 module Main where
 
+import Data.Monoid
 import Path
 import Path.Internal
-
-import Data.Monoid
 import Test.Hspec
 
 -- | Test suite entry point, returns exit failure if any test fails.
@@ -14,11 +15,90 @@ main = hspec spec
 
 -- | Test suite.
 spec :: Spec
-spec = do
-  describe "Parsing: Path Abs Dir" parseAbsDirSpec
-  describe "Parsing: Path Rel Dir" parseRelDirSpec
-  describe "Parsing: Path Abs File" parseAbsFileSpec
-  describe "Parsing: Path Rel File" parseRelFileSpec
+spec =
+  do describe "Parsing: Path Abs Dir" parseAbsDirSpec
+     describe "Parsing: Path Rel Dir" parseRelDirSpec
+     describe "Parsing: Path Abs File" parseAbsFileSpec
+     describe "Parsing: Path Rel File" parseRelFileSpec
+     describe "Operations: (</>)" operationAppend
+     describe "Operations: stripDir" operationStripDir
+     describe "Operations: isParentOf" operationIsParentOf
+     describe "Operations: parentAbs" operationParentAbs
+     describe "Operations: filename" operationFilename
+
+-- | The 'filename' operation.
+operationFilename :: Spec
+operationFilename =
+  do it "filename ($(mkAbsDir parent) </> filename $(mkRelFile filename)) == $(mkRelFile filename)"
+        (filename ($(mkAbsDir "/home/chris/") </>
+                   filename $(mkRelFile "bar.txt")) ==
+         $(mkRelFile "bar.txt"))
+     it "filename ($(mkRelDir parent) </> filename $(mkRelFile filename)) == $(mkRelFile filename)"
+        (filename ($(mkRelDir "home/chris/") </>
+                   filename $(mkRelFile "bar.txt")) ==
+         $(mkRelFile "bar.txt"))
+
+-- | The 'parentAbs' operation.
+operationParentAbs :: Spec
+operationParentAbs =
+  do it "parentAbs (parent </> child) == parent"
+        (parentAbs ($(mkAbsDir "/foo") </>
+                    $(mkRelDir "bar")) ==
+         $(mkAbsDir "/foo"))
+     it "parentAbs \"\" == \"\""
+        (parentAbs $(mkAbsDir "/") ==
+         $(mkAbsDir "/"))
+     it "parentAbs (parentAbs \"\") == \"\""
+        (parentAbs (parentAbs $(mkAbsDir "/")) ==
+         $(mkAbsDir "/"))
+
+-- | The 'isParentOf' operation.
+operationIsParentOf :: Spec
+operationIsParentOf =
+  do it "isParentOf parent (parent </> child)"
+        (isParentOf
+           $(mkAbsDir "///bar/")
+           ($(mkAbsDir "///bar/") </>
+            $(mkRelFile "bar/foo.txt")))
+     it "isParentOf parent (parent </> child)"
+        (isParentOf
+           $(mkRelDir "bar/")
+           ($(mkRelDir "bar/") </>
+            $(mkRelFile "bob/foo.txt")))
+
+-- | The 'stripDir' operation.
+operationStripDir :: Spec
+operationStripDir =
+  do it "stripDir parent (parent </> child) = child"
+        (stripDir $(mkAbsDir "///bar/")
+                  ($(mkAbsDir "///bar/") </>
+                   $(mkRelFile "bar/foo.txt")) ==
+         Just $(mkRelFile "bar/foo.txt"))
+     it "stripDir parent (parent </> child) = child"
+        (stripDir $(mkRelDir "bar/")
+                  ($(mkRelDir "bar/") </>
+                   $(mkRelFile "bob/foo.txt")) ==
+         Just $(mkRelFile "bob/foo.txt"))
+
+-- | The '</>' operation.
+operationAppend :: Spec
+operationAppend =
+  do it "AbsDir + RelDir = AbsDir"
+        ($(mkAbsDir "/home/") </>
+         $(mkRelDir "chris") ==
+         $(mkAbsDir "/home/chris/"))
+     it "AbsDir + RelFile = AbsFile"
+        ($(mkAbsDir "/home/") </>
+         $(mkRelFile "chris/test.txt") ==
+         $(mkAbsFile "/home/chris/test.txt"))
+     it "RelDir + RelDir = RelDir"
+        ($(mkRelDir "home/") </>
+         $(mkRelDir "chris") ==
+         $(mkRelDir "home/chris"))
+     it "RelDir + RelFile = RelFile"
+        ($(mkRelDir "home/") </>
+         $(mkRelFile "chris/test.txt") ==
+         $(mkRelFile "home/chris/test.txt"))
 
 -- | Tests for the tokenizer.
 parseAbsDirSpec :: Spec
