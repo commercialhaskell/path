@@ -99,8 +99,7 @@ parseRelDir filepath =
      then return (Path (normalizeDir filepath))
      else throwM (InvalidRelDir filepath)
 
--- | Get a location for an absolute file. Produces a normalized
---  path which always ends in a path separator.
+-- | Get a location for an absolute file.
 --
 -- Throws: 'PathParseException'
 --
@@ -114,8 +113,7 @@ parseAbsFile filepath =
      then return (Path (normalizeFile filepath))
      else throwM (InvalidAbsFile filepath)
 
--- | Get a location for a relative file. Produces a normalized
--- path which always ends in a path separator.
+-- | Get a location for a relative file.
 --
 -- Throws: 'PathParseException'
 --
