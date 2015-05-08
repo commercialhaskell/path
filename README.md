@@ -1,4 +1,2 @@
-paths
+path
 =====
-
-Typed paths

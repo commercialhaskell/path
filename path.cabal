@@ -1,12 +1,12 @@
-name:                paths
+name:                path
 version:             0.0.0
-synopsis:            Typed paths
-description:         Typed paths
+synopsis:            Path
+description:         Path
 license:             BSD3
 license-file:        LICENSE
 author:              Chris Done
-maintainer:          chrisdone@gmail.com
-copyright:           2015 Chris Done
+maintainer:          chrisdone@fpcomplete.com
+copyright:           2015 FP Complete
 category:            Filesystem
 build-type:          Simple
 cabal-version:       >=1.8
@@ -28,4 +28,4 @@ test-suite test
                  , base
                  , hspec
                  , mtl
-                 , paths
+                 , path
