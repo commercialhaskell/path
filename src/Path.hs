@@ -47,16 +47,16 @@ import qualified System.FilePath as FilePath
 -- Types
 
 -- | An absolute path.
-data Abs
+data Abs deriving (Typeable)
 
 -- | A relative path; one without a root.
-data Rel
+data Rel deriving (Typeable)
 
 -- | A file path.
-data File
+data File deriving (Typeable)
 
 -- | A directory path.
-data Dir
+data Dir deriving (Typeable)
 
 -- | Exception when parsing a location.
 data PathParseException
@@ -210,7 +210,7 @@ toFilePath (Path l) = l
 --
 -- The following properties hold:
 --
--- @stripDir parent (parent <\/> child) = child@
+-- @stripDir parent (parent \<\/> child) = child@
 --
 -- Cases which are proven not possible:
 --
