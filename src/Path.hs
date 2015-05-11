@@ -240,7 +240,7 @@ isParentOf p l =
 --
 -- @parentAbs (parentAbs \"\/\") = \"\/\"@
 --
-parentAbs :: Path Abs t -> Path Abs t
+parentAbs :: Path Abs t -> Path Abs Dir
 parentAbs (Path fp) =
   Path (normalizeDir (FilePath.takeDirectory (FilePath.dropTrailingPathSeparator fp)))
 
