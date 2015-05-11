@@ -1,0 +1,4 @@
+0.2.0:
+
+        * Rename parentAbs to simply parent.
+	* Add dirname.
