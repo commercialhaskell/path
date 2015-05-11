@@ -29,6 +29,7 @@ module Path
   ,isParentOf
   ,parent
   ,filename
+  ,dirname
   -- * Conversion
   ,toFilePath
   )
@@ -251,7 +252,18 @@ parent (Path fp) =
 -- @filename (parent \<\/> filename a) == a@
 --
 filename :: Path b File -> Path Rel File
-filename (Path l) = Path (normalizeFile (FilePath.takeFileName l))
+filename (Path l) =
+  Path (normalizeFile (FilePath.takeFileName l))
+
+-- | Extract the last directory name of a path.
+--
+-- The following properties hold:
+--
+-- @dirname (parent \<\/> dirname a) == a@
+--
+dirname :: Path b Dir -> Path Rel Dir
+dirname (Path l) =
+  Path (last (FilePath.splitPath l))
 
 --------------------------------------------------------------------------------
 -- Internal functions
