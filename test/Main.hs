@@ -23,7 +23,7 @@ spec =
      describe "Operations: (</>)" operationAppend
      describe "Operations: stripDir" operationStripDir
      describe "Operations: isParentOf" operationIsParentOf
-     describe "Operations: parentAbs" operationParentAbs
+     describe "Operations: parent" operationParent
      describe "Operations: filename" operationFilename
 
 -- | The 'filename' operation.
@@ -38,10 +38,10 @@ operationFilename =
                    filename $(mkRelFile "bar.txt")) ==
          $(mkRelFile "bar.txt"))
 
--- | The 'parentAbs' operation.
-operationParentAbs :: Spec
-operationParentAbs =
-  do it "parentAbs (parent </> child) == parent"
+-- | The 'parent' operation.
+operationParent :: Spec
+operationParent =
+  do it "parent (parent </> child) == parent"
         (parent ($(mkAbsDir "/foo") </>
                     $(mkRelDir "bar")) ==
          $(mkAbsDir "/foo"))
