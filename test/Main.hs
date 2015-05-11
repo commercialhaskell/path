@@ -42,14 +42,14 @@ operationFilename =
 operationParentAbs :: Spec
 operationParentAbs =
   do it "parentAbs (parent </> child) == parent"
-        (parentAbs ($(mkAbsDir "/foo") </>
+        (parent ($(mkAbsDir "/foo") </>
                     $(mkRelDir "bar")) ==
          $(mkAbsDir "/foo"))
-     it "parentAbs \"\" == \"\""
-        (parentAbs $(mkAbsDir "/") ==
+     it "parent \"\" == \"\""
+        (parent $(mkAbsDir "/") ==
          $(mkAbsDir "/"))
-     it "parentAbs (parentAbs \"\") == \"\""
-        (parentAbs (parentAbs $(mkAbsDir "/")) ==
+     it "parent (parent \"\") == \"\""
+        (parent (parent $(mkAbsDir "/")) ==
          $(mkAbsDir "/"))
 
 -- | The 'isParentOf' operation.

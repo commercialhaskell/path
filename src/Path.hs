@@ -27,7 +27,7 @@ module Path
   ,(</>)
   ,stripDir
   ,isParentOf
-  ,parentAbs
+  ,parent
   ,filename
   -- * Conversion
   ,toFilePath
@@ -234,17 +234,17 @@ isParentOf p l =
 --
 -- The following properties hold:
 --
--- @parentAbs (parent \<\/> child) == parent@
+-- @parent (parent \<\/> child) == parent@
 --
 -- On the root, getting the parent is idempotent:
 --
--- @parentAbs (parentAbs \"\/\") = \"\/\"@
+-- @parent (parent \"\/\") = \"\/\"@
 --
-parentAbs :: Path Abs t -> Path Abs Dir
-parentAbs (Path fp) =
+parent :: Path Abs t -> Path Abs Dir
+parent (Path fp) =
   Path (normalizeDir (FilePath.takeDirectory (FilePath.dropTrailingPathSeparator fp)))
 
--- | Extract the relative filename from a given location.
+-- | Extract the file part of a path.
 --
 -- The following properties hold:
 --
