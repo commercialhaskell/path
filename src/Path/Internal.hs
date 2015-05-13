@@ -10,7 +10,6 @@ module Path.Internal
   where
 
 import Data.Data
-import GHC.Generics
 
 -- | Path of some base and type.
 --
@@ -22,7 +21,7 @@ import GHC.Generics
 -- All directories end in a trailing separator. There are no duplicate
 -- path separators @\/\/@, no @..@, no @.\/@, no @~\/@, etc.
 newtype Path b t = Path FilePath
-  deriving (Typeable,Generic)
+  deriving (Typeable)
 
 -- | String equality.
 --
