@@ -217,7 +217,7 @@ toFilePath (Path l) = l
 --
 -- @stripDir (a :: Path Abs …) (b :: Path Rel …)@
 --
--- @stripDir (a :: Path Rel) (b :: Path Abs …)@
+-- @stripDir (a :: Path Rel …) (b :: Path Abs …)@
 --
 -- In other words the bases must match.
 --
