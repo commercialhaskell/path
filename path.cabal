@@ -29,3 +29,7 @@ test-suite test
                  , hspec
                  , mtl
                  , path
+
+source-repository head
+    type:     git
+    location: https://github.com/chrisdone/path.git
