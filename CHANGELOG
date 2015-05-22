@@ -2,3 +2,10 @@
 
         * Rename parentAbs to simply parent.
 	* Add dirname.
+
+0.3.0:
+	* Removed Generic instance.
+
+0.4.0:
+	* Implemented stricter parsing, disabling use of "..".
+	* Made stripDir

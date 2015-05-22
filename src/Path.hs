@@ -65,6 +65,7 @@ data PathParseException
   | InvalidRelDir FilePath
   | InvalidAbsFile FilePath
   | InvalidRelFile FilePath
+  | Couldn'tStripPrefixDir FilePath FilePath
   deriving (Show,Typeable)
 instance Exception PathParseException
 
@@ -81,7 +82,10 @@ parseAbsDir :: MonadThrow m
 parseAbsDir filepath =
   if FilePath.isAbsolute filepath &&
      not (null (normalizeDir filepath)) &&
-     not (isPrefixOf "~/" filepath)
+     not (isPrefixOf "~/" filepath) &&
+     not (isSuffixOf "/.." filepath) &&
+     not (isInfixOf "/../" filepath) &&
+     not (isPrefixOf "../" filepath)
      then return (Path (normalizeDir filepath))
      else throwM (InvalidAbsDir filepath)
 
@@ -96,7 +100,11 @@ parseRelDir filepath =
   if not (FilePath.isAbsolute filepath) &&
      not (null filepath) &&
      not (isPrefixOf "~/" filepath) &&
-     not (null (normalizeDir filepath))
+     not (isPrefixOf "../" filepath) &&
+     not (isSuffixOf "/.." filepath) &&
+     not (isInfixOf "/../" filepath) &&
+     not (null (normalizeDir filepath)) &&
+     filepath /= ".."
      then return (Path (normalizeDir filepath))
      else throwM (InvalidRelDir filepath)
 
@@ -110,7 +118,11 @@ parseAbsFile filepath =
   if FilePath.isAbsolute filepath &&
      not (FilePath.hasTrailingPathSeparator filepath) &&
      not (isPrefixOf "~/" filepath) &&
-     not (null (normalizeFile filepath))
+     not (isPrefixOf "../" filepath) &&
+     not (isSuffixOf "/.." filepath) &&
+     not (isInfixOf "/../" filepath) &&
+     not (null (normalizeFile filepath)) &&
+     filepath /= ".."
      then return (Path (normalizeFile filepath))
      else throwM (InvalidAbsFile filepath)
 
@@ -121,10 +133,16 @@ parseAbsFile filepath =
 parseRelFile :: MonadThrow m
              => FilePath -> m (Path Rel File)
 parseRelFile filepath =
-  if not (FilePath.isAbsolute filepath || FilePath.hasTrailingPathSeparator filepath) &&
+  if not (FilePath.isAbsolute filepath ||
+          FilePath.hasTrailingPathSeparator filepath) &&
      not (null filepath) &&
      not (isPrefixOf "~/" filepath) &&
-     not (null (normalizeFile filepath))
+     not (isPrefixOf "../" filepath) &&
+     not (isInfixOf "/../" filepath) &&
+     not (isSuffixOf "/.." filepath) &&
+     not (isInfixOf "/../" filepath) &&
+     not (null (normalizeFile filepath)) &&
+     filepath /= ".."
      then return (Path (normalizeFile filepath))
      else throwM (InvalidRelFile filepath)
 

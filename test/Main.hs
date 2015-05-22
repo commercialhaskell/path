@@ -4,6 +4,9 @@
 
 module Main where
 
+import Control.Applicative
+import Control.Monad
+import Data.Maybe
 import Data.Monoid
 import Path
 import Path.Internal
@@ -25,6 +28,25 @@ spec =
      describe "Operations: isParentOf" operationIsParentOf
      describe "Operations: parent" operationParent
      describe "Operations: filename" operationFilename
+     describe "Restrictions" restrictions
+
+-- | Restricting the input of any tricks.
+restrictions :: Spec
+restrictions =
+  do parseFails "~/"
+     parseFails "~/foo"
+     parseFails "~/foo/bar"
+     parseFails "../"
+     parseFails ".."
+     parseFails "/.."
+     parseFails "/foo/../bar/"
+     parseFails "/foo/bar/.."
+  where parseFails x =
+          it (show x ++ " should be rejected")
+             (isNothing (void (parseAbsDir x) <|>
+                         void (parseRelDir x) <|>
+                         void (parseAbsFile x) <|>
+                         void (parseRelDir x)))
 
 -- | The 'filename' operation.
 operationFilename :: Spec
