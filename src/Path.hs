@@ -239,9 +239,14 @@ toFilePath (Path l) = l
 --
 -- In other words the bases must match.
 --
-stripDir :: Path b Dir -> Path b t -> Maybe (Path Rel t)
+-- Throws: 'Couldn'tStripPrefixDir'
+--
+stripDir :: MonadThrow m
+         => Path b Dir -> Path b t -> m (Path Rel t)
 stripDir (Path p) (Path l) =
-  fmap Path (stripPrefix p l)
+  case fmap Path (stripPrefix p l) of
+    Nothing -> throwM (Couldn'tStripPrefixDir p l)
+    Just ok -> return ok
 
 -- | Is p a parent of the given location? Implemented in terms of
 -- 'stripDir'. The bases must match.
