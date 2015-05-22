@@ -8,4 +8,4 @@
 
 0.4.0:
 	* Implemented stricter parsing, disabling use of "..".
-	* Made stripDir
+	* Made stripDir generic over MonadThrow
