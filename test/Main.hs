@@ -101,6 +101,10 @@ operationStripDir =
                   ($(mkRelDir "bar/") </>
                    $(mkRelFile "bob/foo.txt")) ==
          Just $(mkRelFile "bob/foo.txt"))
+     it "stripDir parent parent = _|_"
+        (stripDir $(mkAbsDir "/home/chris/foo")
+                  $(mkAbsDir "/home/chris/foo") ==
+         Nothing)
 
 -- | The '</>' operation.
 operationAppend :: Spec

@@ -244,9 +244,10 @@ toFilePath (Path l) = l
 stripDir :: MonadThrow m
          => Path b Dir -> Path b t -> m (Path Rel t)
 stripDir (Path p) (Path l) =
-  case fmap Path (stripPrefix p l) of
+  case stripPrefix p l of
     Nothing -> throwM (Couldn'tStripPrefixDir p l)
-    Just ok -> return ok
+    Just "" -> throwM (Couldn'tStripPrefixDir p l)
+    Just ok -> return (Path ok)
 
 -- | Is p a parent of the given location? Implemented in terms of
 -- 'stripDir'. The bases must match.

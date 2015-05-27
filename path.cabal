@@ -1,5 +1,5 @@
 name:                path
-version:             0.4.0
+version:             0.5.0
 synopsis:            Path
 description:         Path
 license:             BSD3
@@ -10,6 +10,7 @@ copyright:           2015 FP Complete
 category:            Filesystem
 build-type:          Simple
 cabal-version:       >=1.8
+extra-source-files:  README.md, CHANGELOG
 
 library
   hs-source-dirs:    src/
