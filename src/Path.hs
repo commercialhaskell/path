@@ -83,7 +83,7 @@ parseAbsDir filepath =
   if FilePath.isAbsolute filepath &&
      not (null (normalizeDir filepath)) &&
      not (isPrefixOf "~/" filepath) &&
-     not (hasParentDir filepath) &&
+     not (hasParentDir filepath)
      then return (Path (normalizeDir filepath))
      else throwM (InvalidAbsDir filepath)
 
