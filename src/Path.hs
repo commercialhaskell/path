@@ -83,9 +83,7 @@ parseAbsDir filepath =
   if FilePath.isAbsolute filepath &&
      not (null (normalizeDir filepath)) &&
      not (isPrefixOf "~/" filepath) &&
-     not (isSuffixOf "/.." filepath) &&
-     not (isInfixOf "/../" filepath) &&
-     not (isPrefixOf "../" filepath)
+     not (hasParentDir filepath) &&
      then return (Path (normalizeDir filepath))
      else throwM (InvalidAbsDir filepath)
 
@@ -100,9 +98,7 @@ parseRelDir filepath =
   if not (FilePath.isAbsolute filepath) &&
      not (null filepath) &&
      not (isPrefixOf "~/" filepath) &&
-     not (isPrefixOf "../" filepath) &&
-     not (isSuffixOf "/.." filepath) &&
-     not (isInfixOf "/../" filepath) &&
+     not (hasParentDir filepath) &&
      not (null (normalizeDir filepath)) &&
      filepath /= ".."
      then return (Path (normalizeDir filepath))
@@ -118,9 +114,7 @@ parseAbsFile filepath =
   if FilePath.isAbsolute filepath &&
      not (FilePath.hasTrailingPathSeparator filepath) &&
      not (isPrefixOf "~/" filepath) &&
-     not (isPrefixOf "../" filepath) &&
-     not (isSuffixOf "/.." filepath) &&
-     not (isInfixOf "/../" filepath) &&
+     not (hasParentDir filepath) &&
      not (null (normalizeFile filepath)) &&
      filepath /= ".."
      then return (Path (normalizeFile filepath))
@@ -137,14 +131,24 @@ parseRelFile filepath =
           FilePath.hasTrailingPathSeparator filepath) &&
      not (null filepath) &&
      not (isPrefixOf "~/" filepath) &&
-     not (isPrefixOf "../" filepath) &&
-     not (isInfixOf "/../" filepath) &&
-     not (isSuffixOf "/.." filepath) &&
-     not (isInfixOf "/../" filepath) &&
+     not (hasParentDir filepath) &&
      not (null (normalizeFile filepath)) &&
      filepath /= ".."
      then return (Path (normalizeFile filepath))
      else throwM (InvalidRelFile filepath)
+
+-- | Helper function: check if the filepath has any parent directories in it.
+-- This handles the logic of checking for different path separators on Windows.
+hasParentDir :: FilePath -> Bool
+hasParentDir filepath' =
+     (isSuffixOf "/.." filepath) ||
+     (isInfixOf "/../" filepath) ||
+     (isPrefixOf "../" filepath)
+  where
+    filepath =
+        case FilePath.pathSeparator of
+            '/' -> filepath'
+            x   -> map (\y -> if x == y then '/' else y) filepath'
 
 --------------------------------------------------------------------------------
 -- Constructors
