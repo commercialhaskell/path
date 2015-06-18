@@ -197,6 +197,10 @@ mkRelFile s =
 -- Conversion
 
 -- | Convert to a 'FilePath' type.
+--
+-- All directories have a trailing slash, so if you want no trailing
+-- slash, you can use 'System.FilePath.dropTrailingPathSeparator' from
+-- the filepath package.
 toFilePath :: Path b t -> FilePath
 toFilePath (Path l) = l
 
