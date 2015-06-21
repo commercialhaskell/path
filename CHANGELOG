@@ -12,3 +12,6 @@
 
 0.5.0:
 	* Fix stripDir p p /= Nothing bug.
+
+0.5.2:
+	* Removed unused DeriveGeneric.
