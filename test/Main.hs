@@ -46,7 +46,7 @@ restrictions =
              (isNothing (void (parseAbsDir x) <|>
                          void (parseRelDir x) <|>
                          void (parseAbsFile x) <|>
-                         void (parseRelDir x)))
+                         void (parseRelFile x)))
 
 -- | The 'filename' operation.
 operationFilename :: Spec
