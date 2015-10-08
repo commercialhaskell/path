@@ -236,7 +236,7 @@ toFilePath (Path l) = l
 --
 -- The following properties hold:
 --
--- @stripDir parent (parent \<\/> child) = child@
+-- @stripDir x (x \<\/> y) = y@
 --
 -- Cases which are proven not possible:
 --
@@ -266,7 +266,7 @@ isParentOf p l =
 --
 -- The following properties hold:
 --
--- @parent (parent \<\/> child) == parent@
+-- @parent (x \<\/> y) == x@
 --
 -- On the root, getting the parent is idempotent:
 --
@@ -280,7 +280,7 @@ parent (Path fp) =
 --
 -- The following properties hold:
 --
--- @filename (parent \<\/> filename a) == a@
+-- @filename (p \<\/> a) == filename a@
 --
 filename :: Path b File -> Path Rel File
 filename (Path l) =
@@ -290,7 +290,7 @@ filename (Path l) =
 --
 -- The following properties hold:
 --
--- @dirname (parent \<\/> dirname a) == a@
+-- @dirname (p \<\/> a) == dirname a@
 --
 dirname :: Path b Dir -> Path Rel Dir
 dirname (Path l) =
