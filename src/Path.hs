@@ -31,6 +31,10 @@ module Path
   ,dirname
   -- * Conversion
   ,toFilePath
+  ,fromAbsDir
+  ,fromRelDir
+  ,fromAbsFile
+  ,fromRelFile
   )
   where
 
@@ -202,6 +206,22 @@ mkRelFile s =
 -- the filepath package.
 toFilePath :: Path b t -> FilePath
 toFilePath (Path l) = l
+
+-- | Convert absolute path to directory to 'FilePath' type.
+fromAbsDir :: Path Abs Dir -> FilePath
+fromAbsDir = toFilePath
+
+-- | Convert relative path to directory to 'FilePath' type.
+fromRelDir :: Path Rel Dir -> FilePath
+fromRelDir = toFilePath
+
+-- | Convert absolute path to file to 'FilePath' type.
+fromAbsFile :: Path Abs File -> FilePath
+fromAbsFile = toFilePath
+
+-- | Convert relative path to file to 'FilePath' type.
+fromRelFile :: Path Rel File -> FilePath
+fromRelFile = toFilePath
 
 --------------------------------------------------------------------------------
 -- Operations
