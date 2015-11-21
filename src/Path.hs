@@ -31,6 +31,10 @@ module Path
   ,dirname
   -- * Conversion
   ,toFilePath
+  ,fromAbsDir
+  ,fromRelDir
+  ,fromAbsFile
+  ,fromRelFile
   )
   where
 
@@ -81,7 +85,7 @@ parseAbsDir :: MonadThrow m
 parseAbsDir filepath =
   if FilePath.isAbsolute filepath &&
      not (null (normalizeDir filepath)) &&
-     not (isPrefixOf "~/" filepath) &&
+     not ("~/" `isPrefixOf` filepath) &&
      not (hasParentDir filepath)
      then return (Path (normalizeDir filepath))
      else throwM (InvalidAbsDir filepath)
@@ -96,7 +100,7 @@ parseRelDir :: MonadThrow m
 parseRelDir filepath =
   if not (FilePath.isAbsolute filepath) &&
      not (null filepath) &&
-     not (isPrefixOf "~/" filepath) &&
+     not ("~/" `isPrefixOf` filepath) &&
      not (hasParentDir filepath) &&
      not (null (normalizeDir filepath)) &&
      filepath /= ".."
@@ -112,7 +116,7 @@ parseAbsFile :: MonadThrow m
 parseAbsFile filepath =
   if FilePath.isAbsolute filepath &&
      not (FilePath.hasTrailingPathSeparator filepath) &&
-     not (isPrefixOf "~/" filepath) &&
+     not ("~/" `isPrefixOf` filepath) &&
      not (hasParentDir filepath) &&
      not (null (normalizeFile filepath)) &&
      filepath /= ".."
@@ -129,7 +133,7 @@ parseRelFile filepath =
   if not (FilePath.isAbsolute filepath ||
           FilePath.hasTrailingPathSeparator filepath) &&
      not (null filepath) &&
-     not (isPrefixOf "~/" filepath) &&
+     not ("~/" `isPrefixOf` filepath) &&
      not (hasParentDir filepath) &&
      not (null (normalizeFile filepath)) &&
      filepath /= ".."
@@ -140,9 +144,9 @@ parseRelFile filepath =
 -- This handles the logic of checking for different path separators on Windows.
 hasParentDir :: FilePath -> Bool
 hasParentDir filepath' =
-     (isSuffixOf "/.." filepath) ||
-     (isInfixOf "/../" filepath) ||
-     (isPrefixOf "../" filepath)
+     ("/.." `isSuffixOf` filepath) ||
+     ("/../" `isInfixOf` filepath) ||
+     ("../" `isPrefixOf` filepath)
   where
     filepath =
         case FilePath.pathSeparator of
@@ -202,6 +206,22 @@ mkRelFile s =
 -- the filepath package.
 toFilePath :: Path b t -> FilePath
 toFilePath (Path l) = l
+
+-- | Convert absolute path to directory to 'FilePath' type.
+fromAbsDir :: Path Abs Dir -> FilePath
+fromAbsDir = toFilePath
+
+-- | Convert relative path to directory to 'FilePath' type.
+fromRelDir :: Path Rel Dir -> FilePath
+fromRelDir = toFilePath
+
+-- | Convert absolute path to file to 'FilePath' type.
+fromAbsFile :: Path Abs File -> FilePath
+fromAbsFile = toFilePath
+
+-- | Convert relative path to file to 'FilePath' type.
+fromRelFile :: Path Rel File -> FilePath
+fromRelFile = toFilePath
 
 --------------------------------------------------------------------------------
 -- Operations
