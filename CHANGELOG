@@ -1,3 +1,6 @@
+0.5.3:
+	* Added conversion functions.
+
 0.2.0:
 
         * Rename parentAbs to simply parent.
