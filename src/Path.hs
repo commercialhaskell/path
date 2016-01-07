@@ -93,6 +93,8 @@ parseAbsDir filepath =
 -- | Get a location for a relative directory. Produces a normalized
 -- path which always ends in a path separator.
 --
+-- Note that @filepath@ may contain any number of @./@ but may not consist solely of @./@.  It also may not contain a single @..@ anywhere.
+--
 -- Throws: 'PathParseException'
 --
 parseRelDir :: MonadThrow m
@@ -124,6 +126,8 @@ parseAbsFile filepath =
      else throwM (InvalidAbsFile filepath)
 
 -- | Get a location for a relative file.
+--
+-- Note that @filepath@ may contain any number of @./@ but may not contain a single @..@ anywhere.
 --
 -- Throws: 'PathParseException'
 --
