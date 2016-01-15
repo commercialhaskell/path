@@ -20,6 +20,7 @@ library
                    , exceptions
                    , filepath
                    , template-haskell
+                   , deepseq
 
 test-suite test
     type: exitcode-stdio-1.0
