@@ -6,6 +6,7 @@ module Path.Internal
   (Path(..))
   where
 
+import Control.DeepSeq (NFData (..))
 import Data.Data
 
 -- | Path of some base and type.
@@ -43,3 +44,6 @@ instance Ord (Path b t) where
 -- @x == y ≡ show x == show y@
 instance Show (Path b t) where
   show (Path x) = show x
+
+instance NFData (Path b t) where
+  rnf (Path x) = rnf x
