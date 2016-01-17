@@ -252,7 +252,7 @@ fromRelFile = toFilePath
 (</>) (Path a) (Path b) = Path (a ++ b)
 
 -- | Strip directory from path, making it relative to that directory.
--- Returns 'Nothing' if directory is not a parent of the path.
+-- Throws 'Couldn'tStripPrefixDir' if directory is not a parent of the path.
 --
 -- The following properties hold:
 --
@@ -265,8 +265,6 @@ fromRelFile = toFilePath
 -- @stripDir (a :: Path Rel …) (b :: Path Abs …)@
 --
 -- In other words the bases must match.
---
--- Throws: 'Couldn'tStripPrefixDir'
 --
 stripDir :: MonadThrow m
          => Path b Dir -> Path b t -> m (Path Rel t)
