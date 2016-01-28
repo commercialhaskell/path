@@ -1,11 +1,11 @@
 name:                path
 version:             0.5.3
-synopsis:            Path
-description:         Path
+synopsis:            Support for well-typed paths
+description:         Support for will-typed paths.
 license:             BSD3
 license-file:        LICENSE
-author:              Chris Done
-maintainer:          chrisdone@fpcomplete.com
+author:              Chris Done <chrisdone@fpcomplete.com>
+maintainer:          Chris Done <chrisdone@fpcomplete.com>
 copyright:           2015 FP Complete
 category:            Filesystem
 build-type:          Simple
