@@ -156,6 +156,7 @@ parseRelDirSpec =
      failing "///foo//bar//mu/"
      failing "///foo//bar////mu"
      failing "///foo//bar/.//mu"
+     succeeding "..." (Path "...")
      succeeding "foo.bak" (Path "foo.bak/")
      succeeding "./foo" (Path "foo/")
      succeeding "././foo" (Path "foo/")
@@ -176,6 +177,7 @@ parseAbsFileSpec =
      failing "/"
      failing "//"
      failing "///foo//bar//mu/"
+     succeeding "..." (Path "...")
      succeeding "/foo.txt" (Path "/foo.txt")
      succeeding "///foo//bar////mu.txt" (Path "/foo/bar/mu.txt")
      succeeding "///foo//bar/.//mu.txt" (Path "/foo/bar/mu.txt")
@@ -195,6 +197,7 @@ parseRelFileSpec =
      failing "///foo//bar//mu/"
      failing "///foo//bar////mu"
      failing "///foo//bar/.//mu"
+     succeeding "..." (Path "...")
      succeeding "foo.txt" (Path "foo.txt")
      succeeding "./foo.txt" (Path "foo.txt")
      succeeding "././foo.txt" (Path "foo.txt")
