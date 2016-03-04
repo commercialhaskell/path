@@ -1,3 +1,5 @@
+0.5.5:
+	* Use filepath's isValid function for additional sanity checks
 0.5.4:
 	* Disable parsing of path consisting only of "."
 	* Add NFData instance for Path
