@@ -1,5 +1,5 @@
 name:                path
-version:             0.5.5
+version:             0.5.6
 synopsis:            Support for well-typed paths
 description:         Support for will-typed paths.
 license:             BSD3
