@@ -38,6 +38,7 @@ restrictions =
      parseFails "~/foo/bar"
      parseFails "../"
      parseFails ".."
+     parseFails "."
      parseFails "/.."
      parseFails "/foo/../bar/"
      parseFails "/foo/bar/.."

@@ -116,7 +116,7 @@ parseRelDir filepath =
      not ("~/" `isPrefixOf` filepath) &&
      not (hasParentDir filepath) &&
      not (null (normalizeDir filepath)) &&
-     filepath /= ".."
+     not (all (=='.') filepath)
      then return (Path (normalizeDir filepath))
      else throwM (InvalidRelDir filepath)
 
@@ -132,7 +132,7 @@ parseAbsFile filepath =
      not ("~/" `isPrefixOf` filepath) &&
      not (hasParentDir filepath) &&
      not (null (normalizeFile filepath)) &&
-     filepath /= ".."
+     not (all (=='.') filepath)
      then return (Path (normalizeFile filepath))
      else throwM (InvalidAbsFile filepath)
 
@@ -151,7 +151,7 @@ parseRelFile filepath =
      not ("~/" `isPrefixOf` filepath) &&
      not (hasParentDir filepath) &&
      not (null (normalizeFile filepath)) &&
-     filepath /= ".."
+     not (all (=='.') filepath)
      then return (Path (normalizeFile filepath))
      else throwM (InvalidRelFile filepath)
 
