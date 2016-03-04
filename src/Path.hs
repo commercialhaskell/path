@@ -97,7 +97,8 @@ parseAbsDir filepath =
   if FilePath.isAbsolute filepath &&
      not (null (normalizeDir filepath)) &&
      not ("~/" `isPrefixOf` filepath) &&
-     not (hasParentDir filepath)
+     not (hasParentDir filepath) &&
+     FilePath.isValid filepath
      then return (Path (normalizeDir filepath))
      else throwM (InvalidAbsDir filepath)
 
@@ -116,7 +117,8 @@ parseRelDir filepath =
      not ("~/" `isPrefixOf` filepath) &&
      not (hasParentDir filepath) &&
      not (null (normalizeDir filepath)) &&
-     not (all (=='.') filepath)
+     not (all (== '.') filepath) &&
+     FilePath.isValid filepath
      then return (Path (normalizeDir filepath))
      else throwM (InvalidRelDir filepath)
 
@@ -132,7 +134,8 @@ parseAbsFile filepath =
      not ("~/" `isPrefixOf` filepath) &&
      not (hasParentDir filepath) &&
      not (null (normalizeFile filepath)) &&
-     not (all (=='.') filepath)
+     not (all (== '.') filepath) &&
+     FilePath.isValid filepath
      then return (Path (normalizeFile filepath))
      else throwM (InvalidAbsFile filepath)
 
@@ -151,7 +154,8 @@ parseRelFile filepath =
      not ("~/" `isPrefixOf` filepath) &&
      not (hasParentDir filepath) &&
      not (null (normalizeFile filepath)) &&
-     not (all (=='.') filepath)
+     not (all (== '.') filepath) &&
+     FilePath.isValid filepath
      then return (Path (normalizeFile filepath))
      else throwM (InvalidRelFile filepath)
 
