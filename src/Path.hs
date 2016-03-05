@@ -13,8 +13,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE EmptyDataDecls #-}
 
--- | A normalizing well-typed path type.
-
 module Path
   (-- * Types
    Path
