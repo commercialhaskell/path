@@ -7,7 +7,6 @@ module Main where
 import Control.Applicative
 import Control.Monad
 import Data.Maybe
-import Data.Monoid
 import Path
 import Path.Internal
 import Test.Hspec
@@ -214,12 +213,12 @@ parserTest :: (Show a1,Show a,Eq a1)
 parserTest parser input expected =
   it ((case expected of
          Nothing -> "Failing: "
-         Just{} -> "Succeeding: ") <>
-      "Parsing " <>
-      show input <>
-      " " <>
+         Just{} -> "Succeeding: ") ++
+      "Parsing " ++
+      show input ++
+      " " ++
       case expected of
         Nothing -> "should fail."
-        Just x -> "should succeed with: " <> show x)
+        Just x -> "should succeed with: " ++ show x)
      (actual == expected)
   where actual = parser input
