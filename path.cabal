@@ -21,12 +21,14 @@ library
                    , filepath
                    , template-haskell
                    , deepseq
+                   , aeson
 
 test-suite test
     type: exitcode-stdio-1.0
     main-is: Main.hs
     hs-source-dirs: test
     build-depends: HUnit
+                 , aeson
                  , base
                  , hspec
                  , mtl

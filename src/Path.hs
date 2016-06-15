@@ -12,6 +12,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE EmptyDataDecls #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Path
   (-- * Types
@@ -49,6 +50,8 @@ module Path
 
 import           Control.Exception (Exception)
 import           Control.Monad.Catch (MonadThrow(..))
+import           Data.Aeson (FromJSON (..))
+import qualified Data.Aeson.Types as Aeson
 import           Data.Data
 import           Data.List
 import           Data.Maybe
@@ -70,6 +73,31 @@ data File deriving (Typeable)
 
 -- | A directory path.
 data Dir deriving (Typeable)
+
+instance FromJSON (Path Abs File) where
+  parseJSON = parseJSONWith parseAbsFile
+  {-# INLINE parseJSON #-}
+
+instance FromJSON (Path Rel File) where
+  parseJSON = parseJSONWith parseRelFile
+  {-# INLINE parseJSON #-}
+
+instance FromJSON (Path Abs Dir) where
+  parseJSON = parseJSONWith parseAbsDir
+  {-# INLINE parseJSON #-}
+
+instance FromJSON (Path Rel Dir) where
+  parseJSON = parseJSONWith parseRelDir
+  {-# INLINE parseJSON #-}
+
+parseJSONWith :: (Show e, FromJSON a)
+              => (a -> Either e b) -> Aeson.Value -> Aeson.Parser b
+parseJSONWith f x =
+  do fp <- parseJSON x
+     case f fp of
+       Right p -> return p
+       Left e -> fail (show e)
+{-# INLINE parseJSONWith #-}
 
 -- | Exception when parsing a location.
 data PathParseException
