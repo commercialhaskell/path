@@ -1,3 +1,6 @@
+0.5.8
+	* Add Aeson instances.
+
 0.5.7:
 	* Fix haddock problem.
 0.5.6:
