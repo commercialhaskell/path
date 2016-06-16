@@ -230,7 +230,7 @@ parserTest parser input expected =
 aesonInstances :: Spec
 aesonInstances =
   do it "Decoding \"/foo/bar\" as a Path Abs Dir should succeed." $
-       decode "\"/foo/bar\"" `shouldBe` Just (Path "/foo/bar/" :: Path Abs Dir)
+       eitherDecode "\"/foo/bar\"" `shouldBe` Right (Path "/foo/bar/" :: Path Abs Dir)
      it "Decoding \"/foo/bar\" as a Path Rel Dir should fail." $
        decode "\"/foo/bar\"" `shouldBe` (Nothing :: Maybe (Path Rel Dir))
      it "Encoding \"/foo/bar/mu.txt\" should succeed." $
