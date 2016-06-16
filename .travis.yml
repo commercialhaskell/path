@@ -1,4 +1,8 @@
-# Adapted from: http://docs.haskellstack.org/en/stable/GUIDE/#travis-with-caching
+# Copy these contents into the root directory of your Github project in a file
+# named .travis.yml
+
+# Use new container infrastructure to enable caching
+sudo: false
 
 # Choose a lightweight base image; we provide our own build tools.
 language: c
@@ -10,42 +14,58 @@ cache:
   - $HOME/.cabal
   - $HOME/.stack
 
+# The different configurations we want to test. We have BUILD=cabal which uses
+# cabal-install, and BUILD=stack which uses Stack. More documentation on each
+# of those below.
+#
+# We set the compiler values here to tell Travis to use a different
+# cache file per set of arguments.
+#
+# If you need to have different apt packages for each combination in the
+# matrix, you can use a line such as:
+#     addons: {apt: {packages: [libfcgi-dev,libgmp-dev]}}
 matrix:
   include:
-  - env: BUILD=cabal GHCVER=7.0.4 CABALVER=1.16
-    compiler: ": #GHC 7.0.4"
-    addons: {apt: {packages: [cabal-install-1.16,ghc-7.0.4], sources: [hvr-ghc]}}
-  - env: BUILD=cabal GHCVER=7.2.2 CABALVER=1.16 
-    compiler: ": #GHC 7.2.2"
-    addons: {apt: {packages: [cabal-install-1.16,ghc-7.2.2], sources: [hvr-ghc]}}
-  - env: BUILD=cabal GHCVER=7.4.2 CABALVER=1.16
-    compiler: ": #GHC 7.4.2"
-    addons: {apt: {packages: [cabal-install-1.16,ghc-7.4.2], sources: [hvr-ghc]}}
-  - env: BUILD=cabal GHCVER=7.6.3 CABALVER=1.16 
-    compiler: ": #GHC 7.6.3"
-    addons: {apt: {packages: [cabal-install-1.16,ghc-7.6.3], sources: [hvr-ghc]}}
-  - env: BUILD=cabal GHCVER=7.8.4 CABALVER=1.18 
-    compiler: ": #GHC 7.8.4"
-    addons: {apt: {packages: [cabal-install-1.18,ghc-7.8.4], sources: [hvr-ghc]}}
-  - env: BUILD=cabal GHCVER=7.10.3 CABALVER=1.22 
-    compiler: ": #GHC 7.10.3"
-    addons: {apt: {packages: [cabal-install-1.22,ghc-7.10.3], sources: [hvr-ghc]}}
-  - env: BUILD=cabal GHCVER=8.0.1 CABALVER=1.24
-    compiler: ": #GHC 8.0.1"
-    addons: {apt: {packages: [cabal-install-1.24,ghc-8.0.1], sources: [hvr-ghc]}}
-  - env: BUILD=stack ARGS="--resolver lts-2.22" # has aeson-0.8.0.2
+
+  - env: BUILD=stack ARGS="--resolver lts-2"
     compiler: ": #stack 7.8.4"
     addons: {apt: {packages: [ghc-7.8.4], sources: [hvr-ghc]}}
+
+  - env: BUILD=stack ARGS="--resolver lts-3"
+    compiler: ": #stack 7.10.2"
+    addons: {apt: {packages: [ghc-7.10.2], sources: [hvr-ghc]}}
+
+  - env: BUILD=stack ARGS="--resolver lts-5"
+    compiler: ": #stack 7.10.3"
+    addons: {apt: {packages: [ghc-7.10.3], sources: [hvr-ghc]}}
+
+  - env: BUILD=stack ARGS="--resolver nightly-2016-05-27"
+    compiler: ": #stack 8.0.1"
+    addons: {apt: {packages: [ghc-8.0.1], sources: [hvr-ghc]}}
+
+  # Build on OS X in addition to Linux
+  - env: BUILD=stack ARGS=""
+    compiler: ": #stack default osx"
+    os: osx
 
 before_install:
 # Using compiler above sets CC to an invalid value, so unset it
 - unset CC
 
+# We want to always allow newer versions of packages when building on GHC HEAD
+- CABALARGS=""
+- if [ "x$GHCVER" = "xhead" ]; then CABALARGS=--allow-newer; fi
+
 # Download and unpack the stack executable
-- export PATH=/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:$HOME/.local/bin::$HOME/.cabal/bin:$PATH
+- export PATH=/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:$HOME/.local/bin:/opt/alex/$ALEXVER/bin:/opt/happy/$HAPPYVER/bin:$HOME/.cabal/bin:$PATH
 - mkdir -p ~/.local/bin
 - |
-  travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+  if [ `uname` = "Darwin" ]
+  then
+    travis_retry curl --insecure -L https://www.stackage.org/stack/osx-x86_64 | tar xz --strip-components=1 --include '*/stack' -C ~/.local/bin
+  else
+    travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+  fi
 
   # Use the more reliable S3 mirror of Hackage
   mkdir -p $HOME/.cabal
@@ -72,7 +92,7 @@ install:
     cabal)
       cabal --version
       travis_retry cabal update
-      cabal install --only-dependencies --enable-tests --enable-benchmarks --force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1 $PACKAGES
+      cabal install --only-dependencies --enable-tests --enable-benchmarks --force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1 $CABALARGS $PACKAGES
       ;;
   esac
   set +ex
@@ -85,7 +105,7 @@ script:
       stack --no-terminal $ARGS test --bench --no-run-benchmarks --haddock --no-haddock-deps
       ;;
     cabal)
-      cabal install --enable-tests --enable-benchmarks --force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1 $PACKAGES
+      cabal install --enable-tests --enable-benchmarks --force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1 $CABALARGS $PACKAGES
 
       ORIGDIR=$(pwd)
       for dir in $PACKAGES
@@ -93,13 +113,8 @@ script:
         cd $dir
         cabal check || [ "$CABALVER" == "1.16" ]
         cabal sdist
-        PKGVER=$(cabal info . | awk '{print $2;exit}')
-        SRC_TGZ=$PKGVER.tar.gz
-        cd dist
-        tar zxfv "$SRC_TGZ"
-        cd "$PKGVER"
-        cabal configure --enable-tests
-        cabal build
+        SRC_TGZ=$(cabal info . | awk '{print $2;exit}').tar.gz && \
+          (cd dist && cabal install --force-reinstalls "$SRC_TGZ")
         cd $ORIGDIR
       done
       ;;
