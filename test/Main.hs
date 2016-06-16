@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 -- | Test suite.
 
@@ -6,6 +7,7 @@ module Main where
 
 import Control.Applicative
 import Control.Monad
+import Data.Aeson
 import Data.Maybe
 import Path
 import Path.Internal
@@ -28,6 +30,7 @@ spec =
      describe "Operations: parent" operationParent
      describe "Operations: filename" operationFilename
      describe "Restrictions" restrictions
+     describe "Aeson Instances" aesonInstances
 
 -- | Restricting the input of any tricks.
 restrictions :: Spec
@@ -222,3 +225,13 @@ parserTest parser input expected =
         Just x -> "should succeed with: " ++ show x)
      (actual == expected)
   where actual = parser input
+
+-- | Tests for the 'ToJSON' and 'FromJSON' instances
+aesonInstances :: Spec
+aesonInstances =
+  do it "Decoding \"/foo/bar\" as a Path Abs Dir should succeed." $
+       eitherDecode "\"/foo/bar\"" `shouldBe` Right (Path "/foo/bar/" :: Path Abs Dir)
+     it "Decoding \"/foo/bar\" as a Path Rel Dir should fail." $
+       decode "\"/foo/bar\"" `shouldBe` (Nothing :: Maybe (Path Rel Dir))
+     it "Encoding \"/foo/bar/mu.txt\" should succeed." $
+       encode (Path "/foo/bar/mu.txt" :: Path Abs File) `shouldBe` "\"/foo/bar/mu.txt\""

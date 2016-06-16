@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 
 -- | Internal types and functions.
@@ -7,6 +8,7 @@ module Path.Internal
   where
 
 import Control.DeepSeq (NFData (..))
+import Data.Aeson (ToJSON (..))
 import Data.Data
 
 -- | Path of some base and type.
@@ -47,3 +49,11 @@ instance Show (Path b t) where
 
 instance NFData (Path b t) where
   rnf (Path x) = rnf x
+
+instance ToJSON (Path b t) where
+  toJSON (Path x) = toJSON x
+  {-# INLINE toJSON #-}
+#if MIN_VERSION_aeson(0,10,0)
+  toEncoding (Path x) = toEncoding x
+  {-# INLINE toEncoding #-}
+#endif
