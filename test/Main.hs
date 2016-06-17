@@ -223,7 +223,7 @@ parserTest parser input expected =
       case expected of
         Nothing -> "should fail."
         Just x -> "should succeed with: " ++ show x)
-     (actual == expected)
+     (actual `shouldBe` expected)
   where actual = parser input
 
 -- | Tests for the 'ToJSON' and 'FromJSON' instances
