@@ -1,5 +1,4 @@
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 -- | Test suite.
 
@@ -8,6 +7,7 @@ module Main where
 import Control.Applicative
 import Control.Monad
 import Data.Aeson
+import qualified Data.ByteString.Lazy.Char8 as LBS
 import Data.Maybe
 import Path
 import Path.Internal
@@ -223,15 +223,18 @@ parserTest parser input expected =
       case expected of
         Nothing -> "should fail."
         Just x -> "should succeed with: " ++ show x)
-     (actual == expected)
+     (actual `shouldBe` expected)
   where actual = parser input
 
 -- | Tests for the 'ToJSON' and 'FromJSON' instances
+--
+-- Can't use overloaded strings due to some weird issue with bytestring-0.9.2.1 / ghc-7.4.2:
+-- https://travis-ci.org/sjakobi/path/jobs/138399072#L989
 aesonInstances :: Spec
 aesonInstances =
   do it "Decoding \"[\"/foo/bar\"]\" as a [Path Abs Dir] should succeed." $
-       eitherDecode "[\"/foo/bar\"]" `shouldBe` Right [Path "/foo/bar/" :: Path Abs Dir]
+       eitherDecode (LBS.pack "[\"/foo/bar\"]") `shouldBe` Right [Path "/foo/bar/" :: Path Abs Dir]
      it "Decoding \"[\"/foo/bar\"]\" as a [Path Rel Dir] should fail." $
-       decode "[\"/foo/bar\"]" `shouldBe` (Nothing :: Maybe [Path Rel Dir])
+       decode (LBS.pack "[\"/foo/bar\"]") `shouldBe` (Nothing :: Maybe [Path Rel Dir])
      it "Encoding \"[\"/foo/bar/mu.txt\"]\" should succeed." $
-       encode [Path "/foo/bar/mu.txt" :: Path Abs File] `shouldBe` "[\"/foo/bar/mu.txt\"]"
+       encode [Path "/foo/bar/mu.txt" :: Path Abs File] `shouldBe` (LBS.pack "[\"/foo/bar/mu.txt\"]")
