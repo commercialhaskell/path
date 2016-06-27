@@ -1,7 +1,7 @@
 name:                path
 version:             0.5.8
 synopsis:            Support for well-typed paths
-description:         Support for will-typed paths.
+description:         Support for well-typed paths.
 license:             BSD3
 license-file:        LICENSE
 author:              Chris Done <chrisdone@fpcomplete.com>
