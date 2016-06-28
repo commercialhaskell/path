@@ -65,7 +65,10 @@ import qualified System.FilePath as FilePath
 -- | An absolute path.
 data Abs deriving (Typeable)
 
--- | A relative path; one without a root.
+-- | A relative path; one without a root. Note that a @.@ as well as any path
+-- starting with a @..@ is not a valid relative path. In other words, a
+-- relative path is always strictly under the directory tree to which it is
+-- relative.
 data Rel deriving (Typeable)
 
 -- | A file path.
@@ -112,10 +115,13 @@ instance Exception PathParseException
 --------------------------------------------------------------------------------
 -- Parsers
 
--- | Get a location for an absolute directory. Produces a normalized
---  path which always ends in a path separator.
+-- | Convert an absolute 'FilePath' to a normalized absolute dir 'Path'.
 --
--- Throws: 'PathParseException'
+-- Throws: 'PathParseException' when the supplied path:
+--
+-- * is not an absolute path
+-- * contains a @..@ anywhere in the path
+-- * is not a valid path (See 'System.FilePath.isValid')
 --
 parseAbsDir :: MonadThrow m
             => FilePath -> m (Path Abs Dir)
@@ -128,12 +134,15 @@ parseAbsDir filepath =
      then return (Path (normalizeDir filepath))
      else throwM (InvalidAbsDir filepath)
 
--- | Get a location for a relative directory. Produces a normalized
--- path which always ends in a path separator.
+-- | Convert a relative 'FilePath' to a normalized relative dir 'Path'.
 --
--- Note that @filepath@ may contain any number of @./@ but may not consist solely of @./@.  It also may not contain a single @..@ anywhere.
+-- Throws: 'PathParseException' when the supplied path:
 --
--- Throws: 'PathParseException'
+-- * is not a relative path
+-- * is any of "", @.@ or @..@
+-- * contains @..@ anywhere in the path
+-- * starts with @~/@
+-- * is not a valid path (See 'System.FilePath.isValid')
 --
 parseRelDir :: MonadThrow m
             => FilePath -> m (Path Rel Dir)
@@ -148,9 +157,14 @@ parseRelDir filepath =
      then return (Path (normalizeDir filepath))
      else throwM (InvalidRelDir filepath)
 
--- | Get a location for an absolute file.
+-- | Convert an absolute 'FilePath' to a normalized absolute file 'Path'.
 --
--- Throws: 'PathParseException'
+-- Throws: 'PathParseException' when the supplied path:
+--
+-- * is not an absolute path
+-- * has a trailing path separator
+-- * contains @..@ anywhere in the path
+-- * is not a valid path (See 'System.FilePath.isValid')
 --
 parseAbsFile :: MonadThrow m
              => FilePath -> m (Path Abs File)
@@ -164,11 +178,16 @@ parseAbsFile filepath =
      then return (Path (normalizeFile filepath))
      else throwM (InvalidAbsFile filepath)
 
--- | Get a location for a relative file.
+-- | Convert a relative 'FilePath' to a normalized relative file 'Path'.
 --
--- Note that @filepath@ may contain any number of @./@ but may not contain a single @..@ anywhere.
+-- Throws: 'PathParseException' when the supplied path:
 --
--- Throws: 'PathParseException'
+-- * is not a relative path
+-- * has a trailing path separator
+-- * is "", @.@ or @..@
+-- * contains @..@ anywhere in the path
+-- * starts with @~/@
+-- * is not a valid path (See 'System.FilePath.isValid')
 --
 parseRelFile :: MonadThrow m
              => FilePath -> m (Path Rel File)
