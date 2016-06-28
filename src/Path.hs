@@ -122,7 +122,6 @@ parseAbsDir :: MonadThrow m
 parseAbsDir filepath =
   if FilePath.isAbsolute filepath &&
      not (null (normalizeDir filepath)) &&
-     not ("~/" `isPrefixOf` filepath) &&
      not (hasParentDir filepath) &&
      FilePath.isValid filepath
      then return (Path (normalizeDir filepath))
@@ -157,7 +156,6 @@ parseAbsFile :: MonadThrow m
 parseAbsFile filepath =
   if FilePath.isAbsolute filepath &&
      not (FilePath.hasTrailingPathSeparator filepath) &&
-     not ("~/" `isPrefixOf` filepath) &&
      not (hasParentDir filepath) &&
      not (null (normalizeFile filepath)) &&
      FilePath.isValid filepath
