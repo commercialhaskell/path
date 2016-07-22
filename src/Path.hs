@@ -9,6 +9,7 @@
 --
 -- Support for well-typed paths.
 
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE EmptyDataDecls #-}
@@ -149,7 +150,7 @@ parseRelDir filepath =
      not ("~/" `isPrefixOf` filepath) &&
      not (hasParentDir filepath) &&
      not (null filepath) &&
-     filepath /= "." && (FilePath.normalise filepath) /= curDirNormalizedFP &&
+     filepath /= "." && (normalizeFilePath filepath) /= curDirNormalizedFP &&
      filepath /= ".." &&
      FilePath.isValid filepath
      then return (Path (normalizeDir filepath))
@@ -171,7 +172,7 @@ parseAbsFile filepath =
      not (FilePath.hasTrailingPathSeparator filepath) &&
      not (hasParentDir filepath) &&
      FilePath.isValid filepath
-     then return (Path (FilePath.normalise filepath))
+     then return (Path (normalizeFilePath filepath))
      else throwM (InvalidAbsFile filepath)
 
 -- | Convert a relative 'FilePath' to a normalized relative file 'Path'.
@@ -195,7 +196,7 @@ parseRelFile filepath =
      not (hasParentDir filepath) &&
      filepath /= "." && filepath /= ".." &&
      FilePath.isValid filepath
-     then return (Path (FilePath.normalise filepath))
+     then return (Path (normalizeFilePath filepath))
      else throwM (InvalidRelFile filepath)
 
 -- | Helper function: check if the filepath has any parent directories in it.
@@ -387,4 +388,16 @@ curDirNormalizedFP = '.' : [FilePath.pathSeparator]
 
 -- | Internal use for normalizing a directory.
 normalizeDir :: FilePath -> FilePath
-normalizeDir = FilePath.addTrailingPathSeparator . FilePath.normalise
+normalizeDir = FilePath.addTrailingPathSeparator . normalizeFilePath
+
+normalizeFilePath :: FilePath -> FilePath
+#if defined(mingw32_HOST_OS) || defined(__MINGW32__) || MIN_VERSION_filepath(1,4,0)
+normalizeFilePath = FilePath.normalise
+#else
+normalizeFilePath = normalizeLeadingSeparators . FilePath.normalise
+    where
+        sep = FilePath.pathSeparator
+        normalizeLeadingSeparators (x1:x2:xs) | x1 == sep && x2 == sep
+            = normalizeLeadingSeparators (sep:xs)
+        normalizeLeadingSeparators x = x
+#endif
