@@ -110,6 +110,7 @@ data PathParseException
   | InvalidAbsFile FilePath
   | InvalidRelFile FilePath
   | Couldn'tStripPrefixDir FilePath FilePath
+  | NoParent
   deriving (Show,Typeable)
 instance Exception PathParseException
 
@@ -329,8 +330,7 @@ stripDir (Path p) (Path l) =
     Just "" -> throwM (Couldn'tStripPrefixDir p l)
     Just ok -> return (Path ok)
 
--- | Is p a parent of the given location? Implemented in terms of
--- 'stripDir'. The bases must match.
+-- | Determine if a directory is a parent of a given path.
 --
 -- The following properties hold:
 --
@@ -348,13 +348,17 @@ isParentOf p l =
 --
 -- @parent (x \<\/> y) == x@
 --
--- On the root, getting the parent is idempotent:
+-- Throws `NoParent` for root directory.
 --
--- @parent (parent \"\/\") = \"\/\"@
---
-parent :: Path Abs t -> Path Abs Dir
+parent :: MonadThrow m
+       => Path Abs t -> m (Path Abs Dir)
 parent (Path fp) =
-  Path (normalizeDir (FilePath.takeDirectory (FilePath.dropTrailingPathSeparator fp)))
+  case isRootDir fp of
+    True  -> throwM NoParent
+    False -> return $ Path
+                    $ normalizeDir
+                    $ FilePath.takeDirectory
+                    $ FilePath.dropTrailingPathSeparator fp
 
 -- | Extract the file part of a path.
 --
@@ -378,6 +382,12 @@ dirname (Path l) =
 
 --------------------------------------------------------------------------------
 -- Internal functions
+
+-- | On Posix root is always "/" but on windows it could be "C:" or "C:\" etc.
+-- So check in a portable manner.
+isRootDir :: FilePath -> Bool
+isRootDir p = p' == FilePath.takeDirectory p'
+    where p' = FilePath.dropTrailingPathSeparator p
 
 curDirNormalizedFP :: FilePath
 curDirNormalizedFP = '.' : [FilePath.pathSeparator]

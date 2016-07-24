@@ -74,13 +74,9 @@ operationParent =
   do it "parent (parent </> child) == parent"
         (parent ($(mkAbsDir "/foo") </>
                     $(mkRelDir "bar")) ==
-         $(mkAbsDir "/foo"))
-     it "parent \"\" == \"\""
-        (parent $(mkAbsDir "/") ==
-         $(mkAbsDir "/"))
-     it "parent (parent \"\") == \"\""
-        (parent (parent $(mkAbsDir "/")) ==
-         $(mkAbsDir "/"))
+         Just $(mkAbsDir "/foo"))
+     it "parent / == _|_"
+        (parent $(mkAbsDir "/") == Nothing)
 
 -- | The 'isParentOf' operation.
 operationIsParentOf :: Spec
@@ -95,6 +91,14 @@ operationIsParentOf =
            $(mkRelDir "bar/")
            ($(mkRelDir "bar/") </>
             $(mkRelFile "bob/foo.txt")))
+     it "not (x `isParentOf` x)"
+        (not (isParentOf
+           $(mkRelDir "x")
+           $(mkRelDir "x")))
+     it "not (/ `isParentOf` /)"
+        (not (isParentOf
+           $(mkAbsDir "/")
+           $(mkAbsDir "/")))
 
 -- | The 'stripDir' operation.
 operationStripDir :: Spec
