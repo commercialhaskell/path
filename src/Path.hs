@@ -110,7 +110,7 @@ data PathParseException
   | InvalidAbsFile FilePath
   | InvalidRelFile FilePath
   | Couldn'tStripPrefixDir FilePath FilePath
-  | NoParent FilePath
+  | HasNoParent FilePath
   deriving (Show,Typeable)
 instance Exception PathParseException
 
@@ -348,13 +348,13 @@ isParentOf p l =
 --
 -- @parent (x \<\/> y) == x@
 --
--- Throws `NoParent` for root directory.
+-- Throws `HasNoParent` for root directory.
 --
 parent :: MonadThrow m
        => Path Abs t -> m (Path Abs Dir)
 parent (Path fp) =
   case FilePath.isDrive fp of
-    True  -> throwM (NoParent fp)
+    True  -> throwM (HasNoParent fp)
     False -> return $ Path
                     $ normalizeDir
                     $ FilePath.takeDirectory
