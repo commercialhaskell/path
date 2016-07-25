@@ -9,6 +9,7 @@
 --
 -- Support for well-typed paths.
 
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE EmptyDataDecls #-}
@@ -127,7 +128,6 @@ parseAbsDir :: MonadThrow m
             => FilePath -> m (Path Abs Dir)
 parseAbsDir filepath =
   if FilePath.isAbsolute filepath &&
-     not (null (normalizeDir filepath)) &&
      not (hasParentDir filepath) &&
      FilePath.isValid filepath
      then return (Path (normalizeDir filepath))
@@ -138,7 +138,7 @@ parseAbsDir filepath =
 -- Throws: 'PathParseException' when the supplied path:
 --
 -- * is not a relative path
--- * is any of "", @.@ or @..@
+-- * is any of @""@, @.@ or @..@
 -- * contains @..@ anywhere in the path
 -- * starts with @~/@
 -- * is not a valid path (See 'System.FilePath.isValid')
@@ -147,11 +147,11 @@ parseRelDir :: MonadThrow m
             => FilePath -> m (Path Rel Dir)
 parseRelDir filepath =
   if not (FilePath.isAbsolute filepath) &&
-     not (null filepath) &&
      not ("~/" `isPrefixOf` filepath) &&
      not (hasParentDir filepath) &&
-     not (null (normalizeDir filepath)) &&
-     filepath /= "." && filepath /= ".." &&
+     not (null filepath) &&
+     filepath /= "." && (normalizeFilePath filepath) /= curDirNormalizedFP &&
+     filepath /= ".." &&
      FilePath.isValid filepath
      then return (Path (normalizeDir filepath))
      else throwM (InvalidRelDir filepath)
@@ -171,9 +171,8 @@ parseAbsFile filepath =
   if FilePath.isAbsolute filepath &&
      not (FilePath.hasTrailingPathSeparator filepath) &&
      not (hasParentDir filepath) &&
-     not (null (normalizeFile filepath)) &&
      FilePath.isValid filepath
-     then return (Path (normalizeFile filepath))
+     then return (Path (normalizeFilePath filepath))
      else throwM (InvalidAbsFile filepath)
 
 -- | Convert a relative 'FilePath' to a normalized relative file 'Path'.
@@ -182,7 +181,7 @@ parseAbsFile filepath =
 --
 -- * is not a relative path
 -- * has a trailing path separator
--- * is "", @.@ or @..@
+-- * is @""@, @.@ or @..@
 -- * contains @..@ anywhere in the path
 -- * starts with @~/@
 -- * is not a valid path (See 'System.FilePath.isValid')
@@ -195,10 +194,9 @@ parseRelFile filepath =
      not (null filepath) &&
      not ("~/" `isPrefixOf` filepath) &&
      not (hasParentDir filepath) &&
-     not (null (normalizeFile filepath)) &&
      filepath /= "." && filepath /= ".." &&
      FilePath.isValid filepath
-     then return (Path (normalizeFile filepath))
+     then return (Path (normalizeFilePath filepath))
      else throwM (InvalidRelFile filepath)
 
 -- | Helper function: check if the filepath has any parent directories in it.
@@ -337,6 +335,13 @@ stripDir (Path p) (Path l) =
 
 -- | Is p a parent of the given location? Implemented in terms of
 -- 'stripDir'. The bases must match.
+--
+-- The following properties hold:
+--
+-- @not (x `isParentOf` x)@
+--
+-- @x `isParentOf` (x \<\/\> y)@
+--
 isParentOf :: Path b Dir -> Path b t -> Bool
 isParentOf p l =
   isJust (stripDir p l)
@@ -363,7 +368,7 @@ parent (Path fp) =
 --
 filename :: Path b File -> Path Rel File
 filename (Path l) =
-  Path (normalizeFile (FilePath.takeFileName l))
+  Path (FilePath.takeFileName l)
 
 -- | Extract the last directory name of a path.
 --
@@ -378,18 +383,21 @@ dirname (Path l) =
 --------------------------------------------------------------------------------
 -- Internal functions
 
+curDirNormalizedFP :: FilePath
+curDirNormalizedFP = '.' : [FilePath.pathSeparator]
+
 -- | Internal use for normalizing a directory.
 normalizeDir :: FilePath -> FilePath
-normalizeDir =
-  clean . FilePath.addTrailingPathSeparator . FilePath.normalise
-  where clean "./" = ""
-        clean ('/':'/':xs) = clean ('/':xs)
-        clean x = x
+normalizeDir = FilePath.addTrailingPathSeparator . normalizeFilePath
 
--- | Internal use for normalizing a fileectory.
-normalizeFile :: FilePath -> FilePath
-normalizeFile =
-  clean . FilePath.normalise
-  where clean "./" = ""
-        clean ('/':'/':xs) = clean ('/':xs)
-        clean x = x
+normalizeFilePath :: FilePath -> FilePath
+#if defined(mingw32_HOST_OS) || defined(__MINGW32__) || MIN_VERSION_filepath(1,4,0)
+normalizeFilePath = FilePath.normalise
+#else
+normalizeFilePath = normalizeLeadingSeparators . FilePath.normalise
+    where
+        sep = FilePath.pathSeparator
+        normalizeLeadingSeparators (x1:x2:xs) | x1 == sep && x2 == sep
+            = normalizeLeadingSeparators (sep:xs)
+        normalizeLeadingSeparators x = x
+#endif
