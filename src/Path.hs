@@ -77,10 +77,8 @@ import qualified System.FilePath as FilePath
 -- | An absolute path.
 data Abs deriving (Typeable)
 
--- | A relative path; one without a root. Note that a @.@ as well as any path
--- starting with a @..@ is not a valid relative path. In other words, a
--- relative path is always strictly under the directory tree to which it is
--- relative.
+-- | A relative path; one without a root. Note that a @..@ path component to
+-- represent the parent directory is not allowed by this library.
 data Rel deriving (Typeable)
 
 -- | A file path.
@@ -282,9 +280,12 @@ filename (Path l) =
 --
 -- The following properties hold:
 --
+-- @dirname $(mkRelDir ".") == $(mkRelDir ".")@
+--
 -- @dirname (p \<\/> a) == dirname a@
 --
 dirname :: Path b Dir -> Path Rel Dir
+dirname (Path []) = Path []
 dirname (Path l) =
   Path (last (FilePath.splitPath l))
 
@@ -318,7 +319,7 @@ setFileExtension ext (Path path) =
 -- Throws: 'PathParseException' when the supplied path:
 --
 -- * is not an absolute path
--- * contains a @..@ anywhere in the path
+-- * contains a @..@ path component representing the parent directory
 -- * is not a valid path (See 'System.FilePath.isValid')
 --
 parseAbsDir :: MonadThrow m
@@ -335,8 +336,8 @@ parseAbsDir filepath =
 -- Throws: 'PathParseException' when the supplied path:
 --
 -- * is not a relative path
--- * is any of @""@, @.@ or @..@
--- * contains @..@ anywhere in the path
+-- * is @""@
+-- * contains a @..@ path component representing the parent directory
 -- * is not a valid path (See 'System.FilePath.isValid')
 --
 parseRelDir :: MonadThrow m
@@ -345,20 +346,27 @@ parseRelDir filepath =
   if not (FilePath.isAbsolute filepath) &&
      not (hasParentDir filepath) &&
      not (null filepath) &&
-     filepath /= "." &&
-     normalizeFilePath filepath /= curDirNormalizedFP &&
      FilePath.isValid filepath
-     then return (Path (normalizeDir filepath))
+     then return (Path (normalizeRelDir filepath))
      else throwM (InvalidRelDir filepath)
+  where
+      normalizeRelDir = toRelDirPath . normalizeDir
+      -- Represent a "." in relative dir path as "" internally so that it
+      -- composes without having to renormalize the path.
+      toRelDirPath p | p == curDirNormalizedFP = ""
+      toRelDirPath p = p
 
 -- | Convert an absolute 'FilePath' to a normalized absolute file 'Path'.
 --
 -- Throws: 'PathParseException' when the supplied path:
 --
 -- * is not an absolute path
--- * has a trailing path separator
--- * contains @..@ anywhere in the path
--- * ends in @/.@
+-- * is a directory path i.e.
+--
+--     * has a trailing path separator
+--     * is @.@ or ends in @/.@
+--
+-- * contains a @..@ path component representing the parent directory
 -- * is not a valid path (See 'System.FilePath.isValid')
 --
 parseAbsFile :: MonadThrow m
@@ -384,9 +392,13 @@ validAbsFile filepath =
 -- Throws: 'PathParseException' when the supplied path:
 --
 -- * is not a relative path
--- * has a trailing path separator
--- * is @""@, @.@ or @..@
--- * contains @..@ anywhere in the path
+-- * is @""@
+-- * is a directory path i.e.
+--
+--     * has a trailing path separator
+--     * is @.@ or ends in @/.@
+--
+-- * contains a @..@ path component representing the parent directory
 -- * is not a valid path (See 'System.FilePath.isValid')
 --
 parseRelFile :: MonadThrow m
@@ -409,14 +421,6 @@ validRelFile filepath =
 
 --------------------------------------------------------------------------------
 -- Conversion
-
--- | Convert to a 'FilePath' type.
---
--- All directories have a trailing slash, so if you want no trailing
--- slash, you can use 'System.FilePath.dropTrailingPathSeparator' from
--- the filepath package.
-toFilePath :: Path b t -> FilePath
-toFilePath (Path l) = l
 
 -- | Convert absolute path to directory to 'FilePath' type.
 fromAbsDir :: Path Abs Dir -> FilePath
@@ -480,9 +484,6 @@ mkRelFile s =
 
 --------------------------------------------------------------------------------
 -- Internal functions
-
-curDirNormalizedFP :: FilePath
-curDirNormalizedFP = '.' : [FilePath.pathSeparator]
 
 -- | Internal use for normalizing a directory.
 normalizeDir :: FilePath -> FilePath

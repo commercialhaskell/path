@@ -23,6 +23,7 @@ spec =
      describe "Parsing: Path Abs File" parseAbsFileSpec
      describe "Parsing: Path Rel File" parseRelFileSpec
      describe "Operations: (</>)" operationAppend
+     describe "Operations: toFilePath" operationToFilePath
      describe "Operations: stripDir" operationStripDir
      describe "Operations: isParentOf" operationIsParentOf
      describe "Operations: parent" operationParent
@@ -45,7 +46,6 @@ restrictions =
      --
      parseFails "../"
      parseFails ".."
-     parseFails "."
      parseFails "/.."
      parseFails "/foo/../bar/"
      parseFails "/foo/bar/.."
@@ -69,6 +69,9 @@ operationDirname = do
     "dirname ($(mkRelDir parent) </> $(mkRelFile dirname)) == dirname $(mkRelFile dirname) (unit test)"
     (dirname ($(mkRelDir "home/chris/") </> $(mkRelDir "bar")) ==
      dirname $(mkRelDir "bar"))
+  it
+    "dirname $(mkRelDir .) == $(mkRelDir .)"
+    (dirname $(mkRelDir ".") == $(mkRelDir "."))
 
 -- | The 'filename' operation.
 operationFilename :: Spec
@@ -147,10 +150,23 @@ operationAppend =
         ($(mkRelDir "home/") </>
          $(mkRelDir "chris") ==
          $(mkRelDir "home/chris"))
+     it ". + . = ."
+        ($(mkRelDir "./") </> $(mkRelDir ".") == $(mkRelDir "."))
+     it ". + x = x"
+        ($(mkRelDir ".") </> $(mkRelDir "x") == $(mkRelDir "x"))
+     it "x + . = x"
+        ($(mkRelDir "x") </> $(mkRelDir "./") == $(mkRelDir "x"))
      it "RelDir + RelFile = RelFile"
         ($(mkRelDir "home/") </>
          $(mkRelFile "chris/test.txt") ==
          $(mkRelFile "home/chris/test.txt"))
+
+operationToFilePath :: Spec
+operationToFilePath =
+  do it "toFilePath $(mkRelDir \".\") == \"./\""
+        (toFilePath $(mkRelDir ".") == "./")
+     it "show $(mkRelDir \".\") == \"\\\"./\\\"\""
+        (show $(mkRelDir ".") == "\"./\"")
 
 -- | Tests for the tokenizer.
 parseAbsDirSpec :: Spec
@@ -175,8 +191,8 @@ parseRelDirSpec =
      failing "//"
      succeeding "~/" (Path "~/") -- https://github.com/chrisdone/path/issues/19
      failing "/"
-     failing "./"
-     failing "././"
+     succeeding "./" (Path "")
+     succeeding "././" (Path "")
      failing "//"
      failing "///foo//bar//mu/"
      failing "///foo//bar////mu"

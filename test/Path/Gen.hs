@@ -47,7 +47,6 @@ instance Validity (Path Rel Dir) where
     =  FilePath.isRelative fp
     && FilePath.hasTrailingPathSeparator fp
     && FilePath.isValid fp
-    && not (null fp)
     && fp /= "."
     && not (hasParentDir fp)
     && (parseRelDir fp == Just p)
