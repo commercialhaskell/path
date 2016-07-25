@@ -110,7 +110,7 @@ data PathParseException
   | InvalidAbsFile FilePath
   | InvalidRelFile FilePath
   | Couldn'tStripPrefixDir FilePath FilePath
-  | NoParent
+  | NoParent FilePath
   deriving (Show,Typeable)
 instance Exception PathParseException
 
@@ -353,8 +353,8 @@ isParentOf p l =
 parent :: MonadThrow m
        => Path Abs t -> m (Path Abs Dir)
 parent (Path fp) =
-  case isRootDir fp of
-    True  -> throwM NoParent
+  case FilePath.isDrive fp of
+    True  -> throwM (NoParent fp)
     False -> return $ Path
                     $ normalizeDir
                     $ FilePath.takeDirectory
@@ -382,12 +382,6 @@ dirname (Path l) =
 
 --------------------------------------------------------------------------------
 -- Internal functions
-
--- | On Posix root is always "/" but on windows it could be "C:" or "C:\" etc.
--- So check in a portable manner.
-isRootDir :: FilePath -> Bool
-isRootDir p = p' == FilePath.takeDirectory p'
-    where p' = FilePath.dropTrailingPathSeparator p
 
 curDirNormalizedFP :: FilePath
 curDirNormalizedFP = '.' : [FilePath.pathSeparator]
