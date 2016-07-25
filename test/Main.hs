@@ -35,9 +35,12 @@ spec =
 -- | Restricting the input of any tricks.
 restrictions :: Spec
 restrictions =
-  do parseFails "~/"
-     parseFails "~/foo"
-     parseFails "~/foo/bar"
+  do -- These ~ related ones below are now lifted:
+     -- https://github.com/chrisdone/path/issues/19
+     parseSucceeds "~/" (Path "~/")
+     parseSucceeds "~/foo" (Path "~/foo/")
+     parseSucceeds "~/foo/bar" (Path "~/foo/bar/")
+     --
      parseFails "../"
      parseFails ".."
      parseFails "."
@@ -50,6 +53,8 @@ restrictions =
                          void (parseRelDir x) <|>
                          void (parseAbsFile x) <|>
                          void (parseRelFile x)))
+        parseSucceeds x with =
+          parserTest parseRelDir x (Just with)
 
 -- | The 'filename' operation.
 operationFilename :: Spec
@@ -134,7 +139,6 @@ parseAbsDirSpec :: Spec
 parseAbsDirSpec =
   do failing ""
      failing "./"
-     failing "~/"
      failing "foo.txt"
      succeeding "/" (Path "/")
      succeeding "//" (Path "/")
@@ -150,7 +154,7 @@ parseRelDirSpec =
   do failing ""
      failing "/"
      failing "//"
-     failing "~/"
+     succeeding "~/" (Path "~/") -- https://github.com/chrisdone/path/issues/19
      failing "/"
      failing "./"
      failing "././"

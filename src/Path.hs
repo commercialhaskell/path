@@ -140,14 +140,12 @@ parseAbsDir filepath =
 -- * is not a relative path
 -- * is any of @""@, @.@ or @..@
 -- * contains @..@ anywhere in the path
--- * starts with @~/@
 -- * is not a valid path (See 'System.FilePath.isValid')
 --
 parseRelDir :: MonadThrow m
             => FilePath -> m (Path Rel Dir)
 parseRelDir filepath =
   if not (FilePath.isAbsolute filepath) &&
-     not ("~/" `isPrefixOf` filepath) &&
      not (hasParentDir filepath) &&
      not (null filepath) &&
      filepath /= "." && (normalizeFilePath filepath) /= curDirNormalizedFP &&
@@ -183,7 +181,6 @@ parseAbsFile filepath =
 -- * has a trailing path separator
 -- * is @""@, @.@ or @..@
 -- * contains @..@ anywhere in the path
--- * starts with @~/@
 -- * is not a valid path (See 'System.FilePath.isValid')
 --
 parseRelFile :: MonadThrow m
@@ -192,7 +189,6 @@ parseRelFile filepath =
   if not (FilePath.isAbsolute filepath ||
           FilePath.hasTrailingPathSeparator filepath) &&
      not (null filepath) &&
-     not ("~/" `isPrefixOf` filepath) &&
      not (hasParentDir filepath) &&
      filepath /= "." && filepath /= ".." &&
      FilePath.isValid filepath
