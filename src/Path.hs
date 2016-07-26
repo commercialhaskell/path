@@ -22,12 +22,14 @@ module Path
   ,Rel
   ,File
   ,Dir
+   -- * Exceptions
+  ,PathException(..)
+  ,PathParseException
    -- * Parsing
   ,parseAbsDir
   ,parseRelDir
   ,parseAbsFile
   ,parseRelFile
-  ,PathParseException
   -- * Constructors
   ,mkAbsDir
   ,mkRelDir
@@ -103,8 +105,8 @@ parseJSONWith f x =
        Left e -> fail (show e)
 {-# INLINE parseJSONWith #-}
 
--- | Exception when parsing a location.
-data PathParseException
+-- | Exceptions during path operations
+data PathException
   = InvalidAbsDir FilePath
   | InvalidRelDir FilePath
   | InvalidAbsFile FilePath
@@ -112,7 +114,10 @@ data PathParseException
   | Couldn'tStripPrefixDir FilePath FilePath
   | HasNoParent FilePath
   deriving (Show,Typeable)
-instance Exception PathParseException
+instance Exception PathException
+
+{-# DEPRECATED PathParseException "Please use PathException instead." #-}
+type PathParseException = PathException
 
 --------------------------------------------------------------------------------
 -- Parsers
