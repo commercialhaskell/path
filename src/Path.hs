@@ -124,7 +124,7 @@ type PathParseException = PathException
 
 -- | Convert an absolute 'FilePath' to a normalized absolute dir 'Path'.
 --
--- Throws: 'PathParseException' when the supplied path:
+-- Throws: 'InvalidAbsDir' when the supplied path:
 --
 -- * is not an absolute path
 -- * contains a @..@ anywhere in the path
@@ -141,7 +141,7 @@ parseAbsDir filepath =
 
 -- | Convert a relative 'FilePath' to a normalized relative dir 'Path'.
 --
--- Throws: 'PathParseException' when the supplied path:
+-- Throws: 'InvalidRelDir' when the supplied path:
 --
 -- * is not a relative path
 -- * is any of @""@, @.@ or @..@
@@ -162,7 +162,7 @@ parseRelDir filepath =
 
 -- | Convert an absolute 'FilePath' to a normalized absolute file 'Path'.
 --
--- Throws: 'PathParseException' when the supplied path:
+-- Throws: 'InvalidAbsFile' when the supplied path:
 --
 -- * is not an absolute path
 -- * has a trailing path separator
@@ -181,7 +181,7 @@ parseAbsFile filepath =
 
 -- | Convert a relative 'FilePath' to a normalized relative file 'Path'.
 --
--- Throws: 'PathParseException' when the supplied path:
+-- Throws: 'InvalidRelFile' when the supplied path:
 --
 -- * is not a relative path
 -- * has a trailing path separator
