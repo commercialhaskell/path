@@ -111,7 +111,7 @@ data PathException
   | InvalidRelDir FilePath
   | InvalidAbsFile FilePath
   | InvalidRelFile FilePath
-  | Couldn'tStripPrefixDir FilePath FilePath
+  | InvalidPrefix FilePath FilePath
   | HasNoParent FilePath
   deriving (Show,Typeable)
 instance Exception PathException
@@ -313,7 +313,7 @@ fromRelFile = toFilePath
 (</>) (Path a) (Path b) = Path (a ++ b)
 
 -- | Strip directory from path, making it relative to that directory.
--- Throws 'Couldn'tStripPrefixDir' if directory is not a parent of the path.
+-- Throws 'InvalidPrefix' if directory is not a parent of the path.
 --
 -- The following properties hold:
 --
@@ -331,8 +331,8 @@ stripDir :: MonadThrow m
          => Path b Dir -> Path b t -> m (Path Rel t)
 stripDir (Path p) (Path l) =
   case stripPrefix p l of
-    Nothing -> throwM (Couldn'tStripPrefixDir p l)
-    Just "" -> throwM (Couldn'tStripPrefixDir p l)
+    Nothing -> throwM (InvalidPrefix p l)
+    Just "" -> throwM (InvalidPrefix p l)
     Just ok -> return (Path ok)
 
 -- | Determine if a directory is a parent of a given path.
