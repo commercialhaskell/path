@@ -1,1 +1,5 @@
+flags: {}
+extra-deps:
+- path-0.5.9
+- validity-0.3.0.1
 resolver: lts-6.3

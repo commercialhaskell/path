@@ -22,6 +22,7 @@ library
                    , template-haskell
                    , deepseq
                    , aeson
+                   , validity
 
 test-suite test
     type: exitcode-stdio-1.0

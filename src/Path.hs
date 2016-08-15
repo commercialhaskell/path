@@ -56,6 +56,7 @@ import qualified Data.Aeson.Types as Aeson
 import           Data.Data
 import           Data.List
 import           Data.Maybe
+import           Data.Validity
 import           Language.Haskell.TH
 import           Path.Internal
 import qualified System.FilePath as FilePath
@@ -77,6 +78,26 @@ data File deriving (Typeable)
 
 -- | A directory path.
 data Dir deriving (Typeable)
+
+instance Validity (Path Abs File) where
+  isValid (Path fp)
+    =  FilePath.isAbsolute fp
+    && not (FilePath.hasTrailingPathSeparator fp)
+
+instance Validity (Path Rel File) where
+  isValid (Path fp)
+    =  FilePath.isRelative fp
+    && not (FilePath.hasTrailingPathSeparator fp)
+
+instance Validity (Path Abs Dir) where
+  isValid (Path fp)
+    =  FilePath.isAbsolute fp
+    && FilePath.hasTrailingPathSeparator fp
+
+instance Validity (Path Rel Dir) where
+  isValid (Path fp)
+    =  FilePath.isRelative fp
+    && FilePath.hasTrailingPathSeparator fp
 
 instance FromJSON (Path Abs File) where
   parseJSON = parseJSONWith parseAbsFile
