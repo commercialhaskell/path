@@ -12,6 +12,10 @@ import Data.Maybe
 import Path
 import Path.Internal
 import Test.Hspec
+import Test.Validity
+import Test.QuickCheck
+
+import Path.Gen ()
 
 -- | Test suite entry point, returns exit failure if any test fails.
 main :: IO ()
@@ -68,6 +72,12 @@ operationFilename =
                    filename $(mkRelFile "bar.txt")) ==
          $(mkRelFile "bar.txt"))
 
+     it "produces a valid path on when passed a valid absolute path" $ do
+        producesValidsOnValids (filename :: Path Abs File -> Path Rel File)
+
+     it "produces a valid path on when passed a valid relative path" $ do
+        producesValidsOnValids (filename :: Path Rel File -> Path Rel File)
+
 -- | The 'parent' operation.
 operationParent :: Spec
 operationParent =
@@ -81,6 +91,12 @@ operationParent =
      it "parent (parent \"\") == \"\""
         (parent (parent $(mkAbsDir "/")) ==
          $(mkAbsDir "/"))
+
+     it "produces a valid path on when passed a valid file path " $ do
+        producesValidsOnValids (parent :: Path Abs File -> Path Abs Dir)
+
+     it "produces a valid path on when passed a valid directory path" $ do
+        producesValidsOnValids (parent :: Path Abs Dir -> Path Abs Dir)
 
 -- | The 'isParentOf' operation.
 operationIsParentOf :: Spec
@@ -145,6 +161,10 @@ parseAbsDirSpec =
      succeeding "///foo//bar//mu/" (Path "/foo/bar/mu/")
      succeeding "///foo//bar////mu" (Path "/foo/bar/mu/")
      succeeding "///foo//bar/.//mu" (Path "/foo/bar/mu/")
+
+     it "Produces valid paths when it succeeds" $
+       validIfSucceedsOnArbitrary
+         (parseAbsDir :: FilePath -> Maybe (Path Abs Dir))
   where failing x = parserTest parseAbsDir x Nothing
         succeeding x with = parserTest parseAbsDir x (Just with)
 
@@ -170,6 +190,10 @@ parseRelDirSpec =
      succeeding "foo//bar//mu//" (Path "foo/bar/mu/")
      succeeding "foo//bar////mu" (Path "foo/bar/mu/")
      succeeding "foo//bar/.//mu" (Path "foo/bar/mu/")
+
+     it "Produces valid paths when it succeeds" $
+       validIfSucceedsOnArbitrary
+         (parseRelDir :: FilePath -> Maybe (Path Rel Dir))
   where failing x = parserTest parseRelDir x Nothing
         succeeding x with = parserTest parseRelDir x (Just with)
 
@@ -187,6 +211,10 @@ parseAbsFileSpec =
      succeeding "/foo.txt" (Path "/foo.txt")
      succeeding "///foo//bar////mu.txt" (Path "/foo/bar/mu.txt")
      succeeding "///foo//bar/.//mu.txt" (Path "/foo/bar/mu.txt")
+
+     it "Produces valid paths when it succeeds" $
+       validIfSucceedsOnArbitrary
+         (parseAbsFile :: FilePath -> Maybe (Path Abs File))
   where failing x = parserTest parseAbsFile x Nothing
         succeeding x with = parserTest parseAbsFile x (Just with)
 
@@ -211,6 +239,10 @@ parseRelFileSpec =
      succeeding "foo//bar//mu.txt" (Path "foo/bar/mu.txt")
      succeeding "foo//bar////mu.txt" (Path "foo/bar/mu.txt")
      succeeding "foo//bar/.//mu.txt" (Path "foo/bar/mu.txt")
+
+     it "Produces valid paths when it succeeds" $
+       validIfSucceedsOnArbitrary
+         (parseRelFile :: FilePath -> Maybe (Path Rel File))
   where failing x = parserTest parseRelFile x Nothing
         succeeding x with = parserTest parseRelFile x (Just with)
 

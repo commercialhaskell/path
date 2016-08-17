@@ -22,19 +22,24 @@ library
                    , template-haskell
                    , deepseq
                    , aeson
-                   , validity
 
 test-suite test
     type: exitcode-stdio-1.0
     main-is: Main.hs
+    other-modules: Path.Gen
     hs-source-dirs: test
     build-depends: HUnit
+                 , QuickCheck
                  , aeson
                  , base
                  , bytestring
+                 , filepath
+                 , genvalidity
+                 , genvalidity-hspec
                  , hspec
                  , mtl
                  , path
+                 , validity
 
 source-repository head
     type:     git
