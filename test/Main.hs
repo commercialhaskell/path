@@ -92,7 +92,7 @@ operationParent =
         (parent (parent $(mkAbsDir "/")) ==
          $(mkAbsDir "/"))
 
-     it "produces a valid path on when passed a valid file path " $ do
+     it "produces a valid path on when passed a valid file path" $ do
         producesValidsOnValids (parent :: Path Abs File -> Path Abs Dir)
 
      it "produces a valid path on when passed a valid directory path" $ do
@@ -130,6 +130,18 @@ operationStripDir =
                   $(mkAbsDir "/home/chris/foo") ==
          Nothing)
 
+     it "produces a valid path on when passed a valid absolute file paths" $ do
+        producesValidsOnValids2 (stripDir :: Path Abs Dir -> Path Abs File -> Maybe (Path Rel File))
+
+     it "produces a valid path on when passed a valid absolute directory paths" $ do
+        producesValidsOnValids2 (stripDir :: Path Abs Dir -> Path Abs Dir -> Maybe (Path Rel Dir))
+
+     it "produces a valid path on when passed a valid relative file paths" $ do
+        producesValidsOnValids2 (stripDir :: Path Rel Dir -> Path Rel File -> Maybe (Path Rel File))
+
+     it "produces a valid path on when passed a valid relative directory paths" $ do
+        producesValidsOnValids2 (stripDir :: Path Rel Dir -> Path Rel Dir -> Maybe (Path Rel Dir))
+
 -- | The '</>' operation.
 operationAppend :: Spec
 operationAppend =
@@ -149,6 +161,18 @@ operationAppend =
         ($(mkRelDir "home/") </>
          $(mkRelFile "chris/test.txt") ==
          $(mkRelFile "home/chris/test.txt"))
+
+     it "produces a valid path on when creating valid absolute file paths" $ do
+        producesValidsOnValids2 ((</>) :: Path Abs Dir -> Path Rel File -> Path Abs File)
+
+     it "produces a valid path on when creating valid absolute directory paths" $ do
+        producesValidsOnValids2 ((</>) :: Path Abs Dir -> Path Rel Dir -> Path Abs Dir)
+
+     it "produces a valid path on when creating valid relative file paths" $ do
+        producesValidsOnValids2 ((</>) :: Path Rel Dir -> Path Rel File -> Path Rel File)
+
+     it "produces a valid path on when creating valid relative directory paths" $ do
+        producesValidsOnValids2 ((</>) :: Path Rel Dir -> Path Rel Dir -> Path Rel Dir)
 
 -- | Tests for the tokenizer.
 parseAbsDirSpec :: Spec

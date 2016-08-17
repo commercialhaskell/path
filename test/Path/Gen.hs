@@ -6,6 +6,7 @@ import           Path.Internal
 
 import qualified System.FilePath as FilePath
 
+import           Data.List (isInfixOf)
 import           Data.Validity
 import           Data.GenValidity
 
@@ -16,21 +17,35 @@ instance Validity (Path Abs File) where
   isValid (Path fp)
     =  FilePath.isAbsolute fp
     && not (FilePath.hasTrailingPathSeparator fp)
+    && FilePath.isValid fp
+    && not (".." `isInfixOf` fp)
 
 instance Validity (Path Rel File) where
   isValid (Path fp)
     =  FilePath.isRelative fp
     && not (FilePath.hasTrailingPathSeparator fp)
+    && FilePath.isValid fp
+    && fp /= "."
+    && fp /= ".."
+    && not (".." `isInfixOf` fp)
 
 instance Validity (Path Abs Dir) where
   isValid (Path fp)
     =  FilePath.isAbsolute fp
     && FilePath.hasTrailingPathSeparator fp
+    && FilePath.isValid fp
+    && not (".." `isInfixOf` fp)
 
 instance Validity (Path Rel Dir) where
   isValid (Path fp)
     =  FilePath.isRelative fp
     && FilePath.hasTrailingPathSeparator fp
+    && FilePath.isValid fp
+    && not (null fp)
+    && fp /= "."
+    && fp /= ".."
+    && not (".." `isInfixOf` fp)
+
 
 
 instance GenValidity (Path Abs File) where
