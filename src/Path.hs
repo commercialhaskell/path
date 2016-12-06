@@ -41,6 +41,8 @@ module Path
   ,parent
   ,filename
   ,dirname
+  ,fileExtension
+  ,setFileExtension
   -- * Conversion
   ,toFilePath
   ,fromAbsDir
@@ -54,12 +56,14 @@ import           Control.Exception (Exception)
 import           Control.Monad.Catch (MonadThrow(..))
 import           Data.Aeson (FromJSON (..))
 import qualified Data.Aeson.Types as Aeson
+import           Data.Char (isAlphaNum)
 import           Data.Data
 import           Data.List
 import           Data.Maybe
 import           Language.Haskell.TH
 import           Path.Internal
 import qualified System.FilePath as FilePath
+import           Unsafe.Coerce (unsafeCoerce)
 
 --------------------------------------------------------------------------------
 -- Types
@@ -111,6 +115,7 @@ data PathParseException
   | InvalidAbsFile FilePath
   | InvalidRelFile FilePath
   | Couldn'tStripPrefixDir FilePath FilePath
+  | InvalidFileExtension String
   deriving (Show,Typeable)
 instance Exception PathParseException
 
@@ -149,7 +154,8 @@ parseRelDir filepath =
   if not (FilePath.isAbsolute filepath) &&
      not (hasParentDir filepath) &&
      not (null filepath) &&
-     filepath /= "." && (normalizeFilePath filepath) /= curDirNormalizedFP &&
+     filepath /= "." &&
+     normalizeFilePath filepath /= curDirNormalizedFP &&
      filepath /= ".." &&
      FilePath.isValid filepath
      then return (Path (normalizeDir filepath))
@@ -391,6 +397,23 @@ filename (Path l) =
 dirname :: Path b Dir -> Path Rel Dir
 dirname (Path l) =
   Path (last (FilePath.splitPath l))
+
+-- | Get extension from given file path.
+
+fileExtension :: Path b File -> String
+fileExtension = FilePath.takeExtension . toFilePath
+
+-- | Replace\/add extension to given file path. Throws
+-- 'InvalidFileExtension' if given extension is not benign.
+
+setFileExtension :: MonadThrow m
+  => String            -- ^ Extension to set
+  -> Path b File       -- ^ Old file name
+  -> m (Path b File)   -- ^ New file name with the desired extension
+setFileExtension ext path =
+  if all isAlphaNum ext
+    then (unsafeCoerce . FilePath.replaceExtension ext . toFilePath) path
+    else throwM (InvalidFileExtension ext)
 
 --------------------------------------------------------------------------------
 -- Internal functions
