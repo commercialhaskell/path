@@ -161,17 +161,26 @@ parseRelDir filepath =
 -- * is not an absolute path
 -- * has a trailing path separator
 -- * contains @..@ anywhere in the path
+-- * ends in @/.@
 -- * is not a valid path (See 'System.FilePath.isValid')
 --
 parseAbsFile :: MonadThrow m
              => FilePath -> m (Path Abs File)
 parseAbsFile filepath =
-  if FilePath.isAbsolute filepath &&
-     not (FilePath.hasTrailingPathSeparator filepath) &&
-     not (hasParentDir filepath) &&
-     FilePath.isValid filepath
-     then return (Path (normalizeFilePath filepath))
-     else throwM (InvalidAbsFile filepath)
+  case validAbsFile filepath of
+    True
+      | normalized <- normalizeFilePath filepath
+      , validAbsFile normalized ->
+        return (Path normalized)
+    _ -> throwM (InvalidAbsFile filepath)
+
+-- | Is the string a valid absolute file?
+validAbsFile :: FilePath -> Bool
+validAbsFile filepath =
+  FilePath.isAbsolute filepath &&
+  not (FilePath.hasTrailingPathSeparator filepath) &&
+  not (hasParentDir filepath) &&
+  FilePath.isValid filepath
 
 -- | Convert a relative 'FilePath' to a normalized relative file 'Path'.
 --

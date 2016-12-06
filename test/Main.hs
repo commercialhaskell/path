@@ -225,6 +225,8 @@ parseAbsFileSpec :: Spec
 parseAbsFileSpec =
   do failing ""
      failing "./"
+     failing "/."
+     failing "/foo/bar/."
      failing "~/"
      failing "./foo.txt"
      failing "/"
