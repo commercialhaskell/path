@@ -13,7 +13,6 @@ import Path
 import Path.Internal
 import Test.Hspec
 import Test.Validity
-import Test.QuickCheck
 
 import Path.Gen ()
 
