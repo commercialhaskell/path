@@ -114,7 +114,6 @@ data PathParseException
   | InvalidAbsFile FilePath
   | InvalidRelFile FilePath
   | Couldn'tStripPrefixDir FilePath FilePath
-  | InvalidFileExtension String
   deriving (Show,Typeable)
 instance Exception PathParseException
 
@@ -401,8 +400,8 @@ dirname (Path l) =
 fileExtension :: Path b File -> String
 fileExtension = FilePath.takeExtension . toFilePath
 
--- | Replace\/add extension to given file path. Throws
--- 'InvalidFileExtension' if the resulting filename does not parse.
+-- | Replace\/add extension to given file path. Throws if the
+-- resulting filename does not parse.
 setFileExtension :: MonadThrow m
   => String            -- ^ Extension to set
   -> Path b File       -- ^ Old file name
