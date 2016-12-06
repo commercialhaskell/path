@@ -1,3 +1,7 @@
+0.5.10
+	* Disallow /. for absolute file
+	* Disallow foo/. for relative file
+
 0.5.9:
 	* Lifted ~ restriction from parser https://github.com/chrisdone/path/issues/19
 0.5.8
