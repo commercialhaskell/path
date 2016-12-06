@@ -397,11 +397,15 @@ dirname (Path l) =
   Path (last (FilePath.splitPath l))
 
 -- | Get extension from given file path.
+--
+-- @since 0.5.11
 fileExtension :: Path b File -> String
 fileExtension = FilePath.takeExtension . toFilePath
 
 -- | Replace\/add extension to given file path. Throws if the
 -- resulting filename does not parse.
+--
+-- @since 0.5.11
 setFileExtension :: MonadThrow m
   => String            -- ^ Extension to set
   -> Path b File       -- ^ Old file name
