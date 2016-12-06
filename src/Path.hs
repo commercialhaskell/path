@@ -195,14 +195,20 @@ validAbsFile filepath =
 parseRelFile :: MonadThrow m
              => FilePath -> m (Path Rel File)
 parseRelFile filepath =
-  if not (FilePath.isAbsolute filepath ||
-          FilePath.hasTrailingPathSeparator filepath) &&
-     not (null filepath) &&
-     not (hasParentDir filepath) &&
-     filepath /= "." && filepath /= ".." &&
-     FilePath.isValid filepath
-     then return (Path (normalizeFilePath filepath))
-     else throwM (InvalidRelFile filepath)
+  case validRelFile filepath of
+    True
+      | normalized <- normalizeFilePath filepath
+      , validRelFile normalized -> return (Path normalized)
+    _ -> throwM (InvalidRelFile filepath)
+
+-- | Is the string a valid relative file?
+validRelFile :: FilePath -> Bool
+validRelFile filepath =
+  not
+    (FilePath.isAbsolute filepath || FilePath.hasTrailingPathSeparator filepath) &&
+  not (null filepath) &&
+  not (hasParentDir filepath) &&
+  filepath /= "." && filepath /= ".." && FilePath.isValid filepath
 
 -- | Helper function: check if the filepath has any parent directories in it.
 -- This handles the logic of checking for different path separators on Windows.

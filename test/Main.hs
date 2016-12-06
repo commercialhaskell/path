@@ -252,10 +252,15 @@ parseRelFileSpec =
      failing "~/"
      failing "/"
      failing "./"
+     failing "a/."
+     failing "a/../b"
+     failing "a/.."
+     failing "../foo.txt"
      failing "//"
      failing "///foo//bar//mu/"
      failing "///foo//bar////mu"
      failing "///foo//bar/.//mu"
+     succeeding "a.." (Path "a..")
      succeeding "..." (Path "...")
      succeeding "foo.txt" (Path "foo.txt")
      succeeding "./foo.txt" (Path "foo.txt")
