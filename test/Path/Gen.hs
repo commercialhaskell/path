@@ -14,30 +14,33 @@ import           Test.QuickCheck
 
 
 instance Validity (Path Abs File) where
-  isValid (Path fp)
+  isValid p@(Path fp)
     =  FilePath.isAbsolute fp
     && not (FilePath.hasTrailingPathSeparator fp)
     && FilePath.isValid fp
     && not (".." `isInfixOf` fp)
+    && (parseAbsFile fp == Just p)
 
 instance Validity (Path Rel File) where
-  isValid (Path fp)
+  isValid p@(Path fp)
     =  FilePath.isRelative fp
     && not (FilePath.hasTrailingPathSeparator fp)
     && FilePath.isValid fp
     && fp /= "."
     && fp /= ".."
     && not (".." `isInfixOf` fp)
+    && (parseRelFile fp == Just p)
 
 instance Validity (Path Abs Dir) where
-  isValid (Path fp)
+  isValid p@(Path fp)
     =  FilePath.isAbsolute fp
     && FilePath.hasTrailingPathSeparator fp
     && FilePath.isValid fp
     && not (".." `isInfixOf` fp)
+    && (parseAbsDir fp == Just p)
 
 instance Validity (Path Rel Dir) where
-  isValid (Path fp)
+  isValid p@(Path fp)
     =  FilePath.isRelative fp
     && FilePath.hasTrailingPathSeparator fp
     && FilePath.isValid fp
@@ -45,6 +48,7 @@ instance Validity (Path Rel Dir) where
     && fp /= "."
     && fp /= ".."
     && not (".." `isInfixOf` fp)
+    && (parseRelDir fp == Just p)
 
 
 
