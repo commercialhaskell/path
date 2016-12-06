@@ -41,6 +41,7 @@ module Path
   ,parent
   ,filename
   ,dirname
+  ,isRoot
   -- * Conversion
   ,toFilePath
   ,fromAbsDir
@@ -371,6 +372,10 @@ isParentOf p l =
 parent :: Path Abs t -> Path Abs Dir
 parent (Path fp) =
   Path (normalizeDir (FilePath.takeDirectory (FilePath.dropTrailingPathSeparator fp)))
+
+-- | Find out whether a directory path is the root folder
+isRoot :: Path Abs Dir -> Bool
+isRoot p = p == parent p
 
 -- | Extract the file part of a path.
 --
