@@ -56,14 +56,13 @@ import           Control.Exception (Exception)
 import           Control.Monad.Catch (MonadThrow(..))
 import           Data.Aeson (FromJSON (..))
 import qualified Data.Aeson.Types as Aeson
-import           Data.Char (isAlphaNum)
+import           Data.Coerce
 import           Data.Data
 import           Data.List
 import           Data.Maybe
 import           Language.Haskell.TH
 import           Path.Internal
 import qualified System.FilePath as FilePath
-import           Unsafe.Coerce (unsafeCoerce)
 
 --------------------------------------------------------------------------------
 -- Types
@@ -399,21 +398,19 @@ dirname (Path l) =
   Path (last (FilePath.splitPath l))
 
 -- | Get extension from given file path.
-
 fileExtension :: Path b File -> String
 fileExtension = FilePath.takeExtension . toFilePath
 
 -- | Replace\/add extension to given file path. Throws
--- 'InvalidFileExtension' if given extension is not benign.
-
+-- 'InvalidFileExtension' if the resulting filename does not parse.
 setFileExtension :: MonadThrow m
   => String            -- ^ Extension to set
   -> Path b File       -- ^ Old file name
   -> m (Path b File)   -- ^ New file name with the desired extension
-setFileExtension ext path =
-  if all isAlphaNum ext
-    then (unsafeCoerce . FilePath.replaceExtension ext . toFilePath) path
-    else throwM (InvalidFileExtension ext)
+setFileExtension ext (Path path) =
+  if FilePath.isAbsolute path
+    then fmap coerce (parseAbsFile (FilePath.replaceExtension path ext))
+    else fmap coerce (parseRelFile (FilePath.replaceExtension path ext))
 
 --------------------------------------------------------------------------------
 -- Internal functions
