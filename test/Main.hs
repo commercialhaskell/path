@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 -- | Test suite.
 
@@ -12,6 +13,7 @@ import Data.Maybe
 import Path
 import Path.Internal
 import Test.Hspec
+import Test.QuickCheck
 import Test.Validity
 
 import Path.Gen ()
@@ -62,14 +64,25 @@ restrictions =
 -- | The 'filename' operation.
 operationFilename :: Spec
 operationFilename =
-  do it "filename ($(mkAbsDir parent) </> filename $(mkRelFile filename)) == $(mkRelFile filename)"
-        (filename ($(mkAbsDir "/home/chris/") </>
-                   filename $(mkRelFile "bar.txt")) ==
-         $(mkRelFile "bar.txt"))
-     it "filename ($(mkRelDir parent) </> filename $(mkRelFile filename)) == $(mkRelFile filename)"
-        (filename ($(mkRelDir "home/chris/") </>
-                   filename $(mkRelFile "bar.txt")) ==
-         $(mkRelFile "bar.txt"))
+  do it "filename ($(mkAbsDir parent) </> $(mkRelFile filename)) == filename $(mkRelFile filename) (unit test)"
+          (filename ($(mkAbsDir "/home/chris/") </>
+                             $(mkRelFile "bar.txt")) ==
+                                      filename $(mkRelFile "bar.txt"))
+
+     it "filename ($(mkAbsDir parent) </> $(mkRelFile filename)) == filename $(mkRelFile filename)" $
+             forAll genValid $ \(parent :: Path Abs Dir) ->
+                         forAll genValid $ \file ->
+                                         filename (parent </> file) `shouldBe` filename file
+
+     it "filename ($(mkRelDir parent) </> $(mkRelFile filename)) == filename $(mkRelFile filename) (unit test)"
+             (filename ($(mkRelDir "home/chris/") </>
+                                $(mkRelFile "bar.txt")) ==
+                                         filename $(mkRelFile "bar.txt"))
+
+     it "filename ($(mkRelDir parent) </> $(mkRelFile filename)) == filename $(mkRelFile filename)" $
+             forAll genValid $ \(parent :: Path Rel Dir) ->
+                         forAll genValid $ \file ->
+                         filename (parent </> file) `shouldBe` filename file
 
      it "produces a valid path on when passed a valid absolute path" $ do
         producesValidsOnValids (filename :: Path Abs File -> Path Rel File)
