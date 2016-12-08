@@ -1,20 +1,22 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell     #-}
 
 -- | Test suite.
 
 module Main where
 
-import Control.Applicative
-import Control.Monad
-import Data.Aeson
+import           Control.Applicative
+import           Control.Monad
+import           Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as LBS
-import Data.Maybe
-import Path
-import Path.Internal
-import Test.Hspec
-import Test.Validity
+import           Data.Maybe
+import           Path
+import           Path.Internal
+import           Test.Hspec
+import           Test.QuickCheck
+import           Test.Validity
 
-import Path.Gen ()
+import           Path.Gen                   ()
 
 -- | Test suite entry point, returns exit failure if any test fails.
 main :: IO ()
@@ -62,14 +64,25 @@ restrictions =
 -- | The 'filename' operation.
 operationFilename :: Spec
 operationFilename =
-  do it "filename ($(mkAbsDir parent) </> filename $(mkRelFile filename)) == $(mkRelFile filename)"
+  do it "filename ($(mkAbsDir parent) </> $(mkRelFile filename)) == filename $(mkRelFile filename) (unit test)"
         (filename ($(mkAbsDir "/home/chris/") </>
-                   filename $(mkRelFile "bar.txt")) ==
-         $(mkRelFile "bar.txt"))
-     it "filename ($(mkRelDir parent) </> filename $(mkRelFile filename)) == $(mkRelFile filename)"
+                   $(mkRelFile "bar.txt")) ==
+         filename $(mkRelFile "bar.txt"))
+
+     it "filename ($(mkAbsDir parent) </> $(mkRelFile filename)) == filename $(mkRelFile filename)" $
+        forAll genValid $ \(parent :: Path Abs Dir) ->
+            forAll genValid $ \file ->
+                filename (parent </> file) `shouldBe` filename file
+
+     it "filename ($(mkRelDir parent) </> $(mkRelFile filename)) == filename $(mkRelFile filename) (unit test)"
         (filename ($(mkRelDir "home/chris/") </>
-                   filename $(mkRelFile "bar.txt")) ==
-         $(mkRelFile "bar.txt"))
+                   $(mkRelFile "bar.txt")) ==
+         filename $(mkRelFile "bar.txt"))
+
+     it "filename ($(mkRelDir parent) </> $(mkRelFile filename)) == filename $(mkRelFile filename)" $
+        forAll genValid $ \(parent :: Path Rel Dir) ->
+            forAll genValid $ \file ->
+                filename (parent </> file) `shouldBe` filename file
 
      it "produces a valid path on when passed a valid absolute path" $ do
         producesValidsOnValids (filename :: Path Abs File -> Path Rel File)
@@ -282,13 +295,13 @@ parserTest :: (Show a1,Show a,Eq a1)
 parserTest parser input expected =
   it ((case expected of
          Nothing -> "Failing: "
-         Just{} -> "Succeeding: ") ++
+         Just{}  -> "Succeeding: ") ++
       "Parsing " ++
       show input ++
       " " ++
       case expected of
         Nothing -> "should fail."
-        Just x -> "should succeed with: " ++ show x)
+        Just x  -> "should succeed with: " ++ show x)
      (actual `shouldBe` expected)
   where actual = parser input
 
