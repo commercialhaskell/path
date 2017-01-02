@@ -113,16 +113,37 @@ operationParent =
 -- | The 'isParentOf' operation.
 operationIsParentOf :: Spec
 operationIsParentOf =
-  do it "isParentOf parent (parent </> child)"
+  do it "isParentOf parent (parent </> child) (unit test)"
         (isParentOf
            $(mkAbsDir "///bar/")
            ($(mkAbsDir "///bar/") </>
             $(mkRelFile "bar/foo.txt")))
-     it "isParentOf parent (parent </> child)"
+            
+     it "isParentOf parent (parent </> child) (unit test)"
         (isParentOf
            $(mkRelDir "bar/")
            ($(mkRelDir "bar/") </>
             $(mkRelFile "bob/foo.txt")))
+
+     it "isParentOf parent (parent </> child)" $
+        forAll genValid $ \(parent :: Path Abs Dir) ->
+            forAll genValid $ \(child :: Path Rel File) ->
+                isParentOf parent (parent </> child)
+
+     it "isParentOf parent (parent </> child)" $
+        forAll genValid $ \(parent :: Path Abs Dir) ->
+            forAll genValid $ \(child :: Path Rel Dir) ->
+                isParentOf parent (parent </> child)
+
+     it "isParentOf parent (parent </> child)" $
+        forAll genValid $ \(parent :: Path Rel Dir) ->
+            forAll genValid $ \(child :: Path Rel File) ->
+                isParentOf parent (parent </> child)
+
+     it "isParentOf parent (parent </> child)" $
+        forAll genValid $ \(parent :: Path Rel Dir) ->
+            forAll genValid $ \(child :: Path Rel Dir) ->
+                isParentOf parent (parent </> child)
 
 -- | The 'stripDir' operation.
 operationStripDir :: Spec
