@@ -148,16 +148,38 @@ operationIsParentOf =
 -- | The 'stripDir' operation.
 operationStripDir :: Spec
 operationStripDir =
-  do it "stripDir parent (parent </> child) = child"
+  do it "stripDir parent (parent </> child) = child (unit test)"
         (stripDir $(mkAbsDir "///bar/")
                   ($(mkAbsDir "///bar/") </>
                    $(mkRelFile "bar/foo.txt")) ==
          Just $(mkRelFile "bar/foo.txt"))
-     it "stripDir parent (parent </> child) = child"
+         
+     it "stripDir parent (parent </> child) = child (unit test)"
         (stripDir $(mkRelDir "bar/")
                   ($(mkRelDir "bar/") </>
                    $(mkRelFile "bob/foo.txt")) ==
          Just $(mkRelFile "bob/foo.txt"))
+
+     it "stripDir parent (parent </> child) = child" $
+        forAll genValid $ \(parent :: Path Abs Dir) ->
+            forAll genValid $ \(child :: Path Rel File) ->
+                stripDir parent (parent </> child) == Just child
+
+     it "stripDir parent (parent </> child) = child" $
+        forAll genValid $ \(parent :: Path Rel Dir) ->
+            forAll genValid $ \(child :: Path Rel File) ->
+                stripDir parent (parent </> child) == Just child
+
+     it "stripDir parent (parent </> child) = child" $
+        forAll genValid $ \(parent :: Path Abs Dir) ->
+            forAll genValid $ \(child :: Path Rel Dir) ->
+                stripDir parent (parent </> child) == Just child
+
+     it "stripDir parent (parent </> child) = child" $
+        forAll genValid $ \(parent :: Path Rel Dir) ->
+            forAll genValid $ \(child :: Path Rel Dir) ->
+                stripDir parent (parent </> child) == Just child
+        
      it "stripDir parent parent = _|_"
         (stripDir $(mkAbsDir "/home/chris/foo")
                   $(mkAbsDir "/home/chris/foo") ==
