@@ -52,6 +52,8 @@ restrictions =
      parseFails "/.."
      parseFails "/foo/../bar/"
      parseFails "/foo/bar/.."
+     parseFails "/hello/\n/world"
+     parseFails "white/\r/space"
   where parseFails x =
           it (show x ++ " should be rejected")
              (isNothing (void (parseAbsDir x) <|>
@@ -118,7 +120,7 @@ operationIsParentOf =
            $(mkAbsDir "///bar/")
            ($(mkAbsDir "///bar/") </>
             $(mkRelFile "bar/foo.txt")))
-            
+
      it "isParentOf parent (parent </> child) (unit test)"
         (isParentOf
            $(mkRelDir "bar/")
@@ -153,7 +155,7 @@ operationStripDir =
                   ($(mkAbsDir "///bar/") </>
                    $(mkRelFile "bar/foo.txt")) ==
          Just $(mkRelFile "bar/foo.txt"))
-         
+
      it "stripDir parent (parent </> child) = child (unit test)"
         (stripDir $(mkRelDir "bar/")
                   ($(mkRelDir "bar/") </>
@@ -179,7 +181,7 @@ operationStripDir =
         forAll genValid $ \(parent :: Path Rel Dir) ->
             forAll genValid $ \(child :: Path Rel Dir) ->
                 stripDir parent (parent </> child) == Just child
-        
+
      it "stripDir parent parent = _|_"
         (stripDir $(mkAbsDir "/home/chris/foo")
                   $(mkAbsDir "/home/chris/foo") ==
