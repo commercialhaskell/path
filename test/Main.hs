@@ -34,6 +34,7 @@ spec =
      describe "Operations: isParentOf" operationIsParentOf
      describe "Operations: parent" operationParent
      describe "Operations: filename" operationFilename
+     describe "Operations: dirname" operationDirname
      describe "Restrictions" restrictions
      describe "Aeson Instances" aesonInstances
 
@@ -89,6 +90,35 @@ operationFilename =
 
      it "produces a valid path on when passed a valid relative path" $ do
         producesValidsOnValids (filename :: Path Rel File -> Path Rel File)
+
+-- | The 'dirname' operation.
+operationDirname :: Spec
+operationDirname =
+  do it "dirname ($(mkAbsDir parent) </> $(mkRelFile dirname)) == dirname $(mkRelFile dirname) (unit test)"
+          (dirname ($(mkAbsDir "/home/chris/") </>
+                             $(mkRelDir "bar")) ==
+                                      dirname $(mkRelDir "bar"))
+
+     it "dirname ($(mkAbsDir parent) </> $(mkRelFile dirname)) == dirname $(mkRelFile dirname)" $
+             forAll genValid $ \(parent :: Path Abs Dir) ->
+                         forAll genValid $ \file ->
+                                         dirname (parent </> file) `shouldBe` dirname file
+
+     it "dirname ($(mkRelDir parent) </> $(mkRelFile dirname)) == dirname $(mkRelFile dirname) (unit test)"
+             (dirname ($(mkRelDir "home/chris/") </>
+                                $(mkRelDir "bar")) ==
+                                         dirname $(mkRelDir "bar"))
+
+     it "dirname ($(mkRelDir parent) </> $(mkRelFile dirname)) == dirname $(mkRelFile dirname)" $
+             forAll genValid $ \(parent :: Path Rel Dir) ->
+                         forAll genValid $ \file ->
+                         dirname (parent </> file) `shouldBe` dirname file
+
+     it "produces a valid path on when passed a valid absolute path" $ do
+        producesValidsOnValids (dirname :: Path Abs Dir -> Path Rel Dir)
+
+     it "produces a valid path on when passed a valid relative path" $ do
+        producesValidsOnValids (dirname :: Path Rel Dir -> Path Rel Dir)
 
 -- | The 'parent' operation.
 operationParent :: Spec
