@@ -52,15 +52,23 @@ instance Validity (Path Rel Dir) where
 
 
 
-instance GenValidity (Path Abs File) where
+instance GenUnchecked (Path Abs File) where
   genUnchecked = Path <$> arbitrary
 
-instance GenValidity (Path Rel File) where
+instance GenValid (Path Abs File)
+
+instance GenUnchecked (Path Rel File) where
   genUnchecked = Path <$> arbitrary
 
-instance GenValidity (Path Abs Dir) where
+instance GenValid (Path Rel File)
+
+instance GenUnchecked (Path Abs Dir) where
   genUnchecked = Path <$> arbitrary
 
-instance GenValidity (Path Rel Dir) where
+instance GenValid (Path Abs Dir)
+
+instance GenUnchecked (Path Rel Dir) where
   genUnchecked = Path <$> arbitrary
+
+instance GenValid (Path Rel Dir)
 

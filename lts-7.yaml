@@ -1,0 +1,7 @@
+flags: {}
+extra-deps:
+- genvalidity-0.3.0.0
+- genvalidity-hspec-0.3.0.0
+- path-0.5.9
+- validity-0.3.1.1
+resolver: lts-7.16
