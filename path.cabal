@@ -26,6 +26,21 @@ library
 test-suite test
     type: exitcode-stdio-1.0
     main-is: Main.hs
+    hs-source-dirs: test
+    build-depends: HUnit
+                 , QuickCheck
+                 , aeson
+                 , base
+                 , bytestring
+                 , filepath
+                 , hspec
+                 , mtl
+                 , path
+                 , validity
+
+test-suite validity-test
+    type: exitcode-stdio-1.0
+    main-is: ValidityTest.hs
     other-modules: Path.Gen
     hs-source-dirs: test
     build-depends: HUnit

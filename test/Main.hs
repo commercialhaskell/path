@@ -14,9 +14,6 @@ import Path
 import Path.Internal
 import Test.Hspec
 import Test.QuickCheck
-import Test.Validity
-
-import Path.Gen ()
 
 -- | Test suite entry point, returns exit failure if any test fails.
 main :: IO ()
@@ -69,26 +66,10 @@ operationFilename =
                              $(mkRelFile "bar.txt")) ==
                                       filename $(mkRelFile "bar.txt"))
 
-     it "filename ($(mkAbsDir parent) </> $(mkRelFile filename)) == filename $(mkRelFile filename)" $
-             forAll genValid $ \(parent :: Path Abs Dir) ->
-                         forAll genValid $ \file ->
-                                         filename (parent </> file) `shouldBe` filename file
-
      it "filename ($(mkRelDir parent) </> $(mkRelFile filename)) == filename $(mkRelFile filename) (unit test)"
              (filename ($(mkRelDir "home/chris/") </>
                                 $(mkRelFile "bar.txt")) ==
                                          filename $(mkRelFile "bar.txt"))
-
-     it "filename ($(mkRelDir parent) </> $(mkRelFile filename)) == filename $(mkRelFile filename)" $
-             forAll genValid $ \(parent :: Path Rel Dir) ->
-                         forAll genValid $ \file ->
-                         filename (parent </> file) `shouldBe` filename file
-
-     it "produces a valid path on when passed a valid absolute path" $ do
-        producesValidsOnValids (filename :: Path Abs File -> Path Rel File)
-
-     it "produces a valid path on when passed a valid relative path" $ do
-        producesValidsOnValids (filename :: Path Rel File -> Path Rel File)
 
 -- | The 'parent' operation.
 operationParent :: Spec
@@ -103,12 +84,6 @@ operationParent =
      it "parent (parent \"\") == \"\""
         (parent (parent $(mkAbsDir "/")) ==
          $(mkAbsDir "/"))
-
-     it "produces a valid path on when passed a valid file path" $ do
-        producesValidsOnValids (parent :: Path Abs File -> Path Abs Dir)
-
-     it "produces a valid path on when passed a valid directory path" $ do
-        producesValidsOnValids (parent :: Path Abs Dir -> Path Abs Dir)
 
 -- | The 'isParentOf' operation.
 operationIsParentOf :: Spec
@@ -125,26 +100,6 @@ operationIsParentOf =
            ($(mkRelDir "bar/") </>
             $(mkRelFile "bob/foo.txt")))
 
-     it "isParentOf parent (parent </> child)" $
-        forAll genValid $ \(parent :: Path Abs Dir) ->
-            forAll genValid $ \(child :: Path Rel File) ->
-                isParentOf parent (parent </> child)
-
-     it "isParentOf parent (parent </> child)" $
-        forAll genValid $ \(parent :: Path Abs Dir) ->
-            forAll genValid $ \(child :: Path Rel Dir) ->
-                isParentOf parent (parent </> child)
-
-     it "isParentOf parent (parent </> child)" $
-        forAll genValid $ \(parent :: Path Rel Dir) ->
-            forAll genValid $ \(child :: Path Rel File) ->
-                isParentOf parent (parent </> child)
-
-     it "isParentOf parent (parent </> child)" $
-        forAll genValid $ \(parent :: Path Rel Dir) ->
-            forAll genValid $ \(child :: Path Rel Dir) ->
-                isParentOf parent (parent </> child)
-
 -- | The 'stripDir' operation.
 operationStripDir :: Spec
 operationStripDir =
@@ -160,42 +115,10 @@ operationStripDir =
                    $(mkRelFile "bob/foo.txt")) ==
          Just $(mkRelFile "bob/foo.txt"))
 
-     it "stripDir parent (parent </> child) = child" $
-        forAll genValid $ \(parent :: Path Abs Dir) ->
-            forAll genValid $ \(child :: Path Rel File) ->
-                stripDir parent (parent </> child) == Just child
-
-     it "stripDir parent (parent </> child) = child" $
-        forAll genValid $ \(parent :: Path Rel Dir) ->
-            forAll genValid $ \(child :: Path Rel File) ->
-                stripDir parent (parent </> child) == Just child
-
-     it "stripDir parent (parent </> child) = child" $
-        forAll genValid $ \(parent :: Path Abs Dir) ->
-            forAll genValid $ \(child :: Path Rel Dir) ->
-                stripDir parent (parent </> child) == Just child
-
-     it "stripDir parent (parent </> child) = child" $
-        forAll genValid $ \(parent :: Path Rel Dir) ->
-            forAll genValid $ \(child :: Path Rel Dir) ->
-                stripDir parent (parent </> child) == Just child
-        
      it "stripDir parent parent = _|_"
         (stripDir $(mkAbsDir "/home/chris/foo")
                   $(mkAbsDir "/home/chris/foo") ==
          Nothing)
-
-     it "produces a valid path on when passed a valid absolute file paths" $ do
-        producesValidsOnValids2 (stripDir :: Path Abs Dir -> Path Abs File -> Maybe (Path Rel File))
-
-     it "produces a valid path on when passed a valid absolute directory paths" $ do
-        producesValidsOnValids2 (stripDir :: Path Abs Dir -> Path Abs Dir -> Maybe (Path Rel Dir))
-
-     it "produces a valid path on when passed a valid relative file paths" $ do
-        producesValidsOnValids2 (stripDir :: Path Rel Dir -> Path Rel File -> Maybe (Path Rel File))
-
-     it "produces a valid path on when passed a valid relative directory paths" $ do
-        producesValidsOnValids2 (stripDir :: Path Rel Dir -> Path Rel Dir -> Maybe (Path Rel Dir))
 
 -- | The '</>' operation.
 operationAppend :: Spec
@@ -217,18 +140,6 @@ operationAppend =
          $(mkRelFile "chris/test.txt") ==
          $(mkRelFile "home/chris/test.txt"))
 
-     it "produces a valid path on when creating valid absolute file paths" $ do
-        producesValidsOnValids2 ((</>) :: Path Abs Dir -> Path Rel File -> Path Abs File)
-
-     it "produces a valid path on when creating valid absolute directory paths" $ do
-        producesValidsOnValids2 ((</>) :: Path Abs Dir -> Path Rel Dir -> Path Abs Dir)
-
-     it "produces a valid path on when creating valid relative file paths" $ do
-        producesValidsOnValids2 ((</>) :: Path Rel Dir -> Path Rel File -> Path Rel File)
-
-     it "produces a valid path on when creating valid relative directory paths" $ do
-        producesValidsOnValids2 ((</>) :: Path Rel Dir -> Path Rel Dir -> Path Rel Dir)
-
 -- | Tests for the tokenizer.
 parseAbsDirSpec :: Spec
 parseAbsDirSpec =
@@ -241,9 +152,6 @@ parseAbsDirSpec =
      succeeding "///foo//bar////mu" (Path "/foo/bar/mu/")
      succeeding "///foo//bar/.//mu" (Path "/foo/bar/mu/")
 
-     it "Produces valid paths when it succeeds" $
-       validIfSucceedsOnArbitrary
-         (parseAbsDir :: FilePath -> Maybe (Path Abs Dir))
   where failing x = parserTest parseAbsDir x Nothing
         succeeding x with = parserTest parseAbsDir x (Just with)
 
@@ -269,10 +177,7 @@ parseRelDirSpec =
      succeeding "foo//bar//mu//" (Path "foo/bar/mu/")
      succeeding "foo//bar////mu" (Path "foo/bar/mu/")
      succeeding "foo//bar/.//mu" (Path "foo/bar/mu/")
-
-     it "Produces valid paths when it succeeds" $
-       validIfSucceedsOnArbitrary
-         (parseRelDir :: FilePath -> Maybe (Path Rel Dir))
+     
   where failing x = parserTest parseRelDir x Nothing
         succeeding x with = parserTest parseRelDir x (Just with)
 
@@ -293,9 +198,6 @@ parseAbsFileSpec =
      succeeding "///foo//bar////mu.txt" (Path "/foo/bar/mu.txt")
      succeeding "///foo//bar/.//mu.txt" (Path "/foo/bar/mu.txt")
 
-     it "Produces valid paths when it succeeds" $
-       validIfSucceedsOnArbitrary
-         (parseAbsFile :: FilePath -> Maybe (Path Abs File))
   where failing x = parserTest parseAbsFile x Nothing
         succeeding x with = parserTest parseAbsFile x (Just with)
 
@@ -326,9 +228,6 @@ parseRelFileSpec =
      succeeding "foo//bar////mu.txt" (Path "foo/bar/mu.txt")
      succeeding "foo//bar/.//mu.txt" (Path "foo/bar/mu.txt")
 
-     it "Produces valid paths when it succeeds" $
-       validIfSucceedsOnArbitrary
-         (parseRelFile :: FilePath -> Maybe (Path Rel File))
   where failing x = parserTest parseRelFile x Nothing
         succeeding x with = parserTest parseRelFile x (Just with)
 
