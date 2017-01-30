@@ -53,6 +53,7 @@ module Path
   where
 
 import           Control.Exception (Exception)
+import           Control.Monad
 import           Control.Monad.Catch (MonadThrow(..))
 import           Data.Aeson (FromJSON (..))
 import qualified Data.Aeson.Types as Aeson
@@ -412,8 +413,8 @@ setFileExtension :: MonadThrow m
   -> m (Path b File)   -- ^ New file name with the desired extension
 setFileExtension ext (Path path) =
   if FilePath.isAbsolute path
-    then fmap coerce (parseAbsFile (FilePath.replaceExtension path ext))
-    else fmap coerce (parseRelFile (FilePath.replaceExtension path ext))
+    then liftM coerce (parseAbsFile (FilePath.replaceExtension path ext))
+    else liftM coerce (parseRelFile (FilePath.replaceExtension path ext))
 
 --------------------------------------------------------------------------------
 -- Internal functions
