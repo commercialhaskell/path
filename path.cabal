@@ -47,15 +47,15 @@ test-suite validity-test
     build-depends: HUnit
                  , QuickCheck
                  , aeson
-                 , base
+                 , base >= 4.9 && < 5
                  , bytestring
                  , filepath
-                 , genvalidity
-                 , genvalidity-hspec
+                 , genvalidity >= 0.3 && < 0.4
+                 , genvalidity-hspec >= 0.3 && < 0.4
                  , hspec
                  , mtl
                  , path
-                 , validity
+                 , validity >= 0.3.1.1 && < 0.4
 
 source-repository head
     type:     git

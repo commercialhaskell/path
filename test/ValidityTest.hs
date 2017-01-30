@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -49,19 +50,19 @@ operationFilename = do
                  filename (parent </> file) `shouldBe` filename file
 
      it "produces a valid path on when passed a valid absolute path" $ do
-        producesValidsOnValids (filename :: Path Abs File -> Path Rel File)
+        producesValidsOnValids (filename @Abs)
 
      it "produces a valid path on when passed a valid relative path" $ do
-        producesValidsOnValids (filename :: Path Rel File -> Path Rel File)
+        producesValidsOnValids (filename @Rel)
 
 -- | The 'parent' operation.
 operationParent :: Spec
 operationParent = do
      it "produces a valid path on when passed a valid file path" $ do
-        producesValidsOnValids (parent :: Path Abs File -> Path Abs Dir)
+        producesValidsOnValids (parent @File)
 
      it "produces a valid path on when passed a valid directory path" $ do
-        producesValidsOnValids (parent :: Path Abs Dir -> Path Abs Dir)
+        producesValidsOnValids (parent @Dir)
 
 -- | The 'isParentOf' operation.
 operationIsParentOf :: Spec
@@ -110,53 +111,53 @@ operationStripDir = do
                 stripDir parent (parent </> child) == Just child
         
      it "produces a valid path on when passed a valid absolute file paths" $ do
-        producesValidsOnValids2 (stripDir :: Path Abs Dir -> Path Abs File -> Maybe (Path Rel File))
+        producesValidsOnValids2 (stripDir @Maybe @Abs @File)
 
      it "produces a valid path on when passed a valid absolute directory paths" $ do
-        producesValidsOnValids2 (stripDir :: Path Abs Dir -> Path Abs Dir -> Maybe (Path Rel Dir))
+        producesValidsOnValids2 (stripDir @Maybe @Abs @Dir)
 
      it "produces a valid path on when passed a valid relative file paths" $ do
-        producesValidsOnValids2 (stripDir :: Path Rel Dir -> Path Rel File -> Maybe (Path Rel File))
+        producesValidsOnValids2 (stripDir @Maybe @Rel @File)
 
      it "produces a valid path on when passed a valid relative directory paths" $ do
-        producesValidsOnValids2 (stripDir :: Path Rel Dir -> Path Rel Dir -> Maybe (Path Rel Dir))
+        producesValidsOnValids2 (stripDir @Maybe @Rel @Dir)
 
 -- | The '</>' operation.
 operationAppend :: Spec
 operationAppend = do
      it "produces a valid path on when creating valid absolute file paths" $ do
-        producesValidsOnValids2 ((</>) :: Path Abs Dir -> Path Rel File -> Path Abs File)
+        producesValidsOnValids2 ((</>) @Abs @File)
 
      it "produces a valid path on when creating valid absolute directory paths" $ do
-        producesValidsOnValids2 ((</>) :: Path Abs Dir -> Path Rel Dir -> Path Abs Dir)
+        producesValidsOnValids2 ((</>) @Abs @Dir)
 
      it "produces a valid path on when creating valid relative file paths" $ do
-        producesValidsOnValids2 ((</>) :: Path Rel Dir -> Path Rel File -> Path Rel File)
+        producesValidsOnValids2 ((</>) @Rel @File)
 
      it "produces a valid path on when creating valid relative directory paths" $ do
-        producesValidsOnValids2 ((</>) :: Path Rel Dir -> Path Rel Dir -> Path Rel Dir)
+        producesValidsOnValids2 ((</>) @Rel @Dir)
 
 
 parseAbsDirSpec :: Spec
 parseAbsDirSpec = do
      it "Produces valid paths when it succeeds" $
        validIfSucceedsOnArbitrary
-         (parseAbsDir :: FilePath -> Maybe (Path Abs Dir))
+         (parseAbsDir @Maybe)
 
 parseRelDirSpec :: Spec
 parseRelDirSpec = do
      it "Produces valid paths when it succeeds" $
        validIfSucceedsOnArbitrary
-         (parseRelDir :: FilePath -> Maybe (Path Rel Dir))
+         (parseRelDir @Maybe)
 
 parseAbsFileSpec :: Spec
 parseAbsFileSpec = do
      it "Produces valid paths when it succeeds" $
        validIfSucceedsOnArbitrary
-         (parseAbsFile :: FilePath -> Maybe (Path Abs File))
+         (parseAbsFile @Maybe)
 
 parseRelFileSpec :: Spec
 parseRelFileSpec = do
      it "Produces valid paths when it succeeds" $
        validIfSucceedsOnArbitrary
-         (parseRelFile :: FilePath -> Maybe (Path Rel File))
+         (parseRelFile @Maybe)
