@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP                #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 
 -- | Internal types and functions.
@@ -10,6 +10,7 @@ module Path.Internal
 import Control.DeepSeq (NFData (..))
 import Data.Aeson (ToJSON (..))
 import Data.Data
+import Data.Hashable
 
 -- | Path of some base and type.
 --
@@ -57,3 +58,6 @@ instance ToJSON (Path b t) where
   toEncoding (Path x) = toEncoding x
   {-# INLINE toEncoding #-}
 #endif
+
+instance Hashable (Path b t) where
+  hashWithSalt n (Path path) = hashWithSalt n path
