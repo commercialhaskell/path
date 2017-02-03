@@ -14,6 +14,11 @@ import Data.Hashable
 
 -- | Path of some base and type.
 --
+-- The type variables are:
+--
+--   * @b@ — base, the base location of the path; absolute or relative.
+--   * @t@ — type, whether file or directory.
+--
 -- Internally is a string. The string can be of two formats only:
 --
 -- 1. File format: @file.txt@, @foo\/bar.txt@, @\/foo\/bar.txt@
