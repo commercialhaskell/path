@@ -57,7 +57,6 @@ import           Control.Monad
 import           Control.Monad.Catch (MonadThrow(..))
 import           Data.Aeson (FromJSON (..))
 import qualified Data.Aeson.Types as Aeson
-import           Data.Coerce
 import           Data.Data
 import           Data.List
 import           Data.Maybe
@@ -413,8 +412,10 @@ setFileExtension :: MonadThrow m
   -> m (Path b File)   -- ^ New file name with the desired extension
 setFileExtension ext (Path path) =
   if FilePath.isAbsolute path
-    then liftM coerce (parseAbsFile (FilePath.replaceExtension path ext))
-    else liftM coerce (parseRelFile (FilePath.replaceExtension path ext))
+    then liftM coercePath (parseAbsFile (FilePath.replaceExtension path ext))
+    else liftM coercePath (parseRelFile (FilePath.replaceExtension path ext))
+  where coercePath :: Path a b -> Path a' b'
+        coercePath (Path a) = Path a
 
 --------------------------------------------------------------------------------
 -- Internal functions
