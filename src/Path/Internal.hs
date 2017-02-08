@@ -45,7 +45,7 @@ instance Eq (Path b t) where
 instance Ord (Path b t) where
   compare (Path x) (Path y) = compare x y
 
--- | Same as 'Path.toFilePath'.
+-- | Same as 'show . Path.toFilePath'.
 --
 -- The following property holds:
 --
