@@ -13,7 +13,6 @@ import Data.Maybe
 import Path
 import Path.Internal
 import Test.Hspec
-import Test.QuickCheck
 
 -- | Test suite entry point, returns exit failure if any test fails.
 main :: IO ()
