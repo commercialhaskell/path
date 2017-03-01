@@ -6,7 +6,7 @@ license:             BSD3
 license-file:        LICENSE
 author:              Chris Done <chrisdone@fpcomplete.com>
 maintainer:          Chris Done <chrisdone@fpcomplete.com>
-copyright:           2015–2016 FP Complete
+copyright:           2015–2017 FP Complete
 category:            Filesystem
 build-type:          Simple
 cabal-version:       >=1.8
@@ -66,4 +66,4 @@ test-suite validity-test
 
 source-repository head
     type:     git
-    location: https://github.com/chrisdone/path.git
+    location: https://github.com/commercialhaskell/path.git
