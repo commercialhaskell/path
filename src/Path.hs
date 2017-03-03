@@ -1,13 +1,4 @@
--- |
--- Module      :  Path
--- Copyright   :  © 2015–2016 FP Complete
--- License     :  BSD 3 clause
---
--- Maintainer  :  Chris Done <chrisdone@fpcomplete.com>
--- Stability   :  experimental
--- Portability :  portable
---
--- Support for well-typed paths.
+-- | Support for well-typed paths.
 
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE TemplateHaskell #-}
