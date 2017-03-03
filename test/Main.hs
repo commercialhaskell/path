@@ -49,17 +49,12 @@ restrictions =
      parseFails "/.."
      parseFails "/foo/../bar/"
      parseFails "/foo/bar/.."
-     parseFailsPending "/hello/\n/world"
-     parseFailsPending "white/\r/space"
   where parseFails x =
           it (show x ++ " should be rejected")
              (isNothing (void (parseAbsDir x) <|>
                          void (parseRelDir x) <|>
                          void (parseAbsFile x) <|>
                          void (parseRelFile x)))
-        parseFailsPending x =
-          it (show x ++ " should be rejected")
-             pending
         parseSucceeds x with =
           parserTest parseRelDir x (Just with)
 
