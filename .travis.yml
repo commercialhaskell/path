@@ -4,28 +4,35 @@ sudo: false
 
 matrix:
   include:
-    - env: CABALVER=1.24 GHCVER=7.8.4
+    - env: TYPE=cabal CABALVER=1.24 GHCVER=7.8.4
       addons: {apt: {packages: [cabal-install-1.24,ghc-7.8.4], sources: [hvr-ghc]}}
-    - env: CABALVER=1.24 GHCVER=7.10.3
+    - env: TYPE=cabal CABALVER=1.24 GHCVER=7.10.3
       addons: {apt: {packages: [cabal-install-1.24,ghc-7.10.3],sources: [hvr-ghc]}}
-    - env: CABALVER=1.24 GHCVER=8.0.2
+    - env: TYPE=cabal CABALVER=1.24 GHCVER=8.0.2
       addons: {apt: {packages: [cabal-install-1.24,ghc-8.0.2], sources: [hvr-ghc]}}
+    - env: TYPE=stack ARGS="--resolver lts-2"
+      addons: {apt: {packages: [ghc-7.8.4], sources: [hvr-ghc]}}
+    - env: TYPE=stack ARGS="--resolver lts-6"
+      addons: {apt: {packages: [ghc-7.10.3], sources: [hvr-ghc]}}
+    - env: TYPE=stack ARGS="--resolver lts-8"
+      addons: {apt: {packages: [ghc-8.0.2], sources: [hvr-ghc]}}
 
 before_install:
   - export PATH=/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:$PATH
 
 install:
- - cabal --version
- - echo "$(ghc --version) [$(ghc --print-project-git-commit-id 2> /dev/null || echo '?')]"
- - travis_retry cabal update
- - cabal install --only-dependencies --enable-tests
+  - echo "$(ghc --version) [$(ghc --print-project-git-commit-id 2> /dev/null || echo '?')]"
+  - mkdir -pv ~/.local/bin
+  - case "$TYPE" in
+      cabal) travis_retry cabal update && cabal install --only-dependencies --enable-tests ;;
+      stack) travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack' ;;
+    esac
 
 script:
- - cabal configure --enable-tests -v2
- - cabal build
- - cabal test --show-details=always
- - cabal sdist
- - cabal haddock | grep "100%" | wc -l | grep "2"
+  - case "$TYPE" in
+      cabal) cabal configure --enable-tests -v2 && cabal build && cabal test --show-details=always && cabal sdist && cabal haddock | grep "100%" | wc -l | grep "2" ;;
+      stack) stack --no-terminal --install-ghc $ARGS test ;;
+    esac
 
 notifications:
   email: false
