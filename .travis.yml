@@ -37,13 +37,16 @@ install:
     esac
 
 script:
-  - case "$TYPE" in
+  - |
+    set -ex # Error out after first failure and print each command before executing
+    case "$TYPE" in
       cabal) cabal configure --enable-tests -v2 && cabal build && cabal test --show-details=always && cabal sdist && cabal haddock | grep "100%" | wc -l | grep "2" ;;
       stack)
-        echo "$(stack --version) @ $(which stack)"
+        stack --version
         stack --no-terminal --install-ghc $ARGS test
         ;;
     esac
+    set +ex # Stop printing each command
 
 notifications:
   email:
