@@ -23,7 +23,7 @@ matrix:
       addons: {apt: {packages: [cabal-install-1.24,ghc-8.0.2], sources: [hvr-ghc]}}
     - env: TYPE=stack ARGS="--resolver lts-2"
     - env: TYPE=stack ARGS="--resolver lts-6"
-    - env: TYPE=stack ARGS="--resolver lts-8"
+    - env: TYPE=stack ARGS="--stack-yaml stack.yaml"
 
 before_install:
   - export PATH=/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:$PATH
