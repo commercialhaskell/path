@@ -37,7 +37,10 @@ install:
 script:
   - case "$TYPE" in
       cabal) cabal configure --enable-tests -v2 && cabal build && cabal test --show-details=always && cabal sdist && cabal haddock | grep "100%" | wc -l | grep "2" ;;
-      stack) stack --no-terminal --install-ghc $ARGS test ;;
+      stack)
+        echo "$(stack --version) @ $(which stack)"
+        stack --no-terminal --install-ghc $ARGS test
+        ;;
     esac
 
 notifications:
