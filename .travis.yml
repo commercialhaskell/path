@@ -8,6 +8,11 @@ cache:
     - ~/.cabal
     - ~/.stack
 
+addons:
+  apt:
+    packages:
+    - libgmp-dev
+
 matrix:
   include:
     - env: TYPE=cabal CABALVER=1.24 GHCVER=7.8.4
@@ -17,11 +22,8 @@ matrix:
     - env: TYPE=cabal CABALVER=1.24 GHCVER=8.0.2
       addons: {apt: {packages: [cabal-install-1.24,ghc-8.0.2], sources: [hvr-ghc]}}
     - env: TYPE=stack ARGS="--resolver lts-2"
-      addons: {apt: {packages: [libgmp-dev]}}
     - env: TYPE=stack ARGS="--resolver lts-6"
-      addons: {apt: {packages: [libgmp-dev]}}
     - env: TYPE=stack ARGS="--resolver lts-8"
-      addons: {apt: {packages: [libgmp-dev]}}
 
 before_install:
   - export PATH=/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:$PATH
