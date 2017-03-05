@@ -1,4 +1,6 @@
-flags: {}
+flags:
+  path:
+    validity: true
 extra-deps:
 - genvalidity-0.3.1.0
 - genvalidity-hspec-0.3.1.0
