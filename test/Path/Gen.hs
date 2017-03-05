@@ -19,7 +19,6 @@ instance Validity (Path Abs File) where
     && not (FilePath.hasTrailingPathSeparator fp)
     && FilePath.isValid fp
     && not (".." `isInfixOf` fp)
-    && not (containsLineBreaks fp)
     && (parseAbsFile fp == Just p)
 
 instance Validity (Path Rel File) where
@@ -30,7 +29,6 @@ instance Validity (Path Rel File) where
     && fp /= "."
     && fp /= ".."
     && not (".." `isInfixOf` fp)
-    && not (containsLineBreaks fp)
     && (parseRelFile fp == Just p)
 
 instance Validity (Path Abs Dir) where
@@ -39,7 +37,6 @@ instance Validity (Path Abs Dir) where
     && FilePath.hasTrailingPathSeparator fp
     && FilePath.isValid fp
     && not (".." `isInfixOf` fp)
-    && not (containsLineBreaks fp)
     && (parseAbsDir fp == Just p)
 
 instance Validity (Path Rel Dir) where
@@ -51,12 +48,7 @@ instance Validity (Path Rel Dir) where
     && fp /= "."
     && fp /= ".."
     && not (".." `isInfixOf` fp)
-    && not (containsLineBreaks fp)
     && (parseRelDir fp == Just p)
-
-
-containsLineBreaks :: String -> Bool
-containsLineBreaks s = any (`elem` s) "\n\r"
 
 instance GenUnchecked (Path Abs File) where
   genUnchecked = Path <$> arbitrary
