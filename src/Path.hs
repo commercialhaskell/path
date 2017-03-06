@@ -116,7 +116,7 @@ instance Exception PathParseException
 -- Throws: 'PathParseException' when the supplied path:
 --
 -- * is not an absolute path
--- * contains a @..@ anywhere in the path
+-- * contains the parent directory @..@
 -- * is not a valid path (See 'System.FilePath.isValid')
 --
 parseAbsDir :: MonadThrow m
@@ -134,7 +134,7 @@ parseAbsDir filepath =
 --
 -- * is not a relative path
 -- * is any of @""@, @.@ or @..@
--- * contains @..@ anywhere in the path
+-- * contains the parent directory @..@
 -- * is not a valid path (See 'System.FilePath.isValid')
 --
 parseRelDir :: MonadThrow m
@@ -156,7 +156,7 @@ parseRelDir filepath =
 --
 -- * is not an absolute path
 -- * has a trailing path separator
--- * contains @..@ anywhere in the path
+-- * contains the parent directory @..@
 -- * ends in @/.@
 -- * is not a valid path (See 'System.FilePath.isValid')
 --
@@ -185,7 +185,7 @@ validAbsFile filepath =
 -- * is not a relative path
 -- * has a trailing path separator
 -- * is @""@, @.@ or @..@
--- * contains @..@ anywhere in the path
+-- * contains the parent directory @..@
 -- * is not a valid path (See 'System.FilePath.isValid')
 --
 parseRelFile :: MonadThrow m
