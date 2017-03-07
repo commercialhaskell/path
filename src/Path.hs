@@ -301,7 +301,7 @@ fromRelFile = toFilePath
 -- @x \<\/> $(mkAbsDir …)@
 --
 (</>) :: Path b Dir -> Path Rel t -> Path b t
-(</>) (Path a) (Path b) = Path (a ++ b)
+(</>) (Path a) (Path b) = Path (normalizeFilePath $ a ++ b)
 
 -- | Strip directory from path, making it relative to that directory.
 -- Throws 'Couldn'tStripPrefixDir' if directory is not a parent of the path.
