@@ -4,13 +4,17 @@
 -- | Internal types and functions.
 
 module Path.Internal
-  (Path(..))
+  ( Path(..)
+  , hasParentDir
+  )
   where
 
 import Control.DeepSeq (NFData (..))
 import Data.Aeson (ToJSON (..))
 import Data.Data
 import Data.Hashable
+import Data.List
+import qualified System.FilePath as FilePath
 
 -- | Path of some base and type.
 --
@@ -66,3 +70,17 @@ instance ToJSON (Path b t) where
 
 instance Hashable (Path b t) where
   hashWithSalt n (Path path) = hashWithSalt n path
+
+-- | Helper function: check if the filepath has any parent directories in it.
+-- This handles the logic of checking for different path separators on Windows.
+hasParentDir :: FilePath -> Bool
+hasParentDir filepath' =
+     (filepath' == "..") ||
+     ("/.." `isSuffixOf` filepath) ||
+     ("/../" `isInfixOf` filepath) ||
+     ("../" `isPrefixOf` filepath)
+  where
+    filepath =
+        case FilePath.pathSeparator of
+            '/' -> filepath'
+            x   -> map (\y -> if x == y then '/' else y) filepath'

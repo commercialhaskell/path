@@ -145,7 +145,6 @@ parseRelDir filepath =
      not (null filepath) &&
      filepath /= "." &&
      normalizeFilePath filepath /= curDirNormalizedFP &&
-     filepath /= ".." &&
      FilePath.isValid filepath
      then return (Path (normalizeDir filepath))
      else throwM (InvalidRelDir filepath)
@@ -204,20 +203,7 @@ validRelFile filepath =
     (FilePath.isAbsolute filepath || FilePath.hasTrailingPathSeparator filepath) &&
   not (null filepath) &&
   not (hasParentDir filepath) &&
-  filepath /= "." && filepath /= ".." && FilePath.isValid filepath
-
--- | Helper function: check if the filepath has any parent directories in it.
--- This handles the logic of checking for different path separators on Windows.
-hasParentDir :: FilePath -> Bool
-hasParentDir filepath' =
-     ("/.." `isSuffixOf` filepath) ||
-     ("/../" `isInfixOf` filepath) ||
-     ("../" `isPrefixOf` filepath)
-  where
-    filepath =
-        case FilePath.pathSeparator of
-            '/' -> filepath'
-            x   -> map (\y -> if x == y then '/' else y) filepath'
+  filepath /= "." && FilePath.isValid filepath
 
 --------------------------------------------------------------------------------
 -- Constructors
