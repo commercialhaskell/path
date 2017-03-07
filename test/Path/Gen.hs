@@ -68,6 +68,9 @@ instance GenUnchecked (Path Rel Dir) where
 
 instance GenValid (Path Rel Dir)
 
+-- | Generates 'FilePath's with a high occurence of @'.'@, @'\/'@ and
+-- @'\\'@ characters. The resulting 'FilePath's are not guaranteed to
+-- be valid.
 genFilePath :: Gen FilePath
 genFilePath = listOf genPathyChar
 
