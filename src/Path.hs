@@ -14,12 +14,14 @@ module Path
   ,Rel
   ,File
   ,Dir
+   -- * Exceptions
+  ,PathException(..)
+  ,PathParseException
    -- * Parsing
   ,parseAbsDir
   ,parseRelDir
   ,parseAbsFile
   ,parseRelFile
-  ,PathParseException
   -- * Constructors
   ,mkAbsDir
   ,mkRelDir
@@ -98,22 +100,26 @@ parseJSONWith f x =
        Left e -> fail (show e)
 {-# INLINE parseJSONWith #-}
 
--- | Exception when parsing a location.
-data PathParseException
+-- | Exceptions during path operations
+data PathException
   = InvalidAbsDir FilePath
   | InvalidRelDir FilePath
   | InvalidAbsFile FilePath
   | InvalidRelFile FilePath
-  | Couldn'tStripPrefixDir FilePath FilePath
+  | InvalidPrefix FilePath FilePath
+  | HasNoParent FilePath
   deriving (Show,Typeable)
-instance Exception PathParseException
+instance Exception PathException
+
+{-# DEPRECATED PathParseException "Please use PathException instead." #-}
+type PathParseException = PathException
 
 --------------------------------------------------------------------------------
 -- Parsers
 
 -- | Convert an absolute 'FilePath' to a normalized absolute dir 'Path'.
 --
--- Throws: 'PathParseException' when the supplied path:
+-- Throws: 'InvalidAbsDir' when the supplied path:
 --
 -- * is not an absolute path
 -- * contains a @..@ anywhere in the path
@@ -130,7 +136,7 @@ parseAbsDir filepath =
 
 -- | Convert a relative 'FilePath' to a normalized relative dir 'Path'.
 --
--- Throws: 'PathParseException' when the supplied path:
+-- Throws: 'InvalidRelDir' when the supplied path:
 --
 -- * is not a relative path
 -- * is any of @""@, @.@ or @..@
@@ -151,7 +157,7 @@ parseRelDir filepath =
 
 -- | Convert an absolute 'FilePath' to a normalized absolute file 'Path'.
 --
--- Throws: 'PathParseException' when the supplied path:
+-- Throws: 'InvalidAbsFile' when the supplied path:
 --
 -- * is not an absolute path
 -- * has a trailing path separator
@@ -179,7 +185,7 @@ validAbsFile filepath =
 
 -- | Convert a relative 'FilePath' to a normalized relative file 'Path'.
 --
--- Throws: 'PathParseException' when the supplied path:
+-- Throws: 'InvalidRelFile' when the supplied path:
 --
 -- * is not a relative path
 -- * has a trailing path separator
@@ -304,7 +310,7 @@ fromRelFile = toFilePath
 (</>) (Path a) (Path b) = Path (a ++ b)
 
 -- | Strip directory from path, making it relative to that directory.
--- Throws 'Couldn'tStripPrefixDir' if directory is not a parent of the path.
+-- Throws 'InvalidPrefix' if directory is not a parent of the path.
 --
 -- The following properties hold:
 --
@@ -322,12 +328,11 @@ stripDir :: MonadThrow m
          => Path b Dir -> Path b t -> m (Path Rel t)
 stripDir (Path p) (Path l) =
   case stripPrefix p l of
-    Nothing -> throwM (Couldn'tStripPrefixDir p l)
-    Just "" -> throwM (Couldn'tStripPrefixDir p l)
+    Nothing -> throwM (InvalidPrefix p l)
+    Just "" -> throwM (InvalidPrefix p l)
     Just ok -> return (Path ok)
 
--- | Is p a parent of the given location? Implemented in terms of
--- 'stripDir'. The bases must match.
+-- | Determine if a directory is a parent of a given path.
 --
 -- The following properties hold:
 --
@@ -345,13 +350,17 @@ isParentOf p l =
 --
 -- @parent (x \<\/> y) == x@
 --
--- On the root, getting the parent is idempotent:
+-- Throws `HasNoParent` for root directory.
 --
--- @parent (parent \"\/\") = \"\/\"@
---
-parent :: Path Abs t -> Path Abs Dir
+parent :: MonadThrow m
+       => Path Abs t -> m (Path Abs Dir)
 parent (Path fp) =
-  Path (normalizeDir (FilePath.takeDirectory (FilePath.dropTrailingPathSeparator fp)))
+  case FilePath.isDrive fp of
+    True  -> throwM (HasNoParent fp)
+    False -> return $ Path
+                    $ normalizeDir
+                    $ FilePath.takeDirectory
+                    $ FilePath.dropTrailingPathSeparator fp
 
 -- | Extract the file part of a path.
 --
