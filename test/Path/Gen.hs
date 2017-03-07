@@ -49,22 +49,27 @@ instance Validity (Path Rel Dir) where
     && (parseRelDir fp == Just p)
 
 instance GenUnchecked (Path Abs File) where
-  genUnchecked = Path <$> arbitrary
+  genUnchecked = Path <$> genFilePath
 
 instance GenValid (Path Abs File)
 
 instance GenUnchecked (Path Rel File) where
-  genUnchecked = Path <$> arbitrary
+  genUnchecked = Path <$> genFilePath
 
 instance GenValid (Path Rel File)
 
 instance GenUnchecked (Path Abs Dir) where
-  genUnchecked = Path <$> arbitrary
+  genUnchecked = Path <$> genFilePath
 
 instance GenValid (Path Abs Dir)
 
 instance GenUnchecked (Path Rel Dir) where
-  genUnchecked = Path <$> arbitrary
+  genUnchecked = Path <$> genFilePath
 
 instance GenValid (Path Rel Dir)
 
+genFilePath :: Gen FilePath
+genFilePath = listOf genPathyChar
+
+genPathyChar :: Gen Char
+genPathyChar = frequency [(2, arbitrary), (1, elements "./\\")]

@@ -17,7 +17,7 @@ import Test.Hspec
 import Test.QuickCheck
 import Test.Validity
 
-import Path.Gen ()
+import Path.Gen
 
 -- | Test suite entry point, returns exit failure if any test fails.
 main :: IO ()
@@ -26,10 +26,10 @@ main = hspec spec
 -- | Test suite.
 spec :: Spec
 spec = do
-     describe "Parsing: Path Abs Dir" parseAbsDirSpec
-     describe "Parsing: Path Rel Dir" parseRelDirSpec
-     describe "Parsing: Path Abs File" parseAbsFileSpec
-     describe "Parsing: Path Rel File" parseRelFileSpec
+     describe "Parsing: Path Abs Dir" (parserSpec parseAbsDir)
+     describe "Parsing: Path Rel Dir" (parserSpec parseRelDir)
+     describe "Parsing: Path Abs File" (parserSpec parseAbsFile)
+     describe "Parsing: Path Rel File" (parserSpec parseRelFile)
      describe "Operations: (</>)" operationAppend
      describe "Operations: stripDir" operationStripDir
      describe "Operations: isParentOf" operationIsParentOf
@@ -137,27 +137,7 @@ operationAppend = do
      it "produces a valid path on when creating valid relative directory paths" $ do
         producesValidsOnValids2 ((</>) @Rel @Dir)
 
-
-parseAbsDirSpec :: Spec
-parseAbsDirSpec = do
+parserSpec :: (Show p, Validity p) => (FilePath -> Maybe p) -> Spec
+parserSpec parser =
      it "Produces valid paths when it succeeds" $
-       validIfSucceedsOnArbitrary
-         (parseAbsDir @Maybe)
-
-parseRelDirSpec :: Spec
-parseRelDirSpec = do
-     it "Produces valid paths when it succeeds" $
-       validIfSucceedsOnArbitrary
-         (parseRelDir @Maybe)
-
-parseAbsFileSpec :: Spec
-parseAbsFileSpec = do
-     it "Produces valid paths when it succeeds" $
-       validIfSucceedsOnArbitrary
-         (parseAbsFile @Maybe)
-
-parseRelFileSpec :: Spec
-parseRelFileSpec = do
-     it "Produces valid paths when it succeeds" $
-       validIfSucceedsOnArbitrary
-         (parseRelFile @Maybe)
+       validIfSucceedsOnGen parser genFilePath
