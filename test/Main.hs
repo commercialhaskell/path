@@ -42,6 +42,8 @@ restrictions =
      parseSucceeds "~/" (Path "~/")
      parseSucceeds "~/foo" (Path "~/foo/")
      parseSucceeds "~/foo/bar" (Path "~/foo/bar/")
+     parseSucceeds "a.." (Path "a../")
+     parseSucceeds "..a" (Path "..a/")
      --
      parseFails "../"
      parseFails ".."
