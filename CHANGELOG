@@ -1,3 +1,6 @@
+UNRELEASED:
+        * Clarify documentation on parsing paths that contain ..
+
 0.5.11:
 	* Add replaceExtension and fileExtension
 

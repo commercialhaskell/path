@@ -18,7 +18,6 @@ instance Validity (Path Abs File) where
     =  FilePath.isAbsolute fp
     && not (FilePath.hasTrailingPathSeparator fp)
     && FilePath.isValid fp
-    && not (".." `isInfixOf` fp)
     && (parseAbsFile fp == Just p)
 
 instance Validity (Path Rel File) where
@@ -28,7 +27,6 @@ instance Validity (Path Rel File) where
     && FilePath.isValid fp
     && fp /= "."
     && fp /= ".."
-    && not (".." `isInfixOf` fp)
     && (parseRelFile fp == Just p)
 
 instance Validity (Path Abs Dir) where
@@ -36,7 +34,6 @@ instance Validity (Path Abs Dir) where
     =  FilePath.isAbsolute fp
     && FilePath.hasTrailingPathSeparator fp
     && FilePath.isValid fp
-    && not (".." `isInfixOf` fp)
     && (parseAbsDir fp == Just p)
 
 instance Validity (Path Rel Dir) where
@@ -47,7 +44,6 @@ instance Validity (Path Rel Dir) where
     && not (null fp)
     && fp /= "."
     && fp /= ".."
-    && not (".." `isInfixOf` fp)
     && (parseRelDir fp == Just p)
 
 instance GenUnchecked (Path Abs File) where
