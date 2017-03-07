@@ -1,6 +1,10 @@
 # Disable standard build process with MSBuild
 build: off
 
+# In case of unreliable builds try disabling caching.
+cache:
+- "c:\\sr"
+
 before_test:
 - curl -sS -ostack.zip -L --insecure http://www.stackage.org/stack/windows-i386
 - 7z x stack.zip stack.exe
