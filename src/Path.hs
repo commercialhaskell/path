@@ -34,6 +34,12 @@ module Path
   ,dirname
   ,fileExtension
   ,setFileExtension
+  -- * QuasiQuoters
+  -- | Using the following requires the QuasiQuotes language extension
+  ,absdir
+  ,reldir
+  ,absfile
+  ,relfile
   -- * Conversion
   ,toFilePath
   ,fromAbsDir
@@ -52,6 +58,7 @@ import           Data.Data
 import           Data.List
 import           Data.Maybe
 import           Language.Haskell.TH
+import           Language.Haskell.TH.Quote (QuasiQuoter(..))
 import           Path.Internal
 import qualified System.FilePath as FilePath
 
@@ -394,6 +401,47 @@ setFileExtension ext (Path path) =
   where coercePath :: Path a b -> Path a' b'
         coercePath (Path a) = Path a
 
+
+--------------------------------------------------------------------------------
+-- QuasiQuoters
+
+qq :: (String -> Q Exp) -> QuasiQuoter
+qq quoteExp' =
+  QuasiQuoter
+  { quoteExp  = quoteExp'
+  , quotePat  = \_ ->
+      fail "illegal QuasiQuote (allowed as expression only, used as a pattern)"
+  , quoteType = \_ ->
+      fail "illegal QuasiQuote (allowed as expression only, used as a type)"
+  , quoteDec  = \_ ->
+      fail "illegal QuasiQuote (allowed as expression only, used as a declaration)"
+  }
+
+-- | Make a 'Path' 'Abs' 'Dir' using QuasiQuotes. See 'mkAbsDir'
+--
+-- @[absdir|\/home\/chris|]@
+absdir :: QuasiQuoter
+absdir = qq mkAbsDir
+
+-- | Make a 'Path' 'Rel' 'Dir' using QuasiQuotes. See 'mkRelDir'
+--
+-- @[absdir|\/home|]\<\/>[reldir|chris|]@
+reldir :: QuasiQuoter
+reldir = qq mkRelDir
+
+-- | Make a 'Path' 'Abs' 'File' using QuasiQuotes. See 'mkAbsFile'
+--
+-- @[absfile|\/home\/chris\/foo.txt|]@
+absfile :: QuasiQuoter
+absfile = qq mkAbsFile
+
+-- | Make a 'Path' 'Rel' 'File' using QuasiQuotes. See 'mkRelFile'
+--
+-- @[absdir|\/home\/chris|]\<\/>[relfile|foo.txt|]@
+relfile :: QuasiQuoter
+relfile = qq mkRelFile
+
+
 --------------------------------------------------------------------------------
 -- Internal functions
 
@@ -415,3 +463,4 @@ normalizeFilePath = normalizeLeadingSeparators . FilePath.normalise
             = normalizeLeadingSeparators (sep:xs)
         normalizeLeadingSeparators x = x
 #endif
+
