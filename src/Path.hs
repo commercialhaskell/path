@@ -208,7 +208,7 @@ validRelFile filepath =
 --------------------------------------------------------------------------------
 -- Constructors
 
--- | Make a 'Path Abs Dir'.
+-- | Make a 'Path' 'Abs' 'Dir'.
 --
 -- Remember: due to the nature of absolute paths this (e.g. @\/home\/foo@)
 -- may compile on your platform, but it may not compile on another
@@ -220,7 +220,7 @@ mkAbsDir s =
     Right (Path str) ->
       [|Path $(return (LitE (StringL str))) :: Path Abs Dir|]
 
--- | Make a 'Path Rel Dir'.
+-- | Make a 'Path' 'Rel' 'Dir'.
 mkRelDir :: FilePath -> Q Exp
 mkRelDir s =
   case parseRelDir s of
@@ -228,7 +228,7 @@ mkRelDir s =
     Right (Path str) ->
       [|Path $(return (LitE (StringL str))) :: Path Rel Dir|]
 
--- | Make a 'Path Abs File'.
+-- | Make a 'Path' 'Abs' 'File'.
 --
 -- Remember: due to the nature of absolute paths this (e.g. @\/home\/foo@)
 -- may compile on your platform, but it may not compile on another
@@ -240,7 +240,7 @@ mkAbsFile s =
     Right (Path str) ->
       [|Path $(return (LitE (StringL str))) :: Path Abs File|]
 
--- | Make a 'Path Rel File'.
+-- | Make a 'Path' 'Rel' 'File'.
 mkRelFile :: FilePath -> Q Exp
 mkRelFile s =
   case parseRelFile s of
@@ -331,9 +331,9 @@ stripDir (Path p) (Path l) =
 --
 -- The following properties hold:
 --
--- @not (x `isParentOf` x)@
+-- @not (x \`isParentOf\` x)@
 --
--- @x `isParentOf` (x \<\/\> y)@
+-- @x \`isParentOf\` (x \<\/\> y)@
 --
 isParentOf :: Path b Dir -> Path b t -> Bool
 isParentOf p l =
