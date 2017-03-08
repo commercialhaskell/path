@@ -33,6 +33,8 @@ library
 test-suite test
   type:              exitcode-stdio-1.0
   main-is:           Main.hs
+  other-modules:     Posix
+                   , Windows
   hs-source-dirs:    test
   build-depends:     aeson
                    , base       >= 4.7     && < 5
