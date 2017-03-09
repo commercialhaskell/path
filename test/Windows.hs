@@ -1,5 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 -- | Test suite.
 
@@ -29,6 +30,7 @@ spec =
      describe "Operations: dirname" operationDirname
      describe "Restrictions" restrictions
      describe "Aeson Instances" aesonInstances
+     describe "QuasiQuotes" quasiquotes
 
 -- | Restricting the input of any tricks.
 restrictions :: Spec
@@ -263,3 +265,21 @@ aesonInstances =
        decode (LBS.pack "[\"C:\\foo\\bar\"]") `shouldBe` (Nothing :: Maybe [Path Rel Dir])
      it "Encoding \"[\"C:\\foo\\bar\\mu.txt\"]\" should succeed." $
        encode [Path "C:\\foo\\bar\\mu.txt" :: Path Abs File] `shouldBe` (LBS.pack "[\"C:\\\\foo\\\\bar\\\\mu.txt\"]")
+
+-- | Test QuasiQuoters. Make sure they work the same as the $(mk*) constructors.
+quasiquotes :: Spec
+quasiquotes =
+  do it "[absdir|C:\\|] == $(mkAbsDir \"C:\\\")"
+       ([absdir|C:\|] `shouldBe` $(mkAbsDir "C:\\"))
+     it "[absdir|C:\\chris\\|] == $(mkAbsDir \"C:\\chris\\\")"
+       ([absdir|C:\chris\|] `shouldBe` $(mkAbsDir "C:\\chris\\"))
+     it "[reldir|foo|] == $(mkRelDir \"foo\")"
+       ([reldir|foo|] `shouldBe` $(mkRelDir "foo"))
+     it "[reldir|foo\\bar|] == $(mkRelDir \"foo\\bar\")"
+       ([reldir|foo\bar|] `shouldBe` $(mkRelDir "foo\\bar"))
+     it "[absfile|C:\\chris\\foo.txt|] == $(mkAbsFile \"C:\\chris\\foo.txt\")"
+       ([absfile|C:\chris\foo.txt|] `shouldBe` $(mkAbsFile "C:\\chris\\foo.txt"))
+     it "[relfile|foo.exe|] == $(mkRelFile \"foo.exe\")"
+       ([relfile|foo.exe|] `shouldBe` $(mkRelFile "foo.exe"))
+     it "[relfile|chris\foo.txt|] == $(mkRelFile \"chris\\foo.txt\")"
+       ([relfile|chris\foo.txt|] `shouldBe` $(mkRelFile "chris\\foo.txt"))
