@@ -1,3 +1,5 @@
+0.5.13:
+	* Add QuasiQuoters absdir, reldir, absfile, relfile
 0.5.11:
 	* Add replaceExtension and fileExtension
 
