@@ -36,6 +36,14 @@ module Path
   ,setFileExtension
   -- * QuasiQuoters
   -- | Using the following requires the QuasiQuotes language extension
+  --
+  -- __For Windows users__, the QuasiQuoters are especially benefitial because they
+  -- prevent Haskell from treating @\\@ as an escape character.
+  -- This makes them easier to write.
+  --
+  -- @
+  -- [absfile|C:\\chris\\foo.txt|]
+  -- @
   ,absdir
   ,reldir
   ,absfile
