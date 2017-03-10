@@ -24,7 +24,7 @@ main = hspec spec
 
 -- | Test suite.
 spec :: Spec
-spec = do
+spec = parallel $ do
      describe "Parsing: Path Abs Dir" (parserSpec parseAbsDir)
      describe "Parsing: Path Rel Dir" (parserSpec parseRelDir)
      describe "Parsing: Path Abs File" (parserSpec parseAbsFile)
