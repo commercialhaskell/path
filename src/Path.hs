@@ -14,17 +14,20 @@ module Path
   ,Rel
   ,File
   ,Dir
-   -- * Parsing
-  ,parseAbsDir
-  ,parseRelDir
-  ,parseAbsFile
-  ,parseRelFile
-  ,PathParseException
-  -- * Constructors
-  ,mkAbsDir
-  ,mkRelDir
-  ,mkAbsFile
-  ,mkRelFile
+  -- * QuasiQuoters
+  -- | Using the following requires the QuasiQuotes language extension.
+  --
+  -- __For Windows users__, the QuasiQuoters are especially benefitial because they
+  -- prevent Haskell from treating @\\@ as an escape character.
+  -- This makes Windows paths easier to write.
+  --
+  -- @
+  -- [absfile|C:\\chris\\foo.txt|]
+  -- @
+  ,absdir
+  ,reldir
+  ,absfile
+  ,relfile
   -- * Operations
   ,(</>)
   ,stripDir
@@ -34,26 +37,23 @@ module Path
   ,dirname
   ,fileExtension
   ,setFileExtension
-  -- * QuasiQuoters
-  -- | Using the following requires the QuasiQuotes language extension
-  --
-  -- __For Windows users__, the QuasiQuoters are especially benefitial because they
-  -- prevent Haskell from treating @\\@ as an escape character.
-  -- This makes them easier to write.
-  --
-  -- @
-  -- [absfile|C:\\chris\\foo.txt|]
-  -- @
-  ,absdir
-  ,reldir
-  ,absfile
-  ,relfile
+   -- * Parsing
+  ,parseAbsDir
+  ,parseRelDir
+  ,parseAbsFile
+  ,parseRelFile
+  ,PathParseException
   -- * Conversion
   ,toFilePath
   ,fromAbsDir
   ,fromRelDir
   ,fromAbsFile
   ,fromRelFile
+  -- * Constructors
+  ,mkAbsDir
+  ,mkRelDir
+  ,mkAbsFile
+  ,mkRelFile
   )
   where
 
@@ -123,172 +123,55 @@ data PathParseException
   deriving (Show,Typeable)
 instance Exception PathParseException
 
---------------------------------------------------------------------------------
--- Parsers
-
--- | Convert an absolute 'FilePath' to a normalized absolute dir 'Path'.
---
--- Throws: 'PathParseException' when the supplied path:
---
--- * is not an absolute path
--- * contains a @..@ anywhere in the path
--- * is not a valid path (See 'System.FilePath.isValid')
---
-parseAbsDir :: MonadThrow m
-            => FilePath -> m (Path Abs Dir)
-parseAbsDir filepath =
-  if FilePath.isAbsolute filepath &&
-     not (hasParentDir filepath) &&
-     FilePath.isValid filepath
-     then return (Path (normalizeDir filepath))
-     else throwM (InvalidAbsDir filepath)
-
--- | Convert a relative 'FilePath' to a normalized relative dir 'Path'.
---
--- Throws: 'PathParseException' when the supplied path:
---
--- * is not a relative path
--- * is any of @""@, @.@ or @..@
--- * contains @..@ anywhere in the path
--- * is not a valid path (See 'System.FilePath.isValid')
---
-parseRelDir :: MonadThrow m
-            => FilePath -> m (Path Rel Dir)
-parseRelDir filepath =
-  if not (FilePath.isAbsolute filepath) &&
-     not (hasParentDir filepath) &&
-     not (null filepath) &&
-     filepath /= "." &&
-     normalizeFilePath filepath /= curDirNormalizedFP &&
-     FilePath.isValid filepath
-     then return (Path (normalizeDir filepath))
-     else throwM (InvalidRelDir filepath)
-
--- | Convert an absolute 'FilePath' to a normalized absolute file 'Path'.
---
--- Throws: 'PathParseException' when the supplied path:
---
--- * is not an absolute path
--- * has a trailing path separator
--- * contains @..@ anywhere in the path
--- * ends in @/.@
--- * is not a valid path (See 'System.FilePath.isValid')
---
-parseAbsFile :: MonadThrow m
-             => FilePath -> m (Path Abs File)
-parseAbsFile filepath =
-  case validAbsFile filepath of
-    True
-      | normalized <- normalizeFilePath filepath
-      , validAbsFile normalized ->
-        return (Path normalized)
-    _ -> throwM (InvalidAbsFile filepath)
-
--- | Is the string a valid absolute file?
-validAbsFile :: FilePath -> Bool
-validAbsFile filepath =
-  FilePath.isAbsolute filepath &&
-  not (FilePath.hasTrailingPathSeparator filepath) &&
-  not (hasParentDir filepath) &&
-  FilePath.isValid filepath
-
--- | Convert a relative 'FilePath' to a normalized relative file 'Path'.
---
--- Throws: 'PathParseException' when the supplied path:
---
--- * is not a relative path
--- * has a trailing path separator
--- * is @""@, @.@ or @..@
--- * contains @..@ anywhere in the path
--- * is not a valid path (See 'System.FilePath.isValid')
---
-parseRelFile :: MonadThrow m
-             => FilePath -> m (Path Rel File)
-parseRelFile filepath =
-  case validRelFile filepath of
-    True
-      | normalized <- normalizeFilePath filepath
-      , validRelFile normalized -> return (Path normalized)
-    _ -> throwM (InvalidRelFile filepath)
-
--- | Is the string a valid relative file?
-validRelFile :: FilePath -> Bool
-validRelFile filepath =
-  not
-    (FilePath.isAbsolute filepath || FilePath.hasTrailingPathSeparator filepath) &&
-  not (null filepath) &&
-  not (hasParentDir filepath) &&
-  filepath /= "." && FilePath.isValid filepath
 
 --------------------------------------------------------------------------------
--- Constructors
+-- QuasiQuoters
 
--- | Make a 'Path' 'Abs' 'Dir'.
+qq :: (String -> Q Exp) -> QuasiQuoter
+qq quoteExp' =
+  QuasiQuoter
+  { quoteExp  = quoteExp'
+  , quotePat  = \_ ->
+      fail "illegal QuasiQuote (allowed as expression only, used as a pattern)"
+  , quoteType = \_ ->
+      fail "illegal QuasiQuote (allowed as expression only, used as a type)"
+  , quoteDec  = \_ ->
+      fail "illegal QuasiQuote (allowed as expression only, used as a declaration)"
+  }
+
+-- | Construct a 'Path' 'Abs' 'Dir' using QuasiQuotes. See also 'mkAbsDir'
 --
--- Remember: due to the nature of absolute paths this (e.g. @\/home\/foo@)
--- may compile on your platform, but it may not compile on another
--- platform (Windows).
-mkAbsDir :: FilePath -> Q Exp
-mkAbsDir s =
-  case parseAbsDir s of
-    Left err -> error (show err)
-    Right (Path str) ->
-      [|Path $(return (LitE (StringL str))) :: Path Abs Dir|]
-
--- | Make a 'Path' 'Rel' 'Dir'.
-mkRelDir :: FilePath -> Q Exp
-mkRelDir s =
-  case parseRelDir s of
-    Left err -> error (show err)
-    Right (Path str) ->
-      [|Path $(return (LitE (StringL str))) :: Path Rel Dir|]
-
--- | Make a 'Path' 'Abs' 'File'.
+-- @
+-- [absdir|/|]
 --
--- Remember: due to the nature of absolute paths this (e.g. @\/home\/foo@)
--- may compile on your platform, but it may not compile on another
--- platform (Windows).
-mkAbsFile :: FilePath -> Q Exp
-mkAbsFile s =
-  case parseAbsFile s of
-    Left err -> error (show err)
-    Right (Path str) ->
-      [|Path $(return (LitE (StringL str))) :: Path Abs File|]
+-- [absdir|\/home\/chris|]
+-- @
+absdir :: QuasiQuoter
+absdir = qq mkAbsDir
 
--- | Make a 'Path' 'Rel' 'File'.
-mkRelFile :: FilePath -> Q Exp
-mkRelFile s =
-  case parseRelFile s of
-    Left err -> error (show err)
-    Right (Path str) ->
-      [|Path $(return (LitE (StringL str))) :: Path Rel File|]
-
---------------------------------------------------------------------------------
--- Conversion
-
--- | Convert to a 'FilePath' type.
+-- | Construct a 'Path' 'Rel' 'Dir' using QuasiQuotes. See also 'mkRelDir'
 --
--- All directories have a trailing slash, so if you want no trailing
--- slash, you can use 'System.FilePath.dropTrailingPathSeparator' from
--- the filepath package.
-toFilePath :: Path b t -> FilePath
-toFilePath (Path l) = l
+-- @
+-- [absdir|\/home|]\<\/>[reldir|chris|]
+-- @
+reldir :: QuasiQuoter
+reldir = qq mkRelDir
 
--- | Convert absolute path to directory to 'FilePath' type.
-fromAbsDir :: Path Abs Dir -> FilePath
-fromAbsDir = toFilePath
+-- | Construct a 'Path' 'Abs' 'File' using QuasiQuotes. See also 'mkAbsFile'
+--
+-- @
+-- [absfile|\/home\/chris\/foo.txt|]
+-- @
+absfile :: QuasiQuoter
+absfile = qq mkAbsFile
 
--- | Convert relative path to directory to 'FilePath' type.
-fromRelDir :: Path Rel Dir -> FilePath
-fromRelDir = toFilePath
-
--- | Convert absolute path to file to 'FilePath' type.
-fromAbsFile :: Path Abs File -> FilePath
-fromAbsFile = toFilePath
-
--- | Convert relative path to file to 'FilePath' type.
-fromRelFile :: Path Rel File -> FilePath
-fromRelFile = toFilePath
+-- | Construct a 'Path' 'Rel' 'File' using QuasiQuotes. See also 'mkRelFile'
+--
+-- @
+-- [absdir|\/home\/chris|]\<\/>[relfile|foo.txt|]
+-- @
+relfile :: QuasiQuoter
+relfile = qq mkRelFile
 
 --------------------------------------------------------------------------------
 -- Operations
@@ -411,43 +294,171 @@ setFileExtension ext (Path path) =
 
 
 --------------------------------------------------------------------------------
--- QuasiQuoters
+-- Parsers
 
-qq :: (String -> Q Exp) -> QuasiQuoter
-qq quoteExp' =
-  QuasiQuoter
-  { quoteExp  = quoteExp'
-  , quotePat  = \_ ->
-      fail "illegal QuasiQuote (allowed as expression only, used as a pattern)"
-  , quoteType = \_ ->
-      fail "illegal QuasiQuote (allowed as expression only, used as a type)"
-  , quoteDec  = \_ ->
-      fail "illegal QuasiQuote (allowed as expression only, used as a declaration)"
-  }
-
--- | Make a 'Path' 'Abs' 'Dir' using QuasiQuotes. See 'mkAbsDir'
+-- | Convert an absolute 'FilePath' to a normalized absolute dir 'Path'.
 --
--- @[absdir|\/home\/chris|]@
-absdir :: QuasiQuoter
-absdir = qq mkAbsDir
-
--- | Make a 'Path' 'Rel' 'Dir' using QuasiQuotes. See 'mkRelDir'
+-- Throws: 'PathParseException' when the supplied path:
 --
--- @[absdir|\/home|]\<\/>[reldir|chris|]@
-reldir :: QuasiQuoter
-reldir = qq mkRelDir
-
--- | Make a 'Path' 'Abs' 'File' using QuasiQuotes. See 'mkAbsFile'
+-- * is not an absolute path
+-- * contains a @..@ anywhere in the path
+-- * is not a valid path (See 'System.FilePath.isValid')
 --
--- @[absfile|\/home\/chris\/foo.txt|]@
-absfile :: QuasiQuoter
-absfile = qq mkAbsFile
+parseAbsDir :: MonadThrow m
+            => FilePath -> m (Path Abs Dir)
+parseAbsDir filepath =
+  if FilePath.isAbsolute filepath &&
+     not (hasParentDir filepath) &&
+     FilePath.isValid filepath
+     then return (Path (normalizeDir filepath))
+     else throwM (InvalidAbsDir filepath)
 
--- | Make a 'Path' 'Rel' 'File' using QuasiQuotes. See 'mkRelFile'
+-- | Convert a relative 'FilePath' to a normalized relative dir 'Path'.
 --
--- @[absdir|\/home\/chris|]\<\/>[relfile|foo.txt|]@
-relfile :: QuasiQuoter
-relfile = qq mkRelFile
+-- Throws: 'PathParseException' when the supplied path:
+--
+-- * is not a relative path
+-- * is any of @""@, @.@ or @..@
+-- * contains @..@ anywhere in the path
+-- * is not a valid path (See 'System.FilePath.isValid')
+--
+parseRelDir :: MonadThrow m
+            => FilePath -> m (Path Rel Dir)
+parseRelDir filepath =
+  if not (FilePath.isAbsolute filepath) &&
+     not (hasParentDir filepath) &&
+     not (null filepath) &&
+     filepath /= "." &&
+     normalizeFilePath filepath /= curDirNormalizedFP &&
+     FilePath.isValid filepath
+     then return (Path (normalizeDir filepath))
+     else throwM (InvalidRelDir filepath)
+
+-- | Convert an absolute 'FilePath' to a normalized absolute file 'Path'.
+--
+-- Throws: 'PathParseException' when the supplied path:
+--
+-- * is not an absolute path
+-- * has a trailing path separator
+-- * contains @..@ anywhere in the path
+-- * ends in @/.@
+-- * is not a valid path (See 'System.FilePath.isValid')
+--
+parseAbsFile :: MonadThrow m
+             => FilePath -> m (Path Abs File)
+parseAbsFile filepath =
+  case validAbsFile filepath of
+    True
+      | normalized <- normalizeFilePath filepath
+      , validAbsFile normalized ->
+        return (Path normalized)
+    _ -> throwM (InvalidAbsFile filepath)
+
+-- | Is the string a valid absolute file?
+validAbsFile :: FilePath -> Bool
+validAbsFile filepath =
+  FilePath.isAbsolute filepath &&
+  not (FilePath.hasTrailingPathSeparator filepath) &&
+  not (hasParentDir filepath) &&
+  FilePath.isValid filepath
+
+-- | Convert a relative 'FilePath' to a normalized relative file 'Path'.
+--
+-- Throws: 'PathParseException' when the supplied path:
+--
+-- * is not a relative path
+-- * has a trailing path separator
+-- * is @""@, @.@ or @..@
+-- * contains @..@ anywhere in the path
+-- * is not a valid path (See 'System.FilePath.isValid')
+--
+parseRelFile :: MonadThrow m
+             => FilePath -> m (Path Rel File)
+parseRelFile filepath =
+  case validRelFile filepath of
+    True
+      | normalized <- normalizeFilePath filepath
+      , validRelFile normalized -> return (Path normalized)
+    _ -> throwM (InvalidRelFile filepath)
+
+-- | Is the string a valid relative file?
+validRelFile :: FilePath -> Bool
+validRelFile filepath =
+  not
+    (FilePath.isAbsolute filepath || FilePath.hasTrailingPathSeparator filepath) &&
+  not (null filepath) &&
+  not (hasParentDir filepath) &&
+  filepath /= "." && FilePath.isValid filepath
+
+--------------------------------------------------------------------------------
+-- Conversion
+
+-- | Convert to a 'FilePath' type.
+--
+-- All directories have a trailing slash, so if you want no trailing
+-- slash, you can use 'System.FilePath.dropTrailingPathSeparator' from
+-- the filepath package.
+toFilePath :: Path b t -> FilePath
+toFilePath (Path l) = l
+
+-- | Convert absolute path to directory to 'FilePath' type.
+fromAbsDir :: Path Abs Dir -> FilePath
+fromAbsDir = toFilePath
+
+-- | Convert relative path to directory to 'FilePath' type.
+fromRelDir :: Path Rel Dir -> FilePath
+fromRelDir = toFilePath
+
+-- | Convert absolute path to file to 'FilePath' type.
+fromAbsFile :: Path Abs File -> FilePath
+fromAbsFile = toFilePath
+
+-- | Convert relative path to file to 'FilePath' type.
+fromRelFile :: Path Rel File -> FilePath
+fromRelFile = toFilePath
+
+--------------------------------------------------------------------------------
+-- Constructors
+
+-- | Make a 'Path' 'Abs' Dir'.
+--
+-- Remember: due to the nature of absolute paths this (e.g. @\/home\/foo@)
+-- may compile on your platform, but it may not compile on another
+-- platform (Windows).
+mkAbsDir :: FilePath -> Q Exp
+mkAbsDir s =
+  case parseAbsDir s of
+    Left err -> error (show err)
+    Right (Path str) ->
+      [|Path $(return (LitE (StringL str))) :: Path Abs Dir|]
+
+-- | Make a 'Path' 'Rel' 'Dir'.
+mkRelDir :: FilePath -> Q Exp
+mkRelDir s =
+  case parseRelDir s of
+    Left err -> error (show err)
+    Right (Path str) ->
+      [|Path $(return (LitE (StringL str))) :: Path Rel Dir|]
+
+-- | Make a 'Path' 'Abs' 'File'.
+--
+-- Remember: due to the nature of absolute paths this (e.g. @\/home\/foo@)
+-- may compile on your platform, but it may not compile on another
+-- platform (Windows).
+mkAbsFile :: FilePath -> Q Exp
+mkAbsFile s =
+  case parseAbsFile s of
+    Left err -> error (show err)
+    Right (Path str) ->
+      [|Path $(return (LitE (StringL str))) :: Path Abs File|]
+
+-- | Make a 'Path' 'Rel' 'File'.
+mkRelFile :: FilePath -> Q Exp
+mkRelFile s =
+  case parseRelFile s of
+    Left err -> error (show err)
+    Right (Path str) ->
+      [|Path $(return (LitE (StringL str))) :: Path Rel File|]
 
 
 --------------------------------------------------------------------------------
