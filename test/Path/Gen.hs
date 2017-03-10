@@ -76,7 +76,7 @@ genFilePath :: Gen FilePath
 genFilePath = listOf genPathyChar
 
 genPathyChar :: Gen Char
-genPathyChar = frequency [(2, arbitrary), (1, elements "./\\")]
+genPathyChar = oneof [arbitrary, elements "?./:\\a ;_"]
 
 shrinkValidAbsFile :: Path Abs File -> [Path Abs File]
 shrinkValidAbsFile = shrinkValidWith parseAbsFile
