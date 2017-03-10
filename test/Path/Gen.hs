@@ -6,7 +6,7 @@ import           Path.Internal
 
 import qualified System.FilePath as FilePath
 
-import           Data.Maybe (catMaybes)
+import           Data.Maybe (mapMaybe)
 import           Data.List (isInfixOf)
 import           Data.Validity
 import           Data.GenValidity
@@ -91,6 +91,4 @@ shrinkValidRelDir :: Path Rel Dir -> [Path Rel Dir]
 shrinkValidRelDir = shrinkValidWith parseRelDir
 
 shrinkValidWith :: (FilePath -> Maybe (Path a b)) -> Path a b -> [Path a b]
-shrinkValidWith fun (Path s) = catMaybes $ do
-    candidate <- shrink s
-    pure $ fun candidate
+shrinkValidWith fun (Path s) = mapMaybe fun $ shrink s
