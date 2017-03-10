@@ -76,3 +76,6 @@ genFilePath = listOf genPathyChar
 
 genPathyChar :: Gen Char
 genPathyChar = frequency [(2, arbitrary), (1, elements "./\\")]
+
+shrinkPath :: Path a b -> [Path a b]
+shrinkPath (Path s) = Path <$> shrink s
