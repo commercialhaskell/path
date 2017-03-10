@@ -25,7 +25,7 @@ main = hspec spec
 
 -- | Test suite.
 spec :: Spec
-spec = do
+spec = parallel $ do
      describe "Parsing: Path Abs Dir" (parserSpec parseAbsDir)
      describe "Parsing: Path Rel Dir" (parserSpec parseRelDir)
      describe "Parsing: Path Abs File" (parserSpec parseAbsFile)
@@ -109,7 +109,7 @@ operationStripDir = do
         forAll genValid $ \(parent :: Path Rel Dir) ->
             forAll genValid $ \(child :: Path Rel Dir) ->
                 stripDir parent (parent </> child) == Just child
-        
+
      it "produces a valid path on when passed a valid absolute file paths" $ do
         producesValidsOnValids2 (stripDir @Maybe @Abs @File)
 
