@@ -40,13 +40,13 @@ spec = parallel $ do
 operationFilename :: Spec
 operationFilename = do
      it "filename ($(mkAbsDir parent) </> $(mkRelFile filename)) == filename $(mkRelFile filename)" $
-         forAll genValid $ \(parent :: Path Abs Dir) ->
-             forAll genValid $ \file ->
+         forAllShrink genValid shrinkValidAbsDir $ \parent ->
+             forAllShrink genValid shrinkValidRelFile $ \file ->
                  filename (parent </> file) `shouldBe` filename file
 
      it "filename ($(mkRelDir parent) </> $(mkRelFile filename)) == filename $(mkRelFile filename)" $
-         forAll genValid $ \(parent :: Path Rel Dir) ->
-             forAll genValid $ \file ->
+         forAllShrink genValid shrinkValidRelDir $ \parent ->
+             forAllShrink genValid shrinkValidRelFile $ \file ->
                  filename (parent </> file) `shouldBe` filename file
 
      it "produces a valid path on when passed a valid absolute path" $ do
@@ -68,46 +68,46 @@ operationParent = do
 operationIsParentOf :: Spec
 operationIsParentOf = do
      it "isParentOf parent (parent </> child)" $
-        forAll genValid $ \(parent :: Path Abs Dir) ->
-            forAll genValid $ \(child :: Path Rel File) ->
+        forAllShrink genValid shrinkValidAbsDir $ \parent ->
+            forAllShrink genValid shrinkValidRelFile $ \child ->
                 isParentOf parent (parent </> child)
 
      it "isParentOf parent (parent </> child)" $
-        forAll genValid $ \(parent :: Path Abs Dir) ->
-            forAll genValid $ \(child :: Path Rel Dir) ->
+        forAllShrink genValid shrinkValidAbsDir $ \parent ->
+            forAllShrink genValid shrinkValidRelDir $ \child ->
                 isParentOf parent (parent </> child)
 
      it "isParentOf parent (parent </> child)" $
-        forAll genValid $ \(parent :: Path Rel Dir) ->
-            forAll genValid $ \(child :: Path Rel File) ->
+        forAllShrink genValid shrinkValidRelDir $ \parent ->
+            forAllShrink genValid shrinkValidRelFile $ \child ->
                 isParentOf parent (parent </> child)
 
      it "isParentOf parent (parent </> child)" $
-        forAll genValid $ \(parent :: Path Rel Dir) ->
-            forAll genValid $ \(child :: Path Rel Dir) ->
+        forAllShrink genValid shrinkValidRelDir $ \parent ->
+            forAllShrink genValid shrinkValidRelDir $ \child ->
                 isParentOf parent (parent </> child)
 
 -- | The 'stripDir' operation.
 operationStripDir :: Spec
 operationStripDir = do
      it "stripDir parent (parent </> child) = child" $
-        forAll genValid $ \(parent :: Path Abs Dir) ->
-            forAll genValid $ \(child :: Path Rel File) ->
+        forAllShrink genValid shrinkValidAbsDir $ \parent ->
+            forAllShrink genValid shrinkValidRelFile $ \child ->
                 stripDir parent (parent </> child) == Just child
 
      it "stripDir parent (parent </> child) = child" $
-        forAll genValid $ \(parent :: Path Rel Dir) ->
-            forAll genValid $ \(child :: Path Rel File) ->
+        forAllShrink genValid shrinkValidRelDir $ \parent ->
+            forAllShrink genValid shrinkValidRelFile $ \child ->
                 stripDir parent (parent </> child) == Just child
 
      it "stripDir parent (parent </> child) = child" $
-        forAll genValid $ \(parent :: Path Abs Dir) ->
-            forAll genValid $ \(child :: Path Rel Dir) ->
+        forAllShrink genValid shrinkValidAbsDir $ \parent ->
+            forAllShrink genValid shrinkValidRelDir $ \child ->
                 stripDir parent (parent </> child) == Just child
 
      it "stripDir parent (parent </> child) = child" $
-        forAll genValid $ \(parent :: Path Rel Dir) ->
-            forAll genValid $ \(child :: Path Rel Dir) ->
+        forAllShrink genValid shrinkValidRelDir $ \parent ->
+            forAllShrink genValid shrinkValidRelDir $ \child ->
                 stripDir parent (parent </> child) == Just child
 
      it "produces a valid path on when passed a valid absolute file paths" $ do
