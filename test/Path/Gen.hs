@@ -6,6 +6,7 @@ import           Path.Internal
 
 import qualified System.FilePath as FilePath
 
+import           Data.Maybe (mapMaybe)
 import           Data.List (isInfixOf)
 import           Data.Validity
 import           Data.GenValidity
@@ -76,3 +77,18 @@ genFilePath = listOf genPathyChar
 
 genPathyChar :: Gen Char
 genPathyChar = frequency [(2, arbitrary), (1, elements "./\\")]
+
+shrinkValidAbsFile :: Path Abs File -> [Path Abs File]
+shrinkValidAbsFile = shrinkValidWith parseAbsFile
+
+shrinkValidAbsDir :: Path Abs Dir -> [Path Abs Dir]
+shrinkValidAbsDir = shrinkValidWith parseAbsDir
+
+shrinkValidRelFile :: Path Rel File -> [Path Rel File]
+shrinkValidRelFile = shrinkValidWith parseRelFile
+
+shrinkValidRelDir :: Path Rel Dir -> [Path Rel Dir]
+shrinkValidRelDir = shrinkValidWith parseRelDir
+
+shrinkValidWith :: (FilePath -> Maybe (Path a b)) -> Path a b -> [Path a b]
+shrinkValidWith fun (Path s) = mapMaybe fun $ shrink s
