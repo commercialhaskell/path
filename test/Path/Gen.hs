@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 module Path.Gen where
 
@@ -52,22 +53,29 @@ instance Validity (Path Rel Dir) where
 instance GenUnchecked (Path Abs File) where
   genUnchecked = Path <$> genFilePath
 
-instance GenValid (Path Abs File)
+instance GenValid (Path Abs File) where
+  genValid = genValidPath
 
 instance GenUnchecked (Path Rel File) where
   genUnchecked = Path <$> genFilePath
 
-instance GenValid (Path Rel File)
+instance GenValid (Path Rel File) where
+  genValid = genValidPath
 
 instance GenUnchecked (Path Abs Dir) where
   genUnchecked = Path <$> genFilePath
 
-instance GenValid (Path Abs Dir)
+instance GenValid (Path Abs Dir) where
+  genValid = genValidPath
 
 instance GenUnchecked (Path Rel Dir) where
   genUnchecked = Path <$> genFilePath
 
-instance GenValid (Path Rel Dir)
+instance GenValid (Path Rel Dir) where
+  genValid = genValidPath
+
+genValidPath :: Validity (Path b t) => Gen (Path b t)
+genValidPath = (Path . FilePath.makeValid <$> genFilePath) `suchThat` isValid
 
 -- | Generates 'FilePath's with a high occurence of @'.'@, @'\/'@ and
 -- @'\\'@ characters. The resulting 'FilePath's are not guaranteed to
