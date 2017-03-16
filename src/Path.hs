@@ -146,6 +146,8 @@ qq quoteExp' =
 --
 -- [absdir|\/home\/chris|]
 -- @
+--
+-- @since 0.5.13
 absdir :: QuasiQuoter
 absdir = qq mkAbsDir
 
@@ -154,6 +156,8 @@ absdir = qq mkAbsDir
 -- @
 -- [absdir|\/home|]\<\/>[reldir|chris|]
 -- @
+--
+-- @since 0.5.13
 reldir :: QuasiQuoter
 reldir = qq mkRelDir
 
@@ -162,6 +166,8 @@ reldir = qq mkRelDir
 -- @
 -- [absfile|\/home\/chris\/foo.txt|]
 -- @
+--
+-- @since 0.5.13
 absfile :: QuasiQuoter
 absfile = qq mkAbsFile
 
@@ -170,6 +176,8 @@ absfile = qq mkAbsFile
 -- @
 -- [absdir|\/home\/chris|]\<\/>[relfile|foo.txt|]
 -- @
+--
+-- @since 0.5.13
 relfile :: QuasiQuoter
 relfile = qq mkRelFile
 
