@@ -219,6 +219,16 @@ $(mkAbsFile "/home/chris/x.txt")
 $(mkRelFile "chris/x.txt")
 ```
 
+With the [QuasiQuotes](https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/glasgow_exts.html#ghc-flag--XQuasiQuotes)
+language extension, paths can be written as follows:
+
+```haskell
+[absdir|/home/chris|]
+[reldir|chris|]
+[absfile|/home/chris/x.txt|]
+[relfile|chris/x.txt|]
+```
+
 These will run at compile-time and underneath use the appropriate parser.
 
 ### Overloaded strings
@@ -273,7 +283,7 @@ Paths now distinguish in the type system whether they are relative or
 absolute. You can’t append two absolute paths, for example:
 
 ```haskell
-λ> $(mkAbsDir "/home/chris") </> $(mkAbsDir "/home/chris")
+λ> [absdir|/home/chris|]</>[absdir|/home/chris|]
 <interactive>:23:31-55:
     Couldn't match type ‘Abs’ with ‘Rel’
 ```
@@ -304,7 +314,7 @@ is simply string concatenation. This is about as predictable as it can get:
 "/home/chris/"
 λ> toFilePath $(mkRelDir "foo//bar")
 "foo/bar/"
-λ> $(mkAbsDir "/home/chris//") </> $(mkRelDir "foo//bar")
+λ> [absdir|/home/chris//|]</>[reldir|foo//bar|]
 "/home/chris/foo/bar/"
 ```
 
@@ -314,9 +324,9 @@ Now that the path type is encoded in the type system, our `</>` operator
 prevents improper appending:
 
 ```haskell
-λ> $(mkAbsDir "/home/chris/") </> $(mkRelFile "foo//bar")
+λ> [absdir|/home/chris/|]</>[relfile|foo//bar|]
 "/home/chris/foo/bar"
-λ> $(mkAbsFile "/home/chris") </> $(mkRelFile "foo//bar")
+λ> [absfile|/home/chris|]</>[relfile|foo//bar|]
 <interactive>:35:1-26:
     Couldn't match type ‘File’ with ‘Dir’
 ```
