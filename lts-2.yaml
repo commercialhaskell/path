@@ -1,1 +1,6 @@
+extra-deps:
+- genvalidity-0.3.2.0
+- genvalidity-property-0.0.0.0
+- validity-0.3.3.0
 resolver: lts-2.22
+

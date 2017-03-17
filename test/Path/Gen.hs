@@ -1,5 +1,10 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE CPP #-}
 module Path.Gen where
+
+#if !MIN_VERSION_base(4,8,0)
+import Data.Functor ((<$>))
+#endif
 
 import           Path
 import           Path.Internal
