@@ -17,7 +17,7 @@ module Path
   -- * QuasiQuoters
   -- | Using the following requires the QuasiQuotes language extension.
   --
-  -- __For Windows users__, the QuasiQuoters are especially benefitial because they
+  -- __For Windows users__, the QuasiQuoters are especially beneficial because they
   -- prevent Haskell from treating @\\@ as an escape character.
   -- This makes Windows paths easier to write.
   --
