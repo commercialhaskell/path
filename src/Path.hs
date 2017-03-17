@@ -49,7 +49,8 @@ module Path
   ,fromRelDir
   ,fromAbsFile
   ,fromRelFile
-  -- * Constructors
+  -- * TemplateHaskell constructors
+  -- | These require the TemplateHaskell language extension.
   ,mkAbsDir
   ,mkRelDir
   ,mkAbsFile
@@ -139,7 +140,7 @@ qq quoteExp' =
       fail "illegal QuasiQuote (allowed as expression only, used as a declaration)"
   }
 
--- | Construct a 'Path' 'Abs' 'Dir' using QuasiQuotes. See also 'mkAbsDir'
+-- | Construct a 'Path' 'Abs' 'Dir' using QuasiQuotes.
 --
 -- @
 -- [absdir|/|]
@@ -147,11 +148,15 @@ qq quoteExp' =
 -- [absdir|\/home\/chris|]
 -- @
 --
+-- Remember: due to the nature of absolute paths a path like @[absdir|\/home\/chris|]@
+-- may compile on your platform, but it may not compile on another
+-- platform (Windows).
+--
 -- @since 0.5.13
 absdir :: QuasiQuoter
 absdir = qq mkAbsDir
 
--- | Construct a 'Path' 'Rel' 'Dir' using QuasiQuotes. See also 'mkRelDir'
+-- | Construct a 'Path' 'Rel' 'Dir' using QuasiQuotes.
 --
 -- @
 -- [absdir|\/home|]\<\/>[reldir|chris|]
@@ -161,17 +166,21 @@ absdir = qq mkAbsDir
 reldir :: QuasiQuoter
 reldir = qq mkRelDir
 
--- | Construct a 'Path' 'Abs' 'File' using QuasiQuotes. See also 'mkAbsFile'
+-- | Construct a 'Path' 'Abs' 'File' using QuasiQuotes.
 --
 -- @
 -- [absfile|\/home\/chris\/foo.txt|]
 -- @
 --
+-- Remember: due to the nature of absolute paths a path like @[absdir|\/home\/chris\/foo.txt|]@
+-- may compile on your platform, but it may not compile on another
+-- platform (Windows).
+--
 -- @since 0.5.13
 absfile :: QuasiQuoter
 absfile = qq mkAbsFile
 
--- | Construct a 'Path' 'Rel' 'File' using QuasiQuotes. See also 'mkRelFile'
+-- | Construct a 'Path' 'Rel' 'File' using QuasiQuotes.
 --
 -- @
 -- [absdir|\/home\/chris|]\<\/>[relfile|foo.txt|]
