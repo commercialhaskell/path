@@ -14,7 +14,7 @@ import Path
 import Path.Internal
 import Test.Hspec
 import Test.QuickCheck
-import Test.Validity
+import Test.Validity.Property
 
 import Path.Gen
 
