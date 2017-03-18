@@ -1,8 +1,5 @@
-flags:
-  path:
-    validity: true
 extra-deps:
-- genvalidity-0.3.1.0
-- genvalidity-hspec-0.3.1.0
-- validity-0.3.2.0
+- genvalidity-0.3.2.0
+- genvalidity-property-0.0.0.0
+- validity-0.3.3.0
 resolver: lts-8.3

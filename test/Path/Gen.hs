@@ -1,6 +1,9 @@
 {-# LANGUAGE FlexibleInstances #-}
 module Path.Gen where
 
+import           Data.Functor
+import           Prelude
+
 import           Path
 import           Path.Internal
 

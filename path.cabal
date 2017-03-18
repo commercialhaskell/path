@@ -12,11 +12,6 @@ build-type:          Simple
 cabal-version:       >=1.10
 extra-source-files:  README.md, CHANGELOG
 
-flag validity
-  manual: True
-  default: False
-  description: Enable validity tests.
-
 library
   hs-source-dirs:    src
   ghc-options:       -Wall -O2
@@ -46,20 +41,17 @@ test-suite test
   default-language:  Haskell2010
 
 test-suite validity-test
-  if !flag(validity)
-    buildable: False
   type:              exitcode-stdio-1.0
   main-is:           ValidityTest.hs
   other-modules:     Path.Gen
   hs-source-dirs:    test
-  if flag(validity)
-    build-depends:   QuickCheck
+  build-depends:     QuickCheck
                    , aeson
-                   , base       >= 4.9 && < 5
+                   , base       >= 4.7 && < 5
                    , bytestring
                    , filepath   < 1.2.0.1  || >= 1.3
                    , genvalidity >= 0.3 && < 0.4
-                   , genvalidity-hspec >= 0.3 && < 0.4
+                   , genvalidity-property >= 0.0 && < 0.1
                    , hspec      >= 2.0     && < 3
                    , mtl        >= 2.0     && < 3
                    , path
