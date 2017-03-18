@@ -110,16 +110,16 @@ operationStripDir = do
                 stripDir parent (parent </> child) == Just child
 
      it "produces a valid path on when passed a valid absolute file paths" $ do
-             producesValidsOnValids2 (stripDir :: Path Abs Dir -> Path Abs File -> Maybe (Path Rel File))
+        producesValidsOnValids2 (stripDir :: Path Abs Dir -> Path Abs File -> Maybe (Path Rel File))
 
      it "produces a valid path on when passed a valid absolute directory paths" $ do
-             producesValidsOnValids2 (stripDir :: Path Abs Dir -> Path Abs Dir -> Maybe (Path Rel Dir))
+        producesValidsOnValids2 (stripDir :: Path Abs Dir -> Path Abs Dir -> Maybe (Path Rel Dir))
 
      it "produces a valid path on when passed a valid relative file paths" $ do
-             producesValidsOnValids2 (stripDir :: Path Rel Dir -> Path Rel File-> Maybe (Path Rel File))
+        producesValidsOnValids2 (stripDir :: Path Rel Dir -> Path Rel File-> Maybe (Path Rel File))
 
      it "produces a valid path on when passed a valid relative directory paths" $ do
-             producesValidsOnValids2 (stripDir :: Path Rel Dir -> Path Rel Dir -> Maybe (Path Rel Dir))
+        producesValidsOnValids2 (stripDir :: Path Rel Dir -> Path Rel Dir -> Maybe (Path Rel Dir))
 
 -- | The '</>' operation.
 operationAppend :: Spec
