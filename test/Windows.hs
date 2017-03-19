@@ -55,14 +55,14 @@ restrictions =
 -- | The 'dirname' operation.
 operationDirname :: Spec
 operationDirname = do
-  it
-    "dirname ($(mkAbsDir parent) </> $(mkRelFile dirname)) == dirname $(mkRelFile dirname) (unit test)"
-    (dirname ($(mkAbsDir "C:\\chris\\") </> $(mkRelDir "bar")) ==
-     dirname $(mkRelDir "bar"))
-  it
-    "dirname ($(mkRelDir parent) </> $(mkRelFile dirname)) == dirname $(mkRelFile dirname) (unit test)"
-    (dirname ($(mkRelDir "home\\chris\\") </> $(mkRelDir "bar")) ==
-     dirname $(mkRelDir "bar"))
+  it "dirname ($(mkAbsDir parent) </> $(mkRelFile dirname)) == dirname $(mkRelFile dirname) (unit test)" $ do
+    x <- dirname ($(mkAbsDir "C:\\chris\\") </> $(mkRelDir "bar"))
+    y <- dirname $(mkRelDir "bar")
+    x `shouldBe` y
+  it "dirname ($(mkRelDir parent) </> $(mkRelFile dirname)) == dirname $(mkRelFile dirname) (unit test)" $ do
+    x <- dirname ($(mkRelDir "home\\chris\\") </> $(mkRelDir "bar"))
+    y <- dirname $(mkRelDir "bar")
+    x `shouldBe` y
 
 -- | The 'filename' operation.
 operationFilename :: Spec
@@ -82,14 +82,11 @@ operationParent :: Spec
 operationParent =
   do it "parent (parent </> child) == parent"
         (parent ($(mkAbsDir "C:\\foo") </>
-                    $(mkRelDir "bar")) ==
+                    $(mkRelDir "bar")) `shouldReturn`
          $(mkAbsDir "C:\\foo"))
      it "parent \"\" == \"\""
-        (parent $(mkAbsDir "C:\\") ==
-         $(mkAbsDir "C:\\"))
-     it "parent (parent \"\") == \"\""
-        (parent (parent $(mkAbsDir "C:\\")) ==
-         $(mkAbsDir "C:\\"))
+        (parent $(mkAbsDir "C:\\") `shouldThrow`
+          (== Couldn'tTakeParent "C:\\"))
 
 -- | The 'isParentOf' operation.
 operationIsParentOf :: Spec
@@ -105,6 +102,9 @@ operationIsParentOf =
            $(mkRelDir "bar\\")
            ($(mkRelDir "bar\\") </>
             $(mkRelFile "bob\\foo.txt")))
+
+     it "the root directory is not the parent of itself" $
+       $(mkAbsDir "C://") `shouldSatisfy` (not . isParentOf $(mkAbsDir "C://"))
 
 -- | The 'stripDir' operation.
 operationStripDir :: Spec

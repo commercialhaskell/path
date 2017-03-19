@@ -1,5 +1,8 @@
-UNRELEASED:
-        * Remove the 'validity' flag
+0.6.0:
+	* Remove the 'validity' flag
+	* Move dirname and parent functions into MonadThrow, see #18
+	* Expose data constructors of PathParseException
+	* Derived Eq for PathParseException
 0.5.13:
 	* Add QuasiQuoters absdir, reldir, absfile, relfile
 0.5.11:

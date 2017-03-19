@@ -34,6 +34,7 @@ spec = parallel $ do
      describe "Operations: isParentOf" operationIsParentOf
      describe "Operations: parent" operationParent
      describe "Operations: filename" operationFilename
+     describe "Operations: dirname" operationDirname
 
 -- | The 'filename' operation.
 operationFilename :: Spec
@@ -54,14 +55,33 @@ operationFilename = do
      it "produces a valid path on when passed a valid relative path" $ do
         producesValidsOnValids (filename :: Path Rel File -> Path Rel File)
 
+-- | The 'dirname' operation.
+operationDirname :: Spec
+operationDirname = do
+     it "dirname ($(mkAbsDir parent) </> $(mkRelFile dirname)) == dirname $(mkRelFile dirname)" $
+         forAllShrink genValid shrinkValidAbsDir $ \parent ->
+             forAllShrink genValid shrinkValidRelDir $ \dir ->
+                 dirname (parent </> dir) `shouldBe` (dirname dir :: Maybe (Path Rel Dir))
+
+     it "dirname ($(mkRelDir parent) </> $(mkRelFile dirname)) == dirname $(mkRelFile dirname)" $
+         forAllShrink genValid shrinkValidRelDir $ \parent ->
+             forAllShrink genValid shrinkValidRelDir $ \dir ->
+                 dirname (parent </> dir) `shouldBe` (dirname dir :: Maybe (Path Rel Dir))
+
+     it "produces a valid path on when passed a valid absolute path" $ do
+        producesValidsOnValids (dirname :: Path Abs Dir -> Maybe (Path Rel Dir))
+
+     it "produces a valid path on when passed a valid relative path" $ do
+        producesValidsOnValids (dirname :: Path Rel Dir -> Maybe (Path Rel Dir))
+
 -- | The 'parent' operation.
 operationParent :: Spec
 operationParent = do
      it "produces a valid path on when passed a valid file path" $ do
-        producesValidsOnValids (parent :: Path Abs File -> Path Abs Dir)
+        producesValidsOnValids (parent :: Path Abs File -> Maybe (Path Abs Dir))
 
      it "produces a valid path on when passed a valid directory path" $ do
-        producesValidsOnValids (parent :: Path Abs Dir -> Path Abs Dir)
+        producesValidsOnValids (parent :: Path Abs Dir -> Maybe (Path Abs Dir))
 
 -- | The 'isParentOf' operation.
 operationIsParentOf :: Spec
