@@ -40,7 +40,7 @@ spec = parallel $ do
 -- | The 'filename' operation.
 operationFilename :: Spec
 operationFilename = do
-    prop "filename (abdir </> relfile) == filename relfile" $
+    prop "filename (absdir </> relfile) == filename relfile" $
         \(parent :: Path Abs Dir) file ->
             filename (parent </> file) `shouldBe` filename file
 
