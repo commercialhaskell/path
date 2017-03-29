@@ -4,6 +4,7 @@ module Path.Gen where
 import           Data.Functor
 import           Data.GenValidity
 import           Data.Maybe
+import           Data.Monoid
 import           Data.List (isInfixOf)
 import           Data.Validity
 import           Prelude
@@ -85,10 +86,26 @@ instance GenUnchecked (Path Rel Dir) where
 instance GenValid (Path Rel Dir)
 
 -- | Generates 'FilePath's with a high occurence of @'.'@, @'\/'@ and
--- @'\\'@ characters. The resulting 'FilePath's are not guaranteed to
--- be valid.
+-- @'\\'@ characters.
 genFilePath :: Gen FilePath
-genFilePath = listOf genPathyChar
+genFilePath = FilePath.makeValid <$> oneof
+  [ listOf genPathyChar
+  , do r <- genRoot
+       x <- listOf genPathyChar
+       pure (r FilePath.</> x)
+  ]
+
+-- | Generate root directories.
+--
+-- Results are not guaranteed to be valid.
+genRoot :: Gen FilePath
+genRoot = oneof
+  [ pure "/"
+  , (: ":") <$> arbitrary -- C:
+  , ("\\\\" <>) <$> arbitrary -- \\foo
+  , ("\\\\?\\UNC\\" <>) <$> arbitrary -- \\?\UNC\foo
+  , (\c -> "\\\\?\\" <> (c : ":")) <$> arbitrary -- \\?\C:
+  ]
 
 genPathyChar :: Gen Char
 genPathyChar = frequency [(2, arbitrary), (1, elements "./\\")]
