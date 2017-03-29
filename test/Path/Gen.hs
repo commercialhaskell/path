@@ -2,19 +2,18 @@
 module Path.Gen where
 
 import           Data.Functor
+import           Data.GenValidity
+import           Data.Maybe
+import           Data.List (isInfixOf)
+import           Data.Validity
 import           Prelude
+import qualified System.FilePath as FilePath
+import           Test.QuickCheck
 
 import           Path
 import           Path.Internal
 
-import qualified System.FilePath as FilePath
 
-import           Data.Maybe (mapMaybe)
-import           Data.List (isInfixOf)
-import           Data.Validity
-import           Data.GenValidity
-
-import           Test.QuickCheck
 
 
 instance Validity (Path Abs File) where
@@ -51,6 +50,22 @@ instance Validity (Path Rel Dir) where
     && fp /= "."
     && not (hasParentDir fp)
     && (parseRelDir fp == Just p)
+
+instance Arbitrary (Path Abs File) where
+  arbitrary = genPathWith parseAbsFile
+  shrink = shrinkValidAbsFile
+
+instance Arbitrary (Path Rel File) where
+  arbitrary = genPathWith parseRelFile
+  shrink = shrinkValidRelFile
+
+instance Arbitrary (Path Abs Dir) where
+  arbitrary = genPathWith parseAbsDir
+  shrink = shrinkValidAbsDir
+
+instance Arbitrary (Path Rel Dir) where
+  arbitrary = genPathWith parseRelDir
+  shrink = shrinkValidRelDir
 
 instance GenUnchecked (Path Abs File) where
   genUnchecked = Path <$> genFilePath
@@ -95,3 +110,9 @@ shrinkValidRelDir = shrinkValidWith parseRelDir
 
 shrinkValidWith :: (FilePath -> Maybe (Path a b)) -> Path a b -> [Path a b]
 shrinkValidWith fun (Path s) = mapMaybe fun $ shrink s
+
+fromMaybeGen :: Gen (Maybe a) -> Gen a
+fromMaybeGen x = fmap fromJust (x `suchThat` isJust)
+
+genPathWith :: (FilePath -> Maybe (Path b t)) -> Gen (Path b t)
+genPathWith p = fromMaybeGen (p <$> genFilePath)
