@@ -94,4 +94,16 @@ shrinkValidRelDir :: Path Rel Dir -> [Path Rel Dir]
 shrinkValidRelDir = shrinkValidWith parseRelDir
 
 shrinkValidWith :: (FilePath -> Maybe (Path a b)) -> Path a b -> [Path a b]
-shrinkValidWith fun (Path s) = mapMaybe fun $ shrink s
+shrinkValidWith fun (Path s) = mapMaybe fun $ shrinkValidFP s
+
+-- | Shrink, but also apply a 'FilePath.makeValid'. Try and make shorter, or use more
+--   @a@ (since @a@ is pretty dull), but make sure you terminate even after valid.
+--
+-- Adapted from
+-- https://github.com/haskell/filepath/blob/f981a217e5555488e9cb06d9a76c24573de15859/tests/TestUtil.hs#L48
+shrinkValidFP :: FilePath -> [FilePath]
+shrinkValidFP o =
+    [ y
+    | y <- map FilePath.makeValid $ shrinkList (\x -> ['a' | x /= 'a']) o
+    , length y < length o || (length y == length o && countA y > countA o)]
+    where countA = length . filter (== 'a')
