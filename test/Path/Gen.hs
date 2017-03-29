@@ -13,9 +13,6 @@ import           Test.QuickCheck
 import           Path
 import           Path.Internal
 
-
-
-
 instance Validity (Path Abs File) where
   isValid p@(Path fp)
     =  FilePath.isAbsolute fp
