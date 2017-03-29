@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 module Path.Gen where
 
-import           Data.Functor
+import           Control.Applicative
 import           Data.GenValidity
 import           Data.Maybe
 import           Data.Monoid
