@@ -10,7 +10,8 @@ import           Path.Internal
 import qualified System.FilePath as FilePath
 
 import           Data.Maybe (mapMaybe)
-import           Data.List (isInfixOf)
+import           Data.List
+import           Data.Ord
 import           Data.Validity
 import           Data.GenValidity
 
@@ -102,7 +103,7 @@ shrinkValidWith fun (Path s) = mapMaybe fun $ shrinkValidFP s
 -- Adapted from
 -- https://github.com/haskell/filepath/blob/f981a217e5555488e9cb06d9a76c24573de15859/tests/TestUtil.hs#L48
 shrinkValidFP :: FilePath -> [FilePath]
-shrinkValidFP o =
+shrinkValidFP o = sortBy (comparing (\fp -> (length fp, Down (countA fp))))
     [ y
     | y <- map FilePath.makeValid $ shrinkList (\x -> ['a' | x /= 'a']) o
     , length y < length o || (length y == length o && countA y > countA o)]
