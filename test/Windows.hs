@@ -281,5 +281,5 @@ quasiquotes =
        ([absfile|C:\chris\foo.txt|] `shouldBe` $(mkAbsFile "C:\\chris\\foo.txt"))
      it "[relfile|foo.exe|] == $(mkRelFile \"foo.exe\")"
        ([relfile|foo.exe|] `shouldBe` $(mkRelFile "foo.exe"))
-     it "[relfile|chris\foo.txt|] == $(mkRelFile \"chris\\foo.txt\")"
+     it "[relfile|chris\\foo.txt|] == $(mkRelFile \"chris\\foo.txt\")"
        ([relfile|chris\foo.txt|] `shouldBe` $(mkRelFile "chris\\foo.txt"))
