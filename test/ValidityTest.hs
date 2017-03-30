@@ -29,7 +29,7 @@ main = hspec spec
 
 -- | Test suite.
 spec :: Spec
-spec = parallel $ do
+spec = modifyMaxDiscardRatio (*100) $ parallel $ do
      describe "Parsing:" parserSpec
      describe "Operations: (</>)" operationAppend
      describe "Operations: stripDir" operationStripDir
@@ -140,7 +140,7 @@ parserSpec = do
         => String -> (FilePath -> Maybe p) -> Spec
     parsedPathIsValid pname parser =
         it ("(isValid <$> " <> pname <> " fp) `elem` [Nothing, Just True]") $
-            forAllShrink
-                (genFilePath `suchThat` (isJust . parser)) -- Make sure we can parse the FilePath so QC doesn't give up
-                shrink $ -- TODO: Use a better shrinking function if available
-                \fp -> (isValid <$> parser fp) == Just True
+            forAllShrink genFilePath shrink $ -- TODO: Use a better shrinking function if available
+                \fp -> do
+                    let mpath = parser fp
+                    isJust mpath ==> (isValid <$> mpath) == Just True
