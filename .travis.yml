@@ -40,7 +40,13 @@ script:
   - |
     set -ex # Error out after first failure and print each command before executing
     case "$TYPE" in
-      cabal) cabal configure --enable-tests -v2 && cabal build && cabal test --show-details=always && cabal sdist && cabal haddock | grep "100%" | wc -l | grep "2" ;;
+      cabal)
+        cabal configure --enable-tests -v2
+        cabal build
+        cabal test --show-details=always
+        cabal sdist
+        cabal haddock | grep "100%" | wc -l | grep "2"
+        ;;
       stack)
         stack --version
         stack --no-terminal --install-ghc $ARGS test
