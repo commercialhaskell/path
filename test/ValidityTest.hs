@@ -33,6 +33,7 @@ spec = parallel $ do
      describe "Operations: stripDir" operationStripDir
      describe "Operations: isParentOf" operationIsParentOf
      describe "Operations: parent" operationParent
+     describe "Operations: fileParent" operationFileParent
      describe "Operations: filename" operationFilename
      describe "Operations: dirname" operationDirname
 
@@ -82,6 +83,12 @@ operationParent = do
 
      it "produces a valid path on when passed a valid directory path" $ do
         producesValidsOnValids (parent :: Path Abs Dir -> Maybe (Path Abs Dir))
+
+-- | The 'fileParent' operation.
+operationFileParent :: Spec
+operationFileParent = do
+     it "produces a valid path on when passed a valid file path" $ do
+        producesValidsOnValids (fileParent :: Path Abs File -> Path Abs Dir)
 
 -- | The 'isParentOf' operation.
 operationIsParentOf :: Spec

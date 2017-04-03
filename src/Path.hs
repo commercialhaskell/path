@@ -33,6 +33,7 @@ module Path
   ,stripDir
   ,isParentOf
   ,parent
+  ,fileParent
   ,filename
   ,dirname
   ,fileExtension
@@ -274,6 +275,19 @@ parent path =
   where
     original = FilePath.dropTrailingPathSeparator (toFilePath path)
     new      = FilePath.takeDirectory original
+
+-- | Take the absolute parent directory from the absolute path.
+--
+-- The following properties hold:
+--
+-- @fileParent (x \<\/> y) == x@
+--
+-- As opposed to 'parent', this function will never fail.
+--
+-- @since 0.6.0
+--
+fileParent :: Path Abs File -> Path Abs Dir
+fileParent = fromJust . parent
 
 -- | Extract the file part of a path.
 --
