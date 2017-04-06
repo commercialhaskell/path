@@ -160,7 +160,7 @@ operationToFilePath =
   do it "toFilePath $(mkRelDir \".\") == \"./\""
         (toFilePath $(mkRelDir ".") == ".\\")
      it "show $(mkRelDir \".\") == \"\\\".\\\\\"\""
-        (show $(mkRelDir ".") == "\".\\\"")
+        (show $(mkRelDir ".") == "\".\\\\\"")
 
 -- | Tests for the tokenizer.
 parseAbsDirSpec :: Spec
