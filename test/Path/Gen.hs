@@ -90,7 +90,8 @@ shrinkValidRelFile :: Path Rel File -> [Path Rel File]
 shrinkValidRelFile = shrinkValidWith parseRelFile
 
 shrinkValidRelDir :: Path Rel Dir -> [Path Rel Dir]
-shrinkValidRelDir = shrinkValidWith parseRelDir
+shrinkValidRelDir (Path []) = []
+shrinkValidRelDir p = shrinkValidWith parseRelDir p
 
 shrinkValidWith :: (FilePath -> Maybe (Path a b)) -> Path a b -> [Path a b]
-shrinkValidWith fun p = mapMaybe fun $ shrink (toFilePath p)
+shrinkValidWith fun (Path s) = mapMaybe fun $ shrink s
