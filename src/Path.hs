@@ -6,14 +6,13 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE EmptyDataDecls #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DataKinds #-}
 
 module Path
   (-- * Types
    Path
-  ,Abs
-  ,Rel
-  ,File
-  ,Dir
+  ,PathRelativity(..)
+  ,FileType(..)
   -- * QuasiQuoters
   -- | Using the following requires the QuasiQuotes language extension.
   --
@@ -58,72 +57,13 @@ module Path
   )
   where
 
-import           Control.Exception (Exception)
-import           Control.Monad
 import           Control.Monad.Catch (MonadThrow(..))
-import           Data.Aeson (FromJSON (..))
-import qualified Data.Aeson.Types as Aeson
-import           Data.Data
 import           Data.List
 import           Data.Maybe
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Quote (QuasiQuoter(..))
 import           Path.Internal
 import qualified System.FilePath as FilePath
-
---------------------------------------------------------------------------------
--- Types
-
--- | An absolute path.
-data Abs deriving (Typeable)
-
--- | A relative path; one without a root. Note that a @.@ as well as any path
--- starting with a @..@ is not a valid relative path. In other words, a
--- relative path is always strictly under the directory tree to which it is
--- relative.
-data Rel deriving (Typeable)
-
--- | A file path.
-data File deriving (Typeable)
-
--- | A directory path.
-data Dir deriving (Typeable)
-
-instance FromJSON (Path Abs File) where
-  parseJSON = parseJSONWith parseAbsFile
-  {-# INLINE parseJSON #-}
-
-instance FromJSON (Path Rel File) where
-  parseJSON = parseJSONWith parseRelFile
-  {-# INLINE parseJSON #-}
-
-instance FromJSON (Path Abs Dir) where
-  parseJSON = parseJSONWith parseAbsDir
-  {-# INLINE parseJSON #-}
-
-instance FromJSON (Path Rel Dir) where
-  parseJSON = parseJSONWith parseRelDir
-  {-# INLINE parseJSON #-}
-
-parseJSONWith :: (Show e, FromJSON a)
-              => (a -> Either e b) -> Aeson.Value -> Aeson.Parser b
-parseJSONWith f x =
-  do fp <- parseJSON x
-     case f fp of
-       Right p -> return p
-       Left e -> fail (show e)
-{-# INLINE parseJSONWith #-}
-
--- | Exception when parsing a location.
-data PathParseException
-  = InvalidAbsDir FilePath
-  | InvalidRelDir FilePath
-  | InvalidAbsFile FilePath
-  | InvalidRelFile FilePath
-  | Couldn'tStripPrefixDir FilePath FilePath
-  deriving (Show,Typeable)
-instance Exception PathParseException
-
 
 --------------------------------------------------------------------------------
 -- QuasiQuoters
@@ -215,7 +155,7 @@ relfile = qq mkRelFile
 --
 -- @x \<\/> $(mkAbsDir …)@
 --
-(</>) :: Path b Dir -> Path Rel t -> Path b t
+(</>) :: Path b 'Dir -> Path 'Rel t -> Path b t
 (</>) (Path a) (Path b) = Path (a ++ b)
 
 -- | Strip directory from path, making it relative to that directory.
@@ -234,7 +174,7 @@ relfile = qq mkRelFile
 -- In other words the bases must match.
 --
 stripDir :: MonadThrow m
-         => Path b Dir -> Path b t -> m (Path Rel t)
+         => Path b 'Dir -> Path b t -> m (Path 'Rel t)
 stripDir (Path p) (Path l) =
   case stripPrefix p l of
     Nothing -> throwM (Couldn'tStripPrefixDir p l)
@@ -250,7 +190,7 @@ stripDir (Path p) (Path l) =
 --
 -- @x \`isParentOf\` (x \<\/\> y)@
 --
-isParentOf :: Path b Dir -> Path b t -> Bool
+isParentOf :: Path b 'Dir -> Path b t -> Bool
 isParentOf p l =
   isJust (stripDir p l)
 
@@ -264,7 +204,7 @@ isParentOf p l =
 --
 -- @parent (parent \"\/\") = \"\/\"@
 --
-parent :: Path Abs t -> Path Abs Dir
+parent :: Path 'Abs t -> Path 'Abs 'Dir
 parent (Path fp) =
   Path (normalizeDir (FilePath.takeDirectory (FilePath.dropTrailingPathSeparator fp)))
 
@@ -274,7 +214,7 @@ parent (Path fp) =
 --
 -- @filename (p \<\/> a) == filename a@
 --
-filename :: Path b File -> Path Rel File
+filename :: Path b 'File -> Path 'Rel 'File
 filename (Path l) =
   Path (FilePath.takeFileName l)
 
@@ -284,14 +224,14 @@ filename (Path l) =
 --
 -- @dirname (p \<\/> a) == dirname a@
 --
-dirname :: Path b Dir -> Path Rel Dir
+dirname :: Path b 'Dir -> Path 'Rel 'Dir
 dirname (Path l) =
   Path (last (FilePath.splitPath l))
 
 -- | Get extension from given file path.
 --
 -- @since 0.5.11
-fileExtension :: Path b File -> String
+fileExtension :: Path b 'File -> String
 fileExtension = FilePath.takeExtension . toFilePath
 
 -- | Replace\/add extension to given file path. Throws if the
@@ -300,112 +240,15 @@ fileExtension = FilePath.takeExtension . toFilePath
 -- @since 0.5.11
 setFileExtension :: MonadThrow m
   => String            -- ^ Extension to set
-  -> Path b File       -- ^ Old file name
-  -> m (Path b File)   -- ^ New file name with the desired extension
+  -> Path b 'File       -- ^ Old file name
+  -> m (Path b 'File)   -- ^ New file name with the desired extension
 setFileExtension ext (Path path) =
   if FilePath.isAbsolute path
-    then liftM coercePath (parseAbsFile (FilePath.replaceExtension path ext))
-    else liftM coercePath (parseRelFile (FilePath.replaceExtension path ext))
+    then fmap coercePath (parseAbsFile (FilePath.replaceExtension path ext))
+    else fmap coercePath (parseRelFile (FilePath.replaceExtension path ext))
   where coercePath :: Path a b -> Path a' b'
         coercePath (Path a) = Path a
 
-
---------------------------------------------------------------------------------
--- Parsers
-
--- | Convert an absolute 'FilePath' to a normalized absolute dir 'Path'.
---
--- Throws: 'PathParseException' when the supplied path:
---
--- * is not an absolute path
--- * contains a @..@ anywhere in the path
--- * is not a valid path (See 'System.FilePath.isValid')
---
-parseAbsDir :: MonadThrow m
-            => FilePath -> m (Path Abs Dir)
-parseAbsDir filepath =
-  if FilePath.isAbsolute filepath &&
-     not (hasParentDir filepath) &&
-     FilePath.isValid filepath
-     then return (Path (normalizeDir filepath))
-     else throwM (InvalidAbsDir filepath)
-
--- | Convert a relative 'FilePath' to a normalized relative dir 'Path'.
---
--- Throws: 'PathParseException' when the supplied path:
---
--- * is not a relative path
--- * is any of @""@, @.@ or @..@
--- * contains @..@ anywhere in the path
--- * is not a valid path (See 'System.FilePath.isValid')
---
-parseRelDir :: MonadThrow m
-            => FilePath -> m (Path Rel Dir)
-parseRelDir filepath =
-  if not (FilePath.isAbsolute filepath) &&
-     not (hasParentDir filepath) &&
-     not (null filepath) &&
-     filepath /= "." &&
-     normalizeFilePath filepath /= curDirNormalizedFP &&
-     FilePath.isValid filepath
-     then return (Path (normalizeDir filepath))
-     else throwM (InvalidRelDir filepath)
-
--- | Convert an absolute 'FilePath' to a normalized absolute file 'Path'.
---
--- Throws: 'PathParseException' when the supplied path:
---
--- * is not an absolute path
--- * has a trailing path separator
--- * contains @..@ anywhere in the path
--- * ends in @/.@
--- * is not a valid path (See 'System.FilePath.isValid')
---
-parseAbsFile :: MonadThrow m
-             => FilePath -> m (Path Abs File)
-parseAbsFile filepath =
-  case validAbsFile filepath of
-    True
-      | normalized <- normalizeFilePath filepath
-      , validAbsFile normalized ->
-        return (Path normalized)
-    _ -> throwM (InvalidAbsFile filepath)
-
--- | Is the string a valid absolute file?
-validAbsFile :: FilePath -> Bool
-validAbsFile filepath =
-  FilePath.isAbsolute filepath &&
-  not (FilePath.hasTrailingPathSeparator filepath) &&
-  not (hasParentDir filepath) &&
-  FilePath.isValid filepath
-
--- | Convert a relative 'FilePath' to a normalized relative file 'Path'.
---
--- Throws: 'PathParseException' when the supplied path:
---
--- * is not a relative path
--- * has a trailing path separator
--- * is @""@, @.@ or @..@
--- * contains @..@ anywhere in the path
--- * is not a valid path (See 'System.FilePath.isValid')
---
-parseRelFile :: MonadThrow m
-             => FilePath -> m (Path Rel File)
-parseRelFile filepath =
-  case validRelFile filepath of
-    True
-      | normalized <- normalizeFilePath filepath
-      , validRelFile normalized -> return (Path normalized)
-    _ -> throwM (InvalidRelFile filepath)
-
--- | Is the string a valid relative file?
-validRelFile :: FilePath -> Bool
-validRelFile filepath =
-  not
-    (FilePath.isAbsolute filepath || FilePath.hasTrailingPathSeparator filepath) &&
-  not (null filepath) &&
-  not (hasParentDir filepath) &&
-  filepath /= "." && FilePath.isValid filepath
 
 --------------------------------------------------------------------------------
 -- Conversion
@@ -419,19 +262,19 @@ toFilePath :: Path b t -> FilePath
 toFilePath (Path l) = l
 
 -- | Convert absolute path to directory to 'FilePath' type.
-fromAbsDir :: Path Abs Dir -> FilePath
+fromAbsDir :: Path 'Abs 'Dir -> FilePath
 fromAbsDir = toFilePath
 
 -- | Convert relative path to directory to 'FilePath' type.
-fromRelDir :: Path Rel Dir -> FilePath
+fromRelDir :: Path 'Rel 'Dir -> FilePath
 fromRelDir = toFilePath
 
 -- | Convert absolute path to file to 'FilePath' type.
-fromAbsFile :: Path Abs File -> FilePath
+fromAbsFile :: Path 'Abs 'File -> FilePath
 fromAbsFile = toFilePath
 
 -- | Convert relative path to file to 'FilePath' type.
-fromRelFile :: Path Rel File -> FilePath
+fromRelFile :: Path 'Rel 'File -> FilePath
 fromRelFile = toFilePath
 
 --------------------------------------------------------------------------------
@@ -447,7 +290,7 @@ mkAbsDir s =
   case parseAbsDir s of
     Left err -> error (show err)
     Right (Path str) ->
-      [|Path $(return (LitE (StringL str))) :: Path Abs Dir|]
+      [|Path $(return (LitE (StringL str))) :: Path 'Abs 'Dir|]
 
 -- | Make a 'Path' 'Rel' 'Dir'.
 mkRelDir :: FilePath -> Q Exp
@@ -455,7 +298,7 @@ mkRelDir s =
   case parseRelDir s of
     Left err -> error (show err)
     Right (Path str) ->
-      [|Path $(return (LitE (StringL str))) :: Path Rel Dir|]
+      [|Path $(return (LitE (StringL str))) :: Path 'Rel 'Dir|]
 
 -- | Make a 'Path' 'Abs' 'File'.
 --
@@ -467,7 +310,7 @@ mkAbsFile s =
   case parseAbsFile s of
     Left err -> error (show err)
     Right (Path str) ->
-      [|Path $(return (LitE (StringL str))) :: Path Abs File|]
+      [|Path $(return (LitE (StringL str))) :: Path 'Abs 'File|]
 
 -- | Make a 'Path' 'Rel' 'File'.
 mkRelFile :: FilePath -> Q Exp
@@ -475,28 +318,4 @@ mkRelFile s =
   case parseRelFile s of
     Left err -> error (show err)
     Right (Path str) ->
-      [|Path $(return (LitE (StringL str))) :: Path Rel File|]
-
-
---------------------------------------------------------------------------------
--- Internal functions
-
-curDirNormalizedFP :: FilePath
-curDirNormalizedFP = '.' : [FilePath.pathSeparator]
-
--- | Internal use for normalizing a directory.
-normalizeDir :: FilePath -> FilePath
-normalizeDir = FilePath.addTrailingPathSeparator . normalizeFilePath
-
-normalizeFilePath :: FilePath -> FilePath
-#if defined(mingw32_HOST_OS) || defined(__MINGW32__) || MIN_VERSION_filepath(1,4,0)
-normalizeFilePath = FilePath.normalise
-#else
-normalizeFilePath = normalizeLeadingSeparators . FilePath.normalise
-    where
-        sep = FilePath.pathSeparator
-        normalizeLeadingSeparators (x1:x2:xs) | x1 == sep && x2 == sep
-            = normalizeLeadingSeparators (sep:xs)
-        normalizeLeadingSeparators x = x
-#endif
-
+      [|Path $(return (LitE (StringL str))) :: Path 'Rel 'File|]
