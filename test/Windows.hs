@@ -1,6 +1,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE DataKinds #-}
 
 -- | Test suite.
 
@@ -260,11 +261,11 @@ parserTest parser input expected =
 aesonInstances :: Spec
 aesonInstances =
   do it "Decoding \"[\"C:\\\\foo\\\\bar\"]\" as a [Path Abs Dir] should succeed." $
-       eitherDecode (LBS.pack "[\"C:\\\\foo\\\\bar\"]") `shouldBe` Right [Path "C:\\foo\\bar\\" :: Path Abs Dir]
+       eitherDecode (LBS.pack "[\"C:\\\\foo\\\\bar\"]") `shouldBe` Right [Path "C:\\foo\\bar\\" :: Path 'Abs 'Dir]
      it "Decoding \"[\"C:\\foo\\bar\"]\" as a [Path Rel Dir] should fail." $
-       decode (LBS.pack "[\"C:\\foo\\bar\"]") `shouldBe` (Nothing :: Maybe [Path Rel Dir])
+       decode (LBS.pack "[\"C:\\foo\\bar\"]") `shouldBe` (Nothing :: Maybe [Path 'Rel 'Dir])
      it "Encoding \"[\"C:\\foo\\bar\\mu.txt\"]\" should succeed." $
-       encode [Path "C:\\foo\\bar\\mu.txt" :: Path Abs File] `shouldBe` (LBS.pack "[\"C:\\\\foo\\\\bar\\\\mu.txt\"]")
+       encode [Path "C:\\foo\\bar\\mu.txt" :: Path 'Abs 'File] `shouldBe` (LBS.pack "[\"C:\\\\foo\\\\bar\\\\mu.txt\"]")
 
 -- | Test QuasiQuoters. Make sure they work the same as the $(mk*) constructors.
 quasiquotes :: Spec
