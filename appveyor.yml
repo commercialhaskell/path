@@ -1,6 +1,9 @@
 # Disable standard build process with MSBuild
 build: off
 
+install:
+- set PATH=C:\Program Files\Git\mingw64\bin;%PATH%
+
 # In case of unreliable builds try disabling caching.
 cache:
 - "c:\\sr"

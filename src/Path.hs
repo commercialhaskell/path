@@ -33,6 +33,7 @@ module Path
   ,stripDir
   ,isParentOf
   ,parent
+  ,fileParent
   ,filename
   ,dirname
   ,fileExtension
@@ -42,7 +43,7 @@ module Path
   ,parseRelDir
   ,parseAbsFile
   ,parseRelFile
-  ,PathParseException
+  ,PathParseException(..)
   -- * Conversion
   ,toFilePath
   ,fromAbsDir
@@ -121,7 +122,8 @@ data PathParseException
   | InvalidAbsFile FilePath
   | InvalidRelFile FilePath
   | Couldn'tStripPrefixDir FilePath FilePath
-  deriving (Show,Typeable)
+  | Couldn'tTakeParent FilePath
+  deriving (Show,Typeable,Eq)
 instance Exception PathParseException
 
 
@@ -260,13 +262,32 @@ isParentOf p l =
 --
 -- @parent (x \<\/> y) == x@
 --
--- On the root, getting the parent is idempotent:
+-- __Note__: when applied to the root directory, this function will throw
+-- 'Couldn'tTakeParent'.
 --
--- @parent (parent \"\/\") = \"\/\"@
+-- @since 0.6.0
 --
-parent :: Path Abs t -> Path Abs Dir
-parent (Path fp) =
-  Path (normalizeDir (FilePath.takeDirectory (FilePath.dropTrailingPathSeparator fp)))
+parent :: MonadThrow m => Path Abs t -> m (Path Abs Dir)
+parent path =
+  if original == new
+    then throwM (Couldn'tTakeParent original)
+    else parseAbsDir new
+  where
+    original = FilePath.dropTrailingPathSeparator (toFilePath path)
+    new      = FilePath.takeDirectory original
+
+-- | Take the absolute parent directory from the absolute path.
+--
+-- The following properties hold:
+--
+-- @fileParent (x \<\/> y) == x@
+--
+-- As opposed to 'parent', this function will never fail.
+--
+-- @since 0.6.0
+--
+fileParent :: Path Abs File -> Path Abs Dir
+fileParent = fromJust . parent
 
 -- | Extract the file part of a path.
 --
@@ -284,9 +305,13 @@ filename (Path l) =
 --
 -- @dirname (p \<\/> a) == dirname a@
 --
-dirname :: Path b Dir -> Path Rel Dir
-dirname (Path l) =
-  Path (last (FilePath.splitPath l))
+-- __Note__: getting 'dirname' of the root will result in an 'InvalidRelDir'
+-- exception.
+--
+-- @since 0.6.0
+--
+dirname :: MonadThrow m => Path b Dir -> m (Path Rel Dir)
+dirname = parseRelDir . last . FilePath.splitPath . toFilePath
 
 -- | Get extension from given file path.
 --
