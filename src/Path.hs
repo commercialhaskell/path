@@ -285,7 +285,7 @@ filename (Path l) =
 -- @dirname (p \<\/> a) == dirname a@
 --
 dirname :: Path b Dir -> Path Rel Dir
-dirname (Path []) = Path []
+dirname (Path "") = Path ""
 dirname (Path l) =
   Path (last (FilePath.splitPath l))
 
