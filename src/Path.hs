@@ -286,8 +286,8 @@ filename (Path l) =
 --
 dirname :: Path b Dir -> Path Rel Dir
 dirname (Path "") = Path ""
-dirname (Path l) =
-  Path (last (FilePath.splitPath l))
+dirname (Path l) | FilePath.isDrive l = Path ""
+dirname (Path l) = Path (last (FilePath.splitPath l))
 
 -- | Get extension from given file path.
 --
