@@ -66,6 +66,10 @@ operationDirname = do
   it
     "dirname $(mkRelDir .) == $(mkRelDir .)"
     (dirname $(mkRelDir ".") == $(mkRelDir "."))
+  it
+    "dirname C:\\ must be a Rel path"
+    ((parseAbsDir $ show $ dirname (fromJust (parseAbsDir "C:\\"))
+     :: Maybe (Path Abs Dir)) == Nothing)
 
 -- | The 'filename' operation.
 operationFilename :: Spec

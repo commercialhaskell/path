@@ -70,8 +70,9 @@ operationDirname = do
     (dirname ($(mkRelDir "home/chris/") </> $(mkRelDir "bar")) ==
      dirname $(mkRelDir "bar"))
   it
-    "dirname $(mkRelDir .) == $(mkRelDir .)"
-    (dirname $(mkRelDir ".") == $(mkRelDir "."))
+    "dirname / must be a Rel path"
+    ((parseAbsDir $ show $ dirname (fromJust (parseAbsDir "/"))
+     :: Maybe (Path Abs Dir)) == Nothing)
 
 -- | The 'filename' operation.
 operationFilename :: Spec
