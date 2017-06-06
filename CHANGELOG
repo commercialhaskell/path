@@ -1,13 +1,14 @@
 UNRELEASED:
 
-  * Allow "." as a valid relative dir path with the following rules:
-    * "./" </> "./" = "./"
-    * "./" </> "x/" = "x/"
-    * "x/" </> "./" = "x/"
-    * dirname "x" = "./"
-    * dirname "/" = "./"
-    * dirname "./" = "./"
-  * Remove the 'validity' flag
+	* Allow "." as a valid relative dir path with the following rules:
+		* "./" </> "./" = "./"
+		* "./" </> "x/" = "x/"
+		* "x/" </> "./" = "x/"
+		* dirname "x" = "./"
+		* dirname "/" = "./"
+		* dirname "./" = "./"
+	* Make dirname return "." instead of "/" (fixes #18).
+	* Remove the 'validity' flag.
 
 0.5.13:
 	* Add QuasiQuoters absdir, reldir, absfile, relfile
