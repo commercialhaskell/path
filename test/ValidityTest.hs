@@ -34,6 +34,7 @@ spec = parallel $ do
      describe "Operations: isParentOf" operationIsParentOf
      describe "Operations: parent" operationParent
      describe "Operations: filename" operationFilename
+     describe "Operations: dirname" operationDirname
 
 -- | The 'filename' operation.
 operationFilename :: Spec
@@ -53,6 +54,25 @@ operationFilename = do
 
      it "produces a valid path on when passed a valid relative path" $ do
         producesValidsOnValids (filename :: Path Rel File -> Path Rel File)
+
+-- | The 'dirname' operation.
+operationDirname :: Spec
+operationDirname = do
+     it "dirname ($(mkAbsDir parent) </> $(mkRelFile dirname)) == dirname $(mkRelFile dirname)" $
+         forAll genValid $ \(parent :: Path Abs Dir) ->
+             forAll genValid $ \file ->
+                 dirname (parent </> file) `shouldBe` dirname file
+
+     it "dirname ($(mkRelDir parent) </> $(mkRelFile dirname)) == dirname $(mkRelFile dirname)" $
+         forAll genValid $ \(parent :: Path Rel Dir) ->
+             forAll genValid $ \file ->
+                 dirname (parent </> file) `shouldBe` dirname file
+
+     it "produces a valid path on when passed a valid absolute path" $ do
+        producesValidsOnValids (dirname @Abs)
+
+     it "produces a valid path on when passed a valid relative path" $ do
+        producesValidsOnValids (dirname @Rel)
 
 -- | The 'parent' operation.
 operationParent :: Spec
