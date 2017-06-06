@@ -43,14 +43,13 @@ instance Validity (Path Abs Dir) where
     && (parseAbsDir fp == Just p)
 
 instance Validity (Path Rel Dir) where
-  isValid p@(Path fp)
-    =  FilePath.isRelative fp
+  isValid p =
+    FilePath.isRelative fp
     && FilePath.hasTrailingPathSeparator fp
     && FilePath.isValid fp
-    && not (null fp)
-    && fp /= "."
     && not (hasParentDir fp)
     && (parseRelDir fp == Just p)
+    where fp = toFilePath p
 
 instance GenUnchecked (Path Abs File) where
   genUnchecked = Path <$> genFilePath
@@ -91,7 +90,8 @@ shrinkValidRelFile :: Path Rel File -> [Path Rel File]
 shrinkValidRelFile = shrinkValidWith parseRelFile
 
 shrinkValidRelDir :: Path Rel Dir -> [Path Rel Dir]
-shrinkValidRelDir = shrinkValidWith parseRelDir
+shrinkValidRelDir (Path []) = []
+shrinkValidRelDir p = shrinkValidWith parseRelDir p
 
 shrinkValidWith :: (FilePath -> Maybe (Path a b)) -> Path a b -> [Path a b]
 shrinkValidWith fun (Path s) = mapMaybe fun $ shrink s

@@ -74,7 +74,7 @@ operationIsParentOf = do
      it "isParentOf parent (parent </> child)" $
         forAllShrink genValid shrinkValidAbsDir $ \parent ->
             forAllShrink genValid shrinkValidRelDir $ \child ->
-                isParentOf parent (parent </> child)
+                child == Path [] || isParentOf parent (parent </> child)
 
      it "isParentOf parent (parent </> child)" $
         forAllShrink genValid shrinkValidRelDir $ \parent ->
@@ -84,7 +84,7 @@ operationIsParentOf = do
      it "isParentOf parent (parent </> child)" $
         forAllShrink genValid shrinkValidRelDir $ \parent ->
             forAllShrink genValid shrinkValidRelDir $ \child ->
-                isParentOf parent (parent </> child)
+                child == Path [] || isParentOf parent (parent </> child)
 
 -- | The 'stripDir' operation.
 operationStripDir :: Spec
@@ -102,12 +102,14 @@ operationStripDir = do
      it "stripDir parent (parent </> child) = child" $
         forAllShrink genValid shrinkValidAbsDir $ \parent ->
             forAllShrink genValid shrinkValidRelDir $ \child ->
-                stripDir parent (parent </> child) == Just child
+                child == Path []
+                || stripDir parent (parent </> child) == Just child
 
      it "stripDir parent (parent </> child) = child" $
         forAllShrink genValid shrinkValidRelDir $ \parent ->
             forAllShrink genValid shrinkValidRelDir $ \child ->
-                stripDir parent (parent </> child) == Just child
+                child == Path []
+                || stripDir parent (parent </> child) == Just child
 
      it "produces a valid path on when passed a valid absolute file paths" $ do
         producesValidsOnValids2 (stripDir :: Path Abs Dir -> Path Abs File -> Maybe (Path Rel File))

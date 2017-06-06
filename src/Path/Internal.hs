@@ -6,6 +6,8 @@
 module Path.Internal
   ( Path(..)
   , hasParentDir
+  , curDirNormalizedFP
+  , toFilePath
   )
   where
 
@@ -49,27 +51,44 @@ instance Eq (Path b t) where
 instance Ord (Path b t) where
   compare (Path x) (Path y) = compare x y
 
+-- | Normalized file path for the current directory
+curDirNormalizedFP :: FilePath
+curDirNormalizedFP = '.' : [FilePath.pathSeparator]
+
+-- | Convert to a 'FilePath' type.
+--
+-- All directories have a trailing slash, so if you want no trailing
+-- slash, you can use 'System.FilePath.dropTrailingPathSeparator' from
+-- the filepath package.
+toFilePath :: Path b t -> FilePath
+toFilePath (Path []) = curDirNormalizedFP
+toFilePath (Path x)  = x
+
 -- | Same as 'show . Path.toFilePath'.
 --
 -- The following property holds:
 --
 -- @x == y ≡ show x == show y@
 instance Show (Path b t) where
-  show (Path x) = show x
+  show = show . toFilePath
 
 instance NFData (Path b t) where
   rnf (Path x) = rnf x
 
 instance ToJSON (Path b t) where
-  toJSON (Path x) = toJSON x
+  toJSON = toJSON . toFilePath
   {-# INLINE toJSON #-}
 #if MIN_VERSION_aeson(0,10,0)
-  toEncoding (Path x) = toEncoding x
+  toEncoding = toEncoding . toFilePath
   {-# INLINE toEncoding #-}
 #endif
 
 instance Hashable (Path b t) where
-  hashWithSalt n (Path path) = hashWithSalt n path
+  -- A "." is represented as an empty string ("") internally. Hashing ""
+  -- results in a hash that is the same as the salt. To produce a more
+  -- reasonable hash we use "toFilePath" before hashing so that a "" gets
+  -- converted back to a ".".
+  hashWithSalt n path = hashWithSalt n (toFilePath path)
 
 -- | Helper function: check if the filepath has any parent directories in it.
 -- This handles the logic of checking for different path separators on Windows.
