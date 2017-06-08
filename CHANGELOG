@@ -9,6 +9,7 @@ UNRELEASED:
 		* dirname "./" = "./"
 	* Make dirname return "." instead of "/" (fixes #18).
 	* Remove the 'validity' flag.
+	* Add synonym for setFileExtension in the form of an operator: (-<.>).
 
 0.5.13:
 	* Add QuasiQuoters absdir, reldir, absfile, relfile

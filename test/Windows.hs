@@ -29,6 +29,7 @@ spec =
      describe "Operations: parent" operationParent
      describe "Operations: filename" operationFilename
      describe "Operations: dirname" operationDirname
+     describe "Operations: setFileExtension" operationSetFileExtension
      describe "Restrictions" restrictions
      describe "Aeson Instances" aesonInstances
      describe "QuasiQuotes" quasiquotes
@@ -165,6 +166,15 @@ operationToFilePath =
         (toFilePath $(mkRelDir ".") == ".\\")
      it "show $(mkRelDir \".\") == \"\\\".\\\\\"\""
         (show $(mkRelDir ".") == "\".\\\\\"")
+
+operationSetFileExtension :: Spec
+operationSetFileExtension = do
+  it "adds extension if there is none" $
+    setFileExtension "txt" $(mkRelFile "foo")
+      `shouldReturn` $(mkRelFile "foo.txt")
+  it "replaces extension if the input path already has one" $
+    setFileExtension "txt" $(mkRelFile "foo.bar")
+      `shouldReturn` $(mkRelFile "foo.txt")
 
 -- | Tests for the tokenizer.
 parseAbsDirSpec :: Spec

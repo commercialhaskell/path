@@ -37,6 +37,7 @@ module Path
   ,dirname
   ,fileExtension
   ,setFileExtension
+  ,(-<.>)
    -- * Parsing
   ,parseAbsDir
   ,parseRelDir
@@ -213,6 +214,7 @@ relfile = qq mkRelFile
 --
 -- @x \<\/> $(mkAbsDir …)@
 --
+infixr 5 </>
 (</>) :: Path b Dir -> Path Rel t -> Path b t
 (</>) (Path a) (Path b) = Path (a ++ b)
 
@@ -310,6 +312,15 @@ setFileExtension ext (Path path) =
   where coercePath :: Path a b -> Path a' b'
         coercePath (Path a) = Path a
 
+-- | A synonym for 'setFileExtension' in the form of an operator.
+--
+-- @since 0.6.0
+infixr 7 -<.>
+(-<.>) :: MonadThrow m
+  => Path b File       -- ^ Old file name
+  -> String            -- ^ Extension to set
+  -> m (Path b File)   -- ^ New file name with the desired extension
+(-<.>) = flip setFileExtension
 
 --------------------------------------------------------------------------------
 -- Parsers
