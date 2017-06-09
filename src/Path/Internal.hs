@@ -6,7 +6,7 @@
 module Path.Internal
   ( Path(..)
   , hasParentDir
-  , curDirNormalizedFP
+  , relRootFP
   , toFilePath
   )
   where
@@ -51,9 +51,9 @@ instance Eq (Path b t) where
 instance Ord (Path b t) where
   compare (Path x) (Path y) = compare x y
 
--- | Normalized file path for the current directory
-curDirNormalizedFP :: FilePath
-curDirNormalizedFP = '.' : [FilePath.pathSeparator]
+-- | Normalized file path representation for the relative path root
+relRootFP :: FilePath
+relRootFP = '.' : [FilePath.pathSeparator]
 
 -- | Convert to a 'FilePath' type.
 --
@@ -61,7 +61,7 @@ curDirNormalizedFP = '.' : [FilePath.pathSeparator]
 -- slash, you can use 'System.FilePath.dropTrailingPathSeparator' from
 -- the filepath package.
 toFilePath :: Path b t -> FilePath
-toFilePath (Path []) = curDirNormalizedFP
+toFilePath (Path []) = relRootFP
 toFilePath (Path x)  = x
 
 -- | Same as 'show . Path.toFilePath'.

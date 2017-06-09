@@ -95,12 +95,14 @@ operationParent =
         (parent ($(mkAbsDir "/foo") </>
                     $(mkRelDir "bar")) ==
          $(mkAbsDir "/foo"))
-     it "parent \"\" == \"\""
-        (parent $(mkAbsDir "/") ==
-         $(mkAbsDir "/"))
-     it "parent (parent \"\") == \"\""
-        (parent (parent $(mkAbsDir "/")) ==
-         $(mkAbsDir "/"))
+     it "parent \"/\" == \"/\""
+        (parent $(mkAbsDir "/") == $(mkAbsDir "/"))
+     it "parent \"/x\" == \"/\""
+        (parent $(mkAbsDir "/x") == $(mkAbsDir "/"))
+     it "parent \"x\" == \".\""
+        (parent $(mkRelDir "x") == $(mkRelDir "."))
+     it "parent \".\" == \".\""
+        (parent $(mkRelDir ".") == $(mkRelDir "."))
 
 -- | The 'isProperPrefixOf' operation.
 operationIsParentOf :: Spec

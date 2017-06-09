@@ -1,5 +1,6 @@
 UNRELEASED:
 
+	* Allow 'parent' to work on relative paths as well
 	* Deprecate isParentOf and stripDir and rename them to isProperPrefixOf and
 	  stripProperPrefix respectively.
 	* Allow "." as a valid relative dir path with the following rules:
