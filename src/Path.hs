@@ -30,8 +30,8 @@ module Path
   ,relfile
   -- * Operations
   ,(</>)
-  ,stripDir
-  ,isParentOf
+  ,stripDirPrefix
+  ,isDirPrefixOf
   ,parent
   ,filename
   ,dirname
@@ -56,6 +56,9 @@ module Path
   ,mkRelDir
   ,mkAbsFile
   ,mkRelFile
+  -- * Deprecated
+  ,stripDir
+  ,isParentOf
   )
   where
 
@@ -223,36 +226,46 @@ infixr 5 </>
 --
 -- The following properties hold:
 --
--- @stripDir x (x \<\/> y) = y@
+-- @stripDirPrefix x (x \<\/> y) = y@
 --
 -- Cases which are proven not possible:
 --
--- @stripDir (a :: Path Abs …) (b :: Path Rel …)@
+-- @stripDirPrefix (a :: Path Abs …) (b :: Path Rel …)@
 --
--- @stripDir (a :: Path Rel …) (b :: Path Abs …)@
+-- @stripDirPrefix (a :: Path Rel …) (b :: Path Abs …)@
 --
 -- In other words the bases must match.
 --
-stripDir :: MonadThrow m
+stripDirPrefix :: MonadThrow m
          => Path b Dir -> Path b t -> m (Path Rel t)
-stripDir (Path p) (Path l) =
+stripDirPrefix (Path p) (Path l) =
   case stripPrefix p l of
     Nothing -> throwM (Couldn'tStripPrefixDir p l)
     Just "" -> throwM (Couldn'tStripPrefixDir p l)
     Just ok -> return (Path ok)
 
--- | Is p a parent of the given location? Implemented in terms of
--- 'stripDir'. The bases must match.
+{-# DEPRECATED stripDir "Please use stripDirPrefix instead." #-}
+-- | Same as 'stripDirPrefix'
+stripDir :: MonadThrow m
+         => Path b Dir -> Path b t -> m (Path Rel t)
+stripDir = stripDirPrefix
+
+-- | Determines if the dir in the first parameter is a prefix of the path in
+-- the second parameter.
 --
 -- The following properties hold:
 --
--- @not (x \`isParentOf\` x)@
+-- @not (x \`isDirPrefixOf\` x)@
 --
--- @x \`isParentOf\` (x \<\/\> y)@
+-- @x \`isDirPrefixOf\` (x \<\/\> y)@
 --
+isDirPrefixOf :: Path b Dir -> Path b t -> Bool
+isDirPrefixOf p l = isJust (stripDirPrefix p l)
+
+{-# DEPRECATED isParentOf "Please use isDirPrefixOf instead." #-}
+-- | Same as 'isDirPrefixOf'
 isParentOf :: Path b Dir -> Path b t -> Bool
-isParentOf p l =
-  isJust (stripDir p l)
+isParentOf = isDirPrefixOf
 
 -- | Take the absolute parent directory from the absolute path.
 --
