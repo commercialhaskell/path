@@ -30,8 +30,8 @@ module Path
   ,relfile
   -- * Operations
   ,(</>)
-  ,stripDirPrefix
-  ,isDirPrefixOf
+  ,stripProperPrefix
+  ,isProperPrefixOf
   ,parent
   ,filename
   ,dirname
@@ -221,51 +221,52 @@ infixr 5 </>
 (</>) :: Path b Dir -> Path Rel t -> Path b t
 (</>) (Path a) (Path b) = Path (a ++ b)
 
--- | Strip directory from path, making it relative to that directory.
+-- | Strip a proper prefix from path, generating a path relative to that
+-- prefix.
 -- Throws 'Couldn'tStripPrefixDir' if directory is not a parent of the path.
 --
 -- The following properties hold:
 --
--- @stripDirPrefix x (x \<\/> y) = y@
+-- @stripProperPrefix x (x \<\/> y) = y@
 --
 -- Cases which are proven not possible:
 --
--- @stripDirPrefix (a :: Path Abs …) (b :: Path Rel …)@
+-- @stripProperPrefix (a :: Path Abs …) (b :: Path Rel …)@
 --
--- @stripDirPrefix (a :: Path Rel …) (b :: Path Abs …)@
+-- @stripProperPrefix (a :: Path Rel …) (b :: Path Abs …)@
 --
 -- In other words the bases must match.
 --
-stripDirPrefix :: MonadThrow m
+stripProperPrefix :: MonadThrow m
          => Path b Dir -> Path b t -> m (Path Rel t)
-stripDirPrefix (Path p) (Path l) =
+stripProperPrefix (Path p) (Path l) =
   case stripPrefix p l of
     Nothing -> throwM (Couldn'tStripPrefixDir p l)
     Just "" -> throwM (Couldn'tStripPrefixDir p l)
     Just ok -> return (Path ok)
 
-{-# DEPRECATED stripDir "Please use stripDirPrefix instead." #-}
--- | Same as 'stripDirPrefix'
+{-# DEPRECATED stripDir "Please use stripProperPrefix instead." #-}
+-- | Same as 'stripProperPrefix'
 stripDir :: MonadThrow m
          => Path b Dir -> Path b t -> m (Path Rel t)
-stripDir = stripDirPrefix
+stripDir = stripProperPrefix
 
--- | Determines if the dir in the first parameter is a prefix of the path in
--- the second parameter.
+-- | Determines if the path in the first parameter is a proper prefix of the
+-- path in the second parameter.
 --
 -- The following properties hold:
 --
--- @not (x \`isDirPrefixOf\` x)@
+-- @not (x \`isProperPrefixOf\` x)@
 --
--- @x \`isDirPrefixOf\` (x \<\/\> y)@
+-- @x \`isProperPrefixOf\` (x \<\/\> y)@
 --
-isDirPrefixOf :: Path b Dir -> Path b t -> Bool
-isDirPrefixOf p l = isJust (stripDirPrefix p l)
+isProperPrefixOf :: Path b Dir -> Path b t -> Bool
+isProperPrefixOf p l = isJust (stripProperPrefix p l)
 
-{-# DEPRECATED isParentOf "Please use isDirPrefixOf instead." #-}
--- | Same as 'isDirPrefixOf'
+{-# DEPRECATED isParentOf "Please use isProperPrefixOf instead." #-}
+-- | Same as 'isProperPrefixOf'
 isParentOf :: Path b Dir -> Path b t -> Bool
-isParentOf = isDirPrefixOf
+isParentOf = isProperPrefixOf
 
 -- | Take the absolute parent directory from the absolute path.
 --

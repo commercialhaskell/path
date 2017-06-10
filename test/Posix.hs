@@ -24,8 +24,8 @@ spec =
      describe "Parsing: Path Rel File" parseRelFileSpec
      describe "Operations: (</>)" operationAppend
      describe "Operations: toFilePath" operationToFilePath
-     describe "Operations: stripDirPrefix" operationStripDir
-     describe "Operations: isDirPrefixOf" operationIsParentOf
+     describe "Operations: stripProperPrefix" operationStripDir
+     describe "Operations: isProperPrefixOf" operationIsParentOf
      describe "Operations: parent" operationParent
      describe "Operations: filename" operationFilename
      describe "Operations: dirname" operationDirname
@@ -102,38 +102,38 @@ operationParent =
         (parent (parent $(mkAbsDir "/")) ==
          $(mkAbsDir "/"))
 
--- | The 'isDirPrefixOf' operation.
+-- | The 'isProperPrefixOf' operation.
 operationIsParentOf :: Spec
 operationIsParentOf =
-  do it "isDirPrefixOf parent (parent </> child) (unit test)"
-        (isDirPrefixOf
+  do it "isProperPrefixOf parent (parent </> child) (unit test)"
+        (isProperPrefixOf
            $(mkAbsDir "///bar/")
            ($(mkAbsDir "///bar/") </>
             $(mkRelFile "bar/foo.txt")))
 
-     it "isDirPrefixOf parent (parent </> child) (unit test)"
-        (isDirPrefixOf
+     it "isProperPrefixOf parent (parent </> child) (unit test)"
+        (isProperPrefixOf
            $(mkRelDir "bar/")
            ($(mkRelDir "bar/") </>
             $(mkRelFile "bob/foo.txt")))
 
--- | The 'stripDirPrefix' operation.
+-- | The 'stripProperPrefix' operation.
 operationStripDir :: Spec
 operationStripDir =
-  do it "stripDirPrefix parent (parent </> child) = child (unit test)"
-        (stripDirPrefix $(mkAbsDir "///bar/")
+  do it "stripProperPrefix parent (parent </> child) = child (unit test)"
+        (stripProperPrefix $(mkAbsDir "///bar/")
                   ($(mkAbsDir "///bar/") </>
                    $(mkRelFile "bar/foo.txt")) ==
          Just $(mkRelFile "bar/foo.txt"))
 
-     it "stripDirPrefix parent (parent </> child) = child (unit test)"
-        (stripDirPrefix $(mkRelDir "bar/")
+     it "stripProperPrefix parent (parent </> child) = child (unit test)"
+        (stripProperPrefix $(mkRelDir "bar/")
                   ($(mkRelDir "bar/") </>
                    $(mkRelFile "bob/foo.txt")) ==
          Just $(mkRelFile "bob/foo.txt"))
 
-     it "stripDirPrefix parent parent = _|_"
-        (stripDirPrefix $(mkAbsDir "/home/chris/foo")
+     it "stripProperPrefix parent parent = _|_"
+        (stripProperPrefix $(mkAbsDir "/home/chris/foo")
                   $(mkAbsDir "/home/chris/foo") ==
          Nothing)
 
