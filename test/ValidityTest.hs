@@ -30,8 +30,8 @@ spec = parallel $ do
      describe "Parsing: Path Abs File" (parserSpec parseAbsFile)
      describe "Parsing: Path Rel File" (parserSpec parseRelFile)
      describe "Operations: (</>)" operationAppend
-     describe "Operations: stripDir" operationStripDir
-     describe "Operations: isParentOf" operationIsParentOf
+     describe "Operations: stripProperPrefix" operationStripDir
+     describe "Operations: isProperPrefixOf" operationIsParentOf
      describe "Operations: parent" operationParent
      describe "Operations: filename" operationFilename
 
@@ -63,65 +63,65 @@ operationParent = do
      it "produces a valid path on when passed a valid directory path" $ do
         producesValidsOnValids (parent :: Path Abs Dir -> Path Abs Dir)
 
--- | The 'isParentOf' operation.
+-- | The 'isProperPrefixOf' operation.
 operationIsParentOf :: Spec
 operationIsParentOf = do
-     it "isParentOf parent (parent </> child)" $
+     it "isProperPrefixOf parent (parent </> child)" $
         forAllShrink genValid shrinkValidAbsDir $ \parent ->
             forAllShrink genValid shrinkValidRelFile $ \child ->
-                isParentOf parent (parent </> child)
+                isProperPrefixOf parent (parent </> child)
 
-     it "isParentOf parent (parent </> child)" $
+     it "isProperPrefixOf parent (parent </> child)" $
         forAllShrink genValid shrinkValidAbsDir $ \parent ->
             forAllShrink genValid shrinkValidRelDir $ \child ->
-                child == Path [] || isParentOf parent (parent </> child)
+                child == Path [] || isProperPrefixOf parent (parent </> child)
 
-     it "isParentOf parent (parent </> child)" $
+     it "isProperPrefixOf parent (parent </> child)" $
         forAllShrink genValid shrinkValidRelDir $ \parent ->
             forAllShrink genValid shrinkValidRelFile $ \child ->
-                isParentOf parent (parent </> child)
+                isProperPrefixOf parent (parent </> child)
 
-     it "isParentOf parent (parent </> child)" $
+     it "isProperPrefixOf parent (parent </> child)" $
         forAllShrink genValid shrinkValidRelDir $ \parent ->
             forAllShrink genValid shrinkValidRelDir $ \child ->
-                child == Path [] || isParentOf parent (parent </> child)
+                child == Path [] || isProperPrefixOf parent (parent </> child)
 
--- | The 'stripDir' operation.
+-- | The 'stripProperPrefix' operation.
 operationStripDir :: Spec
 operationStripDir = do
-     it "stripDir parent (parent </> child) = child" $
+     it "stripProperPrefix parent (parent </> child) = child" $
         forAllShrink genValid shrinkValidAbsDir $ \parent ->
             forAllShrink genValid shrinkValidRelFile $ \child ->
-                stripDir parent (parent </> child) == Just child
+                stripProperPrefix parent (parent </> child) == Just child
 
-     it "stripDir parent (parent </> child) = child" $
+     it "stripProperPrefix parent (parent </> child) = child" $
         forAllShrink genValid shrinkValidRelDir $ \parent ->
             forAllShrink genValid shrinkValidRelFile $ \child ->
-                stripDir parent (parent </> child) == Just child
+                stripProperPrefix parent (parent </> child) == Just child
 
-     it "stripDir parent (parent </> child) = child" $
+     it "stripProperPrefix parent (parent </> child) = child" $
         forAllShrink genValid shrinkValidAbsDir $ \parent ->
             forAllShrink genValid shrinkValidRelDir $ \child ->
                 child == Path []
-                || stripDir parent (parent </> child) == Just child
+                || stripProperPrefix parent (parent </> child) == Just child
 
-     it "stripDir parent (parent </> child) = child" $
+     it "stripProperPrefix parent (parent </> child) = child" $
         forAllShrink genValid shrinkValidRelDir $ \parent ->
             forAllShrink genValid shrinkValidRelDir $ \child ->
                 child == Path []
-                || stripDir parent (parent </> child) == Just child
+                || stripProperPrefix parent (parent </> child) == Just child
 
      it "produces a valid path on when passed a valid absolute file paths" $ do
-        producesValidsOnValids2 (stripDir :: Path Abs Dir -> Path Abs File -> Maybe (Path Rel File))
+        producesValidsOnValids2 (stripProperPrefix :: Path Abs Dir -> Path Abs File -> Maybe (Path Rel File))
 
      it "produces a valid path on when passed a valid absolute directory paths" $ do
-        producesValidsOnValids2 (stripDir :: Path Abs Dir -> Path Abs Dir -> Maybe (Path Rel Dir))
+        producesValidsOnValids2 (stripProperPrefix :: Path Abs Dir -> Path Abs Dir -> Maybe (Path Rel Dir))
 
      it "produces a valid path on when passed a valid relative file paths" $ do
-        producesValidsOnValids2 (stripDir :: Path Rel Dir -> Path Rel File-> Maybe (Path Rel File))
+        producesValidsOnValids2 (stripProperPrefix :: Path Rel Dir -> Path Rel File-> Maybe (Path Rel File))
 
      it "produces a valid path on when passed a valid relative directory paths" $ do
-        producesValidsOnValids2 (stripDir :: Path Rel Dir -> Path Rel Dir -> Maybe (Path Rel Dir))
+        producesValidsOnValids2 (stripProperPrefix :: Path Rel Dir -> Path Rel Dir -> Maybe (Path Rel Dir))
 
 -- | The '</>' operation.
 operationAppend :: Spec

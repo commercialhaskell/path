@@ -30,8 +30,8 @@ module Path
   ,relfile
   -- * Operations
   ,(</>)
-  ,stripDir
-  ,isParentOf
+  ,stripProperPrefix
+  ,isProperPrefixOf
   ,parent
   ,filename
   ,dirname
@@ -56,6 +56,9 @@ module Path
   ,mkRelDir
   ,mkAbsFile
   ,mkRelFile
+  -- * Deprecated
+  ,stripDir
+  ,isParentOf
   )
   where
 
@@ -218,41 +221,43 @@ infixr 5 </>
 (</>) :: Path b Dir -> Path Rel t -> Path b t
 (</>) (Path a) (Path b) = Path (a ++ b)
 
--- | Strip directory from path, making it relative to that directory.
+-- | Strip a proper prefix from path, generating a path relative to that
+-- prefix.
 -- Throws 'Couldn'tStripPrefixDir' if directory is not a parent of the path.
 --
 -- The following properties hold:
 --
--- @stripDir x (x \<\/> y) = y@
+-- @stripProperPrefix x (x \<\/> y) = y@
 --
 -- Cases which are proven not possible:
 --
--- @stripDir (a :: Path Abs …) (b :: Path Rel …)@
+-- @stripProperPrefix (a :: Path Abs …) (b :: Path Rel …)@
 --
--- @stripDir (a :: Path Rel …) (b :: Path Abs …)@
+-- @stripProperPrefix (a :: Path Rel …) (b :: Path Abs …)@
 --
 -- In other words the bases must match.
 --
-stripDir :: MonadThrow m
+-- @since 0.6.0
+stripProperPrefix :: MonadThrow m
          => Path b Dir -> Path b t -> m (Path Rel t)
-stripDir (Path p) (Path l) =
+stripProperPrefix (Path p) (Path l) =
   case stripPrefix p l of
     Nothing -> throwM (Couldn'tStripPrefixDir p l)
     Just "" -> throwM (Couldn'tStripPrefixDir p l)
     Just ok -> return (Path ok)
 
--- | Is p a parent of the given location? Implemented in terms of
--- 'stripDir'. The bases must match.
+-- | Determines if the path in the first parameter is a proper prefix of the
+-- path in the second parameter.
 --
 -- The following properties hold:
 --
--- @not (x \`isParentOf\` x)@
+-- @not (x \`isProperPrefixOf\` x)@
 --
--- @x \`isParentOf\` (x \<\/\> y)@
+-- @x \`isProperPrefixOf\` (x \<\/\> y)@
 --
-isParentOf :: Path b Dir -> Path b t -> Bool
-isParentOf p l =
-  isJust (stripDir p l)
+-- @since 0.6.0
+isProperPrefixOf :: Path b Dir -> Path b t -> Bool
+isProperPrefixOf p l = isJust (stripProperPrefix p l)
 
 -- | Take the absolute parent directory from the absolute path.
 --
@@ -512,3 +517,16 @@ normalizeFilePath = normalizeLeadingSeparators . FilePath.normalise
         normalizeLeadingSeparators x = x
 #endif
 
+--------------------------------------------------------------------------------
+-- Deprecated
+
+{-# DEPRECATED stripDir "Please use stripProperPrefix instead." #-}
+-- | Same as 'stripProperPrefix'
+stripDir :: MonadThrow m
+         => Path b Dir -> Path b t -> m (Path Rel t)
+stripDir = stripProperPrefix
+
+{-# DEPRECATED isParentOf "Please use isProperPrefixOf instead." #-}
+-- | Same as 'isProperPrefixOf'
+isParentOf :: Path b Dir -> Path b t -> Bool
+isParentOf = isProperPrefixOf
