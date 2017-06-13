@@ -24,8 +24,8 @@ spec =
      describe "Parsing: Path Rel File" parseRelFileSpec
      describe "Operations: (</>)" operationAppend
      describe "Operations: toFilePath" operationToFilePath
-     describe "Operations: stripProperPrefix" operationStripDir
-     describe "Operations: isProperPrefixOf" operationIsParentOf
+     describe "Operations: stripProperPrefix" operationStripProperPrefix
+     describe "Operations: isProperPrefixOf" operationIsProperPrefixOf
      describe "Operations: parent" operationParent
      describe "Operations: filename" operationFilename
      describe "Operations: dirname" operationDirname
@@ -100,23 +100,30 @@ operationParent =
          $(mkAbsDir "C:\\"))
 
 -- | The 'isProperPrefixOf' operation.
-operationIsParentOf :: Spec
-operationIsParentOf =
-  do it "isProperPrefixOf parent (parent </> child) (unit test)"
+operationIsProperPrefixOf :: Spec
+operationIsProperPrefixOf =
+  do it "isProperPrefixOf parent (parent </> child) (absolute)"
         (isProperPrefixOf
            $(mkAbsDir "C:\\\\\\bar\\")
            ($(mkAbsDir "C:\\\\\\bar\\") </>
             $(mkRelFile "bar\\foo.txt")))
 
-     it "isProperPrefixOf parent (parent </> child) (unit test)"
+     it "isProperPrefixOf parent (parent </> child) (relative)"
         (isProperPrefixOf
            $(mkRelDir "bar\\")
            ($(mkRelDir "bar\\") </>
             $(mkRelFile "bob\\foo.txt")))
 
+     it "not (x `isProperPrefixOf` x)"
+        (not (isProperPrefixOf $(mkRelDir "x") $(mkRelDir "x")))
+
+     it "not (\\ `isProperPrefixOf` \\)"
+        (not (isProperPrefixOf $(mkAbsDir "C:\\") $(mkAbsDir "C:\\")))
+
+
 -- | The 'stripProperPrefix' operation.
-operationStripDir :: Spec
-operationStripDir =
+operationStripProperPrefix :: Spec
+operationStripProperPrefix =
   do it "stripProperPrefix parent (parent </> child) = child (unit test)"
         (stripProperPrefix $(mkAbsDir "C:\\\\\\bar\\")
                   ($(mkAbsDir "C:\\\\\\bar\\") </>
