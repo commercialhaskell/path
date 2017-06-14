@@ -1,4 +1,15 @@
--- | Support for well-typed paths.
+-- | This library provides a well-typed representation of paths in a filesystem
+-- directory tree.  A path is represented by a number of path components
+-- separated by a path separator which is a @/@ on POSIX systems and can be a
+-- @/@ or @\\@ on Windows.
+--
+-- The root of the tree is represented by a @/@ on POSIX and a drive letter
+-- followed by a @/@ or @\\@ on Windows (e.g. @C:\\@).  Paths can be absolute
+-- or relative. An absolute path always starts from the root of the tree (e.g.
+-- @\/x/y@) whereas a relative path never starts with the root (e.g. @x/y@).
+-- Just like we represent the notion of an absolute root by "@/@", the same way
+-- we represent the notion of a relative root by "@.@". The relative root denotes
+-- the directory which contains the first component of a relative path.
 
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -259,19 +270,31 @@ stripProperPrefix (Path p) (Path l) =
 isProperPrefixOf :: Path b Dir -> Path b t -> Bool
 isProperPrefixOf p l = isJust (stripProperPrefix p l)
 
--- | Take the absolute parent directory from the absolute path.
+-- | Take the parent path component from a path.
 --
 -- The following properties hold:
 --
--- @parent (x \<\/> y) == x@
+-- @
+-- parent (x \<\/> y) == x
+-- parent \"\/x\" == \"\/\"
+-- parent \"x\" == \".\"
+-- @
 --
--- On the root, getting the parent is idempotent:
+-- On the root (absolute or relative), getting the parent is idempotent:
 --
--- @parent (parent \"\/\") = \"\/\"@
+-- @
+-- parent \"\/\" = \"\/\"
+-- parent \"\.\" = \"\.\"
+-- @
 --
-parent :: Path Abs t -> Path Abs Dir
+parent :: Path b t -> Path b Dir
+parent (Path "") = Path ""
+parent (Path fp) | FilePath.isDrive fp = Path fp
 parent (Path fp) =
-  Path (normalizeDir (FilePath.takeDirectory (FilePath.dropTrailingPathSeparator fp)))
+    Path
+    $ normalizeDir
+    $ FilePath.takeDirectory
+    $ FilePath.dropTrailingPathSeparator fp
 
 -- | Extract the file part of a path.
 --
@@ -363,14 +386,8 @@ parseRelDir filepath =
      not (hasParentDir filepath) &&
      not (null filepath) &&
      FilePath.isValid filepath
-     then return (Path (normalizeRelDir filepath))
+     then return (Path (normalizeDir filepath))
      else throwM (InvalidRelDir filepath)
-  where
-      normalizeRelDir = toRelDirPath . normalizeDir
-      -- Represent a "." in relative dir path as "" internally so that it
-      -- composes without having to renormalize the path.
-      toRelDirPath p | p == curDirNormalizedFP = ""
-      toRelDirPath p = p
 
 -- | Convert an absolute 'FilePath' to a normalized absolute file 'Path'.
 --
@@ -503,7 +520,15 @@ mkRelFile s =
 
 -- | Internal use for normalizing a directory.
 normalizeDir :: FilePath -> FilePath
-normalizeDir = FilePath.addTrailingPathSeparator . normalizeFilePath
+normalizeDir =
+      normalizeRelDir
+    . FilePath.addTrailingPathSeparator
+    . normalizeFilePath
+  where
+      -- Represent a "." in relative dir path as "" internally so that it
+      -- composes without having to renormalize the path.
+      normalizeRelDir p | p == relRootFP = ""
+      normalizeRelDir p = p
 
 normalizeFilePath :: FilePath -> FilePath
 #if defined(mingw32_HOST_OS) || defined(__MINGW32__) || MIN_VERSION_filepath(1,4,0)
