@@ -25,6 +25,8 @@ module Path
   ,Rel
   ,File
   ,Dir
+   -- * Exceptions
+  ,PathException(..)
   -- * QuasiQuoters
   -- | Using the following requires the QuasiQuotes language extension.
   --
@@ -54,7 +56,6 @@ module Path
   ,parseRelDir
   ,parseAbsFile
   ,parseRelFile
-  ,PathParseException
   -- * Conversion
   ,toFilePath
   ,fromAbsDir
@@ -68,6 +69,7 @@ module Path
   ,mkAbsFile
   ,mkRelFile
   -- * Deprecated
+  ,PathParseException
   ,stripDir
   ,isParentOf
   )
@@ -127,16 +129,17 @@ parseJSONWith f x =
        Left e -> fail (show e)
 {-# INLINE parseJSONWith #-}
 
--- | Exception when parsing a location.
-data PathParseException
+-- | Exceptions that can occur during path operations.
+--
+-- @since 0.6.0
+data PathException
   = InvalidAbsDir FilePath
   | InvalidRelDir FilePath
   | InvalidAbsFile FilePath
   | InvalidRelFile FilePath
-  | Couldn'tStripPrefixDir FilePath FilePath
+  | NotAProperPrefix FilePath FilePath
   deriving (Show,Typeable)
-instance Exception PathParseException
-
+instance Exception PathException
 
 --------------------------------------------------------------------------------
 -- QuasiQuoters
@@ -232,9 +235,11 @@ infixr 5 </>
 (</>) :: Path b Dir -> Path Rel t -> Path b t
 (</>) (Path a) (Path b) = Path (a ++ b)
 
--- | Strip a proper prefix from path, generating a path relative to that
--- prefix.
--- Throws 'Couldn'tStripPrefixDir' if directory is not a parent of the path.
+-- | If the directory in the first argument is a proper prefix of the path in
+-- the second argument strip it from the second argument, generating a path
+-- relative to the directory.
+-- Throws 'NotAProperPrefix' if the directory is not a proper prefix of the
+-- path.
 --
 -- The following properties hold:
 --
@@ -253,8 +258,8 @@ stripProperPrefix :: MonadThrow m
          => Path b Dir -> Path b t -> m (Path Rel t)
 stripProperPrefix (Path p) (Path l) =
   case stripPrefix p l of
-    Nothing -> throwM (Couldn'tStripPrefixDir p l)
-    Just "" -> throwM (Couldn'tStripPrefixDir p l)
+    Nothing -> throwM (NotAProperPrefix p l)
+    Just "" -> throwM (NotAProperPrefix p l)
     Just ok -> return (Path ok)
 
 -- | Determines if the path in the first parameter is a proper prefix of the
@@ -355,7 +360,7 @@ infixr 7 -<.>
 
 -- | Convert an absolute 'FilePath' to a normalized absolute dir 'Path'.
 --
--- Throws: 'PathParseException' when the supplied path:
+-- Throws: 'InvalidAbsDir' when the supplied path:
 --
 -- * is not an absolute path
 -- * contains a @..@ path component representing the parent directory
@@ -372,7 +377,7 @@ parseAbsDir filepath =
 
 -- | Convert a relative 'FilePath' to a normalized relative dir 'Path'.
 --
--- Throws: 'PathParseException' when the supplied path:
+-- Throws: 'InvalidRelDir' when the supplied path:
 --
 -- * is not a relative path
 -- * is @""@
@@ -391,7 +396,7 @@ parseRelDir filepath =
 
 -- | Convert an absolute 'FilePath' to a normalized absolute file 'Path'.
 --
--- Throws: 'PathParseException' when the supplied path:
+-- Throws: 'InvalidAbsFile' when the supplied path:
 --
 -- * is not an absolute path
 -- * is a directory path i.e.
@@ -422,7 +427,7 @@ validAbsFile filepath =
 
 -- | Convert a relative 'FilePath' to a normalized relative file 'Path'.
 --
--- Throws: 'PathParseException' when the supplied path:
+-- Throws: 'InvalidRelFile' when the supplied path:
 --
 -- * is not a relative path
 -- * is @""@
@@ -545,13 +550,17 @@ normalizeFilePath = normalizeLeadingSeparators . FilePath.normalise
 --------------------------------------------------------------------------------
 -- Deprecated
 
+{-# DEPRECATED PathParseException "Please use PathException instead." #-}
+-- | Same as 'PathException'.
+type PathParseException = PathException
+
 {-# DEPRECATED stripDir "Please use stripProperPrefix instead." #-}
--- | Same as 'stripProperPrefix'
+-- | Same as 'stripProperPrefix'.
 stripDir :: MonadThrow m
          => Path b Dir -> Path b t -> m (Path Rel t)
 stripDir = stripProperPrefix
 
 {-# DEPRECATED isParentOf "Please use isProperPrefixOf instead." #-}
--- | Same as 'isProperPrefixOf'
+-- | Same as 'isProperPrefixOf'.
 isParentOf :: Path b Dir -> Path b t -> Bool
 isParentOf = isProperPrefixOf
