@@ -1,4 +1,4 @@
-UNRELEASED:
+0.6.0:
 
 	* Deprecate PathParseException and rename it to PathException
 	* Allow 'parent' to work on relative paths as well
