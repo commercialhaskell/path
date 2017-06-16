@@ -231,6 +231,14 @@ relfile = qq mkRelFile
 --
 -- @x \<\/> $(mkAbsDir …)@
 --
+-- The following equalities hold for the special relative directory @.@:
+--
+-- @x \<\/> $(mkRelDir ".") == x@
+--
+-- @$(mkRelDir ".") \<\/> x == x@
+--
+-- @$(mkRelDir ".") \<\/>  $(mkRelDir ".") == $(mkRelDir ".")@
+--
 infixr 5 </>
 (</>) :: Path b Dir -> Path Rel t -> Path b t
 (</>) (Path a) (Path b) = Path (a ++ b)
@@ -279,18 +287,18 @@ isProperPrefixOf p l = isJust (stripProperPrefix p l)
 --
 -- The following properties hold:
 --
--- @
--- parent (x \<\/> y) == x
--- parent \"\/x\" == \"\/\"
--- parent \"x\" == \".\"
--- @
+-- @parent (x \<\/> y) == x@
 --
--- On the root (absolute or relative), getting the parent is idempotent:
+-- @parent $(mkRelDir ".") == $(mkRelDir ".")@
 --
--- @
--- parent \"\/\" = \"\/\"
--- parent \"\.\" = \"\.\"
--- @
+-- @parent $(mkRelDir "x") == $(mkRelDir ".")@
+--
+-- The following POSIX path properties (and equivalent Windows path properties)
+-- hold:
+--
+-- @parent $(mkAbsDir "\/") == $(mkAbsDir "/")@
+--
+-- @parent $(mkAbsDir "\/x") == $(mkAbsDir "/")@
 --
 parent :: Path b t -> Path b Dir
 parent (Path "") = Path ""
@@ -315,9 +323,18 @@ filename (Path l) =
 --
 -- The following properties hold:
 --
+-- @dirname (p \<\/> a) == dirname a@
+--
 -- @dirname $(mkRelDir ".") == $(mkRelDir ".")@
 --
--- @dirname (p \<\/> a) == dirname a@
+-- @dirname $(mkRelDir "x") == $(mkRelDir "x")@
+--
+-- The following POSIX path properties (and equivalent Windows path properties)
+-- hold:
+--
+-- @dirname $(mkAbsDir "/") == $(mkRelDir ".")@
+--
+-- @dirname $(mkAbsDir "\/x") == $(mkRelDir "x")@
 --
 dirname :: Path b Dir -> Path Rel Dir
 dirname (Path "") = Path ""
