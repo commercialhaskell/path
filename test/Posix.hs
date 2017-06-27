@@ -29,6 +29,7 @@ spec =
      describe "Operations: parent" operationParent
      describe "Operations: filename" operationFilename
      describe "Operations: dirname" operationDirname
+     describe "Operations: addFileExtension" operationAddFileExtension
      describe "Operations: setFileExtension" operationSetFileExtension
      describe "Restrictions" restrictions
      describe "Aeson Instances" aesonInstances
@@ -177,6 +178,24 @@ operationToFilePath =
         (toFilePath $(mkRelDir ".") == "./")
      it "show $(mkRelDir \".\") == \"\\\"./\\\"\""
         (show $(mkRelDir ".") == "\"./\"")
+
+operationAddFileExtension :: Spec
+operationAddFileExtension = do
+  it "adds extension if there is none" $
+    addFileExtension "ext" $(mkAbsFile "/directory/path")
+      `shouldReturn` $(mkAbsFile "/directory/path.ext")
+  it "adds extension if there is already one" $
+    addFileExtension "baz" $(mkRelFile "foo.bar")
+      `shouldReturn` $(mkRelFile "foo.bar.baz")
+  it "adds extension with dot" $
+    addFileExtension ".bar" $(mkRelFile "foo")
+      `shouldReturn` $(mkRelFile "foo.bar")
+  it "adds extension with dot after dot" $
+    $(mkRelFile "foo.") <.> ".bar"
+      `shouldReturn` $(mkRelFile "foo..bar")
+  it "adds extension with separator" $  -- I'm not sure it's okay
+    $(mkRelFile "foo") <.> "evil/extension"
+      `shouldReturn` $(mkRelFile "foo.evil/extension")
 
 operationSetFileExtension :: Spec
 operationSetFileExtension = do

@@ -1,3 +1,6 @@
+0.6.1:
+	* Add 'addFileExtension' function and its operator form: (<.>).
+
 0.6.0:
 
 	* Deprecate PathParseException and rename it to PathException
@@ -45,7 +48,7 @@
 
 0.2.0:
 
-        * Rename parentAbs to simply parent.
+	* Rename parentAbs to simply parent.
 	* Add dirname.
 
 0.3.0:
