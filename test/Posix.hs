@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -193,9 +194,21 @@ operationAddFileExtension = do
   it "adds extension with dot after dot" $
     $(mkRelFile "foo.") <.> ".bar"
       `shouldReturn` $(mkRelFile "foo..bar")
+  it "adds extension without after dot" $
+    $(mkRelFile "foo.") <.> "bar"
+      `shouldReturn` $(mkRelFile "foo..bar")
   it "adds extension with separator" $  -- I'm not sure it's okay
     $(mkRelFile "foo") <.> "evil/extension"
       `shouldReturn` $(mkRelFile "foo.evil/extension")
+  it "adds extension to file inside dotted directory" $
+    $(mkRelFile "foo.bar/baz") <.> "txt"
+      `shouldReturn` $(mkRelFile "foo.bar/baz.txt")
+  it "throws InvalidRelFile extension if extenstion ends with /" $
+    $(mkRelFile "foo") <.> "evil/" -- No Eq instance for PathException
+      `shouldThrow` (\case {InvalidRelFile "foo.evil/" -> True; _ -> False})
+  it "throws InvalidAbsFile extension if extenstion ends with /" $
+    $(mkAbsFile "/home/cfg") <.> "txt/" -- No Eq instance for PathException
+      `shouldThrow` (\case {InvalidAbsFile "/home/cfg.txt/" -> True; _ -> False})
 
 operationSetFileExtension :: Spec
 operationSetFileExtension = do

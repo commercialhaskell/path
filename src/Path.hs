@@ -335,8 +335,16 @@ fileExtension = FilePath.takeExtension . toFilePath
 -- | Add extension to given file path. Throws if the
 -- resulting filename does not parse.
 --
+-- >>> addFileExtension "txt $(mkRelFile "foo")
+-- "foo.txt"
 -- >>> addFileExtension "symbols" $(mkRelFile "Data.List")
 -- "Data.List.symbols"
+-- >>> addFileExtension ".symbols" $(mkRelFile "Data.List")
+-- "Data.List.symbols"
+-- >>> addFileExtension "symbols" $(mkRelFile "Data.List.")
+-- "Data.List..symbols"
+-- >>> addFileExtension ".symbols" $(mkRelFile "Data.List.")
+-- "Data.List..symbols"
 -- >>> addFileExtension "evil/" $(mkRelFile "Data.List")
 -- *** Exception: InvalidRelFile "Data.List.evil/"
 --
@@ -353,6 +361,7 @@ addFileExtension ext (Path path) =
         coercePath (Path a) = Path a
 
 -- | A synonym for 'addFileExtension' in the form of an operator.
+-- See more examples there.
 --
 -- >>> $(mkRelFile "Data.List") <.> "symbols"
 -- "Data.List.symbols"
