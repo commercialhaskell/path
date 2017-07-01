@@ -1,6 +1,7 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE QuasiQuotes         #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TemplateHaskell     #-}
 
 -- | Test suite.
 
@@ -29,6 +30,7 @@ spec =
      describe "Operations: parent" operationParent
      describe "Operations: filename" operationFilename
      describe "Operations: dirname" operationDirname
+     describe "Operations: addFileExtension" operationAddFileExtension
      describe "Operations: setFileExtension" operationSetFileExtension
      describe "Restrictions" restrictions
      describe "Aeson Instances" aesonInstances
@@ -122,7 +124,6 @@ operationIsProperPrefixOf =
      it "not (\\ `isProperPrefixOf` \\)"
         (not (isProperPrefixOf $(mkAbsDir "C:\\") $(mkAbsDir "C:\\")))
 
-
 -- | The 'stripProperPrefix' operation.
 operationStripProperPrefix :: Spec
 operationStripProperPrefix =
@@ -175,6 +176,36 @@ operationToFilePath =
         (toFilePath $(mkRelDir ".") == ".\\")
      it "show $(mkRelDir \".\") == \"\\\".\\\\\"\""
         (show $(mkRelDir ".") == "\".\\\\\"")
+
+operationAddFileExtension :: Spec
+operationAddFileExtension = do
+  it "adds extension if there is none" $
+    addFileExtension "ext" $(mkAbsFile "C:\\directory\\path")
+      `shouldReturn` $(mkAbsFile "C:\\directory\\path.ext")
+  it "adds extension if there is already one" $
+    addFileExtension "baz" $(mkRelFile "foo.bar")
+      `shouldReturn` $(mkRelFile "foo.bar.baz")
+  it "adds extension with dot" $
+    addFileExtension ".bar" $(mkRelFile "foo")
+      `shouldReturn` $(mkRelFile "foo.bar")
+  it "adds extension with dot after dot" $
+    $(mkRelFile "foo.") <.> ".bar"
+      `shouldReturn` $(mkRelFile "foo..bar")
+  it "adds extension without dot after dot" $
+    $(mkRelFile "foo.") <.> "bar"
+      `shouldReturn` $(mkRelFile "foo..bar")
+  it "adds extension with separator" $  -- I'm not sure it's okay
+    $(mkRelFile "foo") <.> "evil\\extension"
+      `shouldReturn` $(mkRelFile "foo.evil\\extension")
+  it "adds extension to file inside dotted directory" $
+    $(mkRelFile "foo.bar\\baz") <.> "txt"
+      `shouldReturn` $(mkRelFile "foo.bar\\baz.txt")
+  it "throws InvalidRelFile extension if extenstion ends with \\" $
+    $(mkRelFile "foo") <.> "evil\\"
+      `shouldThrow` (== InvalidRelFile "foo.evil\\")
+  it "throws InvalidAbsFile extension if extenstion ends with \\" $
+    $(mkAbsFile "C:\\home\\cfg") <.> "txt\\"
+      `shouldThrow` (== InvalidAbsFile "C:\\home\\cfg.txt\\")
 
 operationSetFileExtension :: Spec
 operationSetFileExtension = do

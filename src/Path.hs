@@ -140,7 +140,7 @@ data PathException
   | InvalidAbsFile FilePath
   | InvalidRelFile FilePath
   | NotAProperPrefix FilePath FilePath
-  deriving (Show,Typeable)
+  deriving (Show,Eq,Typeable)
 instance Exception PathException
 
 --------------------------------------------------------------------------------
@@ -564,7 +564,6 @@ mkRelFile s =
     Left err -> error (show err)
     Right (Path str) ->
       [|Path $(return (LitE (StringL str))) :: Path Rel File|]
-
 
 --------------------------------------------------------------------------------
 -- Internal functions

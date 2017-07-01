@@ -1,5 +1,6 @@
 0.6.1:
 	* Add 'addFileExtension' function and its operator form: (<.>).
+	* Derive 'Eq' instance for 'PathException'.
 
 0.6.0:
 
