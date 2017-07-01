@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -29,6 +30,7 @@ spec =
      describe "Operations: parent" operationParent
      describe "Operations: filename" operationFilename
      describe "Operations: dirname" operationDirname
+     describe "Operations: addFileExtension" operationAddFileExtension
      describe "Operations: setFileExtension" operationSetFileExtension
      describe "Restrictions" restrictions
      describe "Aeson Instances" aesonInstances
@@ -177,6 +179,36 @@ operationToFilePath =
         (toFilePath $(mkRelDir ".") == "./")
      it "show $(mkRelDir \".\") == \"\\\"./\\\"\""
         (show $(mkRelDir ".") == "\"./\"")
+
+operationAddFileExtension :: Spec
+operationAddFileExtension = do
+  it "adds extension if there is none" $
+    addFileExtension "ext" $(mkAbsFile "/directory/path")
+      `shouldReturn` $(mkAbsFile "/directory/path.ext")
+  it "adds extension if there is already one" $
+    addFileExtension "baz" $(mkRelFile "foo.bar")
+      `shouldReturn` $(mkRelFile "foo.bar.baz")
+  it "adds extension with dot" $
+    addFileExtension ".bar" $(mkRelFile "foo")
+      `shouldReturn` $(mkRelFile "foo.bar")
+  it "adds extension with dot after dot" $
+    $(mkRelFile "foo.") <.> ".bar"
+      `shouldReturn` $(mkRelFile "foo..bar")
+  it "adds extension without after dot" $
+    $(mkRelFile "foo.") <.> "bar"
+      `shouldReturn` $(mkRelFile "foo..bar")
+  it "adds extension with separator" $  -- I'm not sure it's okay
+    $(mkRelFile "foo") <.> "evil/extension"
+      `shouldReturn` $(mkRelFile "foo.evil/extension")
+  it "adds extension to file inside dotted directory" $
+    $(mkRelFile "foo.bar/baz") <.> "txt"
+      `shouldReturn` $(mkRelFile "foo.bar/baz.txt")
+  it "throws InvalidRelFile extension if extenstion ends with /" $
+    $(mkRelFile "foo") <.> "evil/" -- No Eq instance for PathException
+      `shouldThrow` (\case {InvalidRelFile "foo.evil/" -> True; _ -> False})
+  it "throws InvalidAbsFile extension if extenstion ends with /" $
+    $(mkAbsFile "/home/cfg") <.> "txt/" -- No Eq instance for PathException
+      `shouldThrow` (\case {InvalidAbsFile "/home/cfg.txt/" -> True; _ -> False})
 
 operationSetFileExtension :: Spec
 operationSetFileExtension = do

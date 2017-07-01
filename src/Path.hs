@@ -49,6 +49,8 @@ module Path
   ,filename
   ,dirname
   ,fileExtension
+  ,addFileExtension
+  ,(<.>)
   ,setFileExtension
   ,(-<.>)
    -- * Parsing
@@ -329,6 +331,50 @@ dirname (Path l) = Path (last (FilePath.splitPath l))
 -- @since 0.5.11
 fileExtension :: Path b File -> String
 fileExtension = FilePath.takeExtension . toFilePath
+
+-- | Add extension to given file path. Throws if the
+-- resulting filename does not parse.
+--
+-- >>> addFileExtension "txt $(mkRelFile "foo")
+-- "foo.txt"
+-- >>> addFileExtension "symbols" $(mkRelFile "Data.List")
+-- "Data.List.symbols"
+-- >>> addFileExtension ".symbols" $(mkRelFile "Data.List")
+-- "Data.List.symbols"
+-- >>> addFileExtension "symbols" $(mkRelFile "Data.List.")
+-- "Data.List..symbols"
+-- >>> addFileExtension ".symbols" $(mkRelFile "Data.List.")
+-- "Data.List..symbols"
+-- >>> addFileExtension "evil/" $(mkRelFile "Data.List")
+-- *** Exception: InvalidRelFile "Data.List.evil/"
+--
+-- @since 0.6.1
+addFileExtension :: MonadThrow m
+  => String            -- ^ Extension to add
+  -> Path b File       -- ^ Old file name
+  -> m (Path b File)   -- ^ New file name with the desired extension added at the end
+addFileExtension ext (Path path) =
+  if FilePath.isAbsolute path
+    then liftM coercePath (parseAbsFile (FilePath.addExtension path ext))
+    else liftM coercePath (parseRelFile (FilePath.addExtension path ext))
+  where coercePath :: Path a b -> Path a' b'
+        coercePath (Path a) = Path a
+
+-- | A synonym for 'addFileExtension' in the form of an operator.
+-- See more examples there.
+--
+-- >>> $(mkRelFile "Data.List") <.> "symbols"
+-- "Data.List.symbols"
+-- >>> $(mkRelFile "Data.List") <.> "evil/"
+-- *** Exception: InvalidRelFile "Data.List.evil/"
+--
+-- @since 0.6.1
+infixr 7 <.>
+(<.>) :: MonadThrow m
+  => Path b File       -- ^ Old file name
+  -> String            -- ^ Extension to add
+  -> m (Path b File)   -- ^ New file name with the desired extension added at the end
+(<.>) = flip addFileExtension
 
 -- | Replace\/add extension to given file path. Throws if the
 -- resulting filename does not parse.
