@@ -401,7 +401,7 @@ be more convenient.
 ## Accepting user input
 
 Sometimes you have user input that contains `../`. The solution we went with
-is to have a function like `resolveDir`:
+is to have a function like `resolveDir` (found in [`path-io`](http://hackage.haskell.org/package/path-io) package):
 
 ```haskell
 resolveDir :: (MonadIO m, MonadThrow m)
