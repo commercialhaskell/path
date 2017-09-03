@@ -93,9 +93,11 @@ import qualified System.FilePath.PLATFORM_NAME as FilePath
 ---------------------------------------------------------------------
 -- Platform Abstraction Methods (private)
 
+{-
 -- | Is the operating system Unix or Linux like
 isPosix :: Bool
 isPosix = not isWindows
+-}
 
 -- | Is the operating system Windows like
 isWindows :: Bool
