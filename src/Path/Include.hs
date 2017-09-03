@@ -594,10 +594,12 @@ normalizeDir =
       normalizeRelDir p = p
 
 normalizeFilePath :: FilePath -> FilePath
-#if defined(mingw32_HOST_OS) || defined(__MINGW32__) || MIN_VERSION_filepath(1,4,0)
+#if MIN_VERSION_filepath(1,4,0)
 normalizeFilePath = FilePath.normalise
 #else
-normalizeFilePath = normalizeLeadingSeparators . FilePath.normalise
+normalizeFilePath
+  | isWindows = FilePath.normalise
+  | otherwise = normalizeLeadingSeparators . FilePath.normalise
     where
         sep = FilePath.pathSeparator
         normalizeLeadingSeparators (x1:x2:xs) | x1 == sep && x2 == sep
