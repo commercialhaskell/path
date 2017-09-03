@@ -90,19 +90,6 @@ import           Language.Haskell.TH.Quote (QuasiQuoter(..))
 import           Path.Internal
 import qualified System.FilePath.PLATFORM_NAME as FilePath
 
----------------------------------------------------------------------
--- Platform Abstraction Methods (private)
-
-{-
--- | Is the operating system Unix or Linux like
-isPosix :: Bool
-isPosix = not isWindows
--}
-
--- | Is the operating system Windows like
-isWindows :: Bool
-isWindows = IS_WINDOWS
-
 --------------------------------------------------------------------------------
 -- Types
 
@@ -598,7 +585,7 @@ normalizeFilePath :: FilePath -> FilePath
 normalizeFilePath = FilePath.normalise
 #else
 normalizeFilePath
-  | isWindows = FilePath.normalise
+  | IS_WINDOWS = FilePath.normalise
   | otherwise = normalizeLeadingSeparators . FilePath.normalise
     where
         sep = FilePath.pathSeparator
