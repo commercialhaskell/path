@@ -1,8 +1,16 @@
+-- This template expects CPP definitions for:
+--     PLATFORM_NAME = Posix | Windows
+--     IS_WINDOWS    = False | True
+
+
 -- | This library provides a well-typed representation of paths in a filesystem
--- directory tree.  A path is represented by a number of path components
--- separated by a path separator which is a @/@ on POSIX systems and can be a
--- @/@ or @\\@ on Windows.
+-- directory tree.
 --
+-- __Note__: This module is for working with PLATFORM_NAME style paths. Importing
+-- "Path" is usually better.
+--
+-- A path is represented by a number of path components separated by a path
+-- separator which is a @/@ on POSIX systems and can be a @/@ or @\\@ on Windows.
 -- The root of the tree is represented by a @/@ on POSIX and a drive letter
 -- followed by a @/@ or @\\@ on Windows (e.g. @C:\\@).  Paths can be absolute
 -- or relative. An absolute path always starts from the root of the tree (e.g.
@@ -410,7 +418,7 @@ infixr 7 -<.>
 --
 -- * is not an absolute path
 -- * contains a @..@ path component representing the parent directory
--- * is not a valid path (See 'System.FilePath.isValid')
+-- * is not a valid path (See 'FilePath.isValid')
 --
 parseAbsDir :: MonadThrow m
             => FilePath -> m (Path Abs Dir)
@@ -428,7 +436,7 @@ parseAbsDir filepath =
 -- * is not a relative path
 -- * is @""@
 -- * contains a @..@ path component representing the parent directory
--- * is not a valid path (See 'System.FilePath.isValid')
+-- * is not a valid path (See 'FilePath.isValid')
 --
 parseRelDir :: MonadThrow m
             => FilePath -> m (Path Rel Dir)
@@ -451,7 +459,7 @@ parseRelDir filepath =
 --     * is @.@ or ends in @/.@
 --
 -- * contains a @..@ path component representing the parent directory
--- * is not a valid path (See 'System.FilePath.isValid')
+-- * is not a valid path (See 'FilePath.isValid')
 --
 parseAbsFile :: MonadThrow m
              => FilePath -> m (Path Abs File)
@@ -483,7 +491,7 @@ validAbsFile filepath =
 --     * is @.@ or ends in @/.@
 --
 -- * contains a @..@ path component representing the parent directory
--- * is not a valid path (See 'System.FilePath.isValid')
+-- * is not a valid path (See 'FilePath.isValid')
 --
 parseRelFile :: MonadThrow m
              => FilePath -> m (Path Rel File)
