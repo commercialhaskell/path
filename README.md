@@ -260,6 +260,12 @@ Get the filename of a file path:
 filename :: Path b File -> Path Rel File
 ```
 
+Get the base filename (without extension) of a file path:
+
+```haskell
+basename :: Path b File -> Path Rel File
+```
+
 Get the directory name of a directory path:
 
 ```haskell

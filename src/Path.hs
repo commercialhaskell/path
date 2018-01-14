@@ -11,12 +11,12 @@
 -- we represent the notion of a relative root by "@.@". The relative root denotes
 -- the directory which contains the first component of a relative path.
 
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE PatternGuards #-}
+{-# LANGUAGE CPP                #-}
 {-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE EmptyDataDecls #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE EmptyDataDecls     #-}
+{-# LANGUAGE FlexibleInstances  #-}
+{-# LANGUAGE PatternGuards      #-}
+{-# LANGUAGE TemplateHaskell    #-}
 
 module Path
   (-- * Types
@@ -47,6 +47,7 @@ module Path
   ,isProperPrefixOf
   ,parent
   ,filename
+  ,basename
   ,dirname
   ,fileExtension
   ,addFileExtension
@@ -77,18 +78,18 @@ module Path
   )
   where
 
-import           Control.Exception (Exception)
+import           Control.Exception         (Exception)
 import           Control.Monad
-import           Control.Monad.Catch (MonadThrow(..))
-import           Data.Aeson (FromJSON (..))
-import qualified Data.Aeson.Types as Aeson
+import           Control.Monad.Catch       (MonadThrow (..))
+import           Data.Aeson                (FromJSON (..))
+import qualified Data.Aeson.Types          as Aeson
 import           Data.Data
 import           Data.List
 import           Data.Maybe
 import           Language.Haskell.TH
-import           Language.Haskell.TH.Quote (QuasiQuoter(..))
+import           Language.Haskell.TH.Quote (QuasiQuoter (..))
 import           Path.Internal
-import qualified System.FilePath as FilePath
+import qualified System.FilePath           as FilePath
 
 --------------------------------------------------------------------------------
 -- Types
@@ -128,7 +129,7 @@ parseJSONWith f x =
   do fp <- parseJSON x
      case f fp of
        Right p -> return p
-       Left e -> fail (show e)
+       Left e  -> fail (show e)
 {-# INLINE parseJSONWith #-}
 
 -- | Exceptions that can occur during path operations.
@@ -313,6 +314,16 @@ filename :: Path b File -> Path Rel File
 filename (Path l) =
   Path (FilePath.takeFileName l)
 
+-- | Extract the base file part of a path, i.e. file name without an extension.
+--
+-- The following properties hold:
+--
+-- @basename (p \<\/> a) == basename a@
+--
+basename :: Path b File -> Path Rel File
+basename (Path l) =
+  Path (FilePath.takeBaseName l)
+
 -- | Extract the last directory name of a path.
 --
 -- The following properties hold:
@@ -323,8 +334,8 @@ filename (Path l) =
 --
 dirname :: Path b Dir -> Path Rel Dir
 dirname (Path "") = Path ""
-dirname (Path l) | FilePath.isDrive l = Path ""
-dirname (Path l) = Path (last (FilePath.splitPath l))
+dirname (Path l)  | FilePath.isDrive l = Path ""
+dirname (Path l)  = Path (last (FilePath.splitPath l))
 
 -- | Get extension from given file path.
 --

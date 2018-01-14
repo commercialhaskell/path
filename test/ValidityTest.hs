@@ -1,22 +1,22 @@
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell     #-}
 
 -- | Test suite.
 
 module Main where
 
-import Control.Applicative
-import Control.Monad
-import Data.Aeson
+import           Control.Applicative
+import           Control.Monad
+import           Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as LBS
-import Data.Maybe
-import Path
-import Path.Internal
-import Test.Hspec
-import Test.QuickCheck
-import Test.Validity.Property
+import           Data.Maybe
+import           Path
+import           Path.Internal
+import           Test.Hspec
+import           Test.QuickCheck
+import           Test.Validity.Property
 
-import Path.Gen
+import           Path.Gen
 
 -- | Test suite entry point, returns exit failure if any test fails.
 main :: IO ()
@@ -34,6 +34,7 @@ spec = parallel $ do
      describe "Operations: isProperPrefixOf" operationIsParentOf
      describe "Operations: parent" operationParent
      describe "Operations: filename" operationFilename
+     describe "Operations: basename" operationBasename
 
 -- | The 'filename' operation.
 operationFilename :: Spec
@@ -53,6 +54,25 @@ operationFilename = do
 
      it "produces a valid path on when passed a valid relative path" $ do
         producesValidsOnValids (filename :: Path Rel File -> Path Rel File)
+
+-- | The 'basename' operation.
+operationBasename :: Spec
+operationBasename = do
+     it "basename ($(mkAbsDir parent) </> $(mkRelFile filename)) == basename $(mkRelFile filename)" $
+         forAllShrink genValid shrinkValidAbsDir $ \parent ->
+             forAllShrink genValid shrinkValidRelFile $ \file ->
+                 basename (parent </> file) `shouldBe` basename file
+
+     it "basename ($(mkRelDir parent) </> $(mkRelFile filename)) == basename $(mkRelFile filename)" $
+         forAllShrink genValid shrinkValidRelDir $ \parent ->
+             forAllShrink genValid shrinkValidRelFile $ \file ->
+                 basename (parent </> file) `shouldBe` basename file
+
+     it "produces a valid path on when passed a valid absolute path" $ do
+        producesValidsOnValids (basename :: Path Abs File -> Path Rel File)
+
+     it "produces a valid path on when passed a valid relative path" $ do
+        producesValidsOnValids (basename :: Path Rel File -> Path Rel File)
 
 -- | The 'parent' operation.
 operationParent :: Spec

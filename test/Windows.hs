@@ -29,6 +29,7 @@ spec =
      describe "Operations: isProperPrefixOf" operationIsProperPrefixOf
      describe "Operations: parent" operationParent
      describe "Operations: filename" operationFilename
+     describe "Operations: basename" operationBasename
      describe "Operations: dirname" operationDirname
      describe "Operations: addFileExtension" operationAddFileExtension
      describe "Operations: setFileExtension" operationSetFileExtension
@@ -86,6 +87,19 @@ operationFilename =
              (filename ($(mkRelDir "home\\chris\\") </>
                                 $(mkRelFile "bar.txt")) ==
                                          filename $(mkRelFile "bar.txt"))
+
+-- | The 'filename' operation.
+operationBasename :: Spec
+operationBasename =
+  do it "basename ($(mkAbsDir parent) </> $(mkRelFile filename)) == basename $(mkRelFile filename) (unit test)"
+          (basename ($(mkAbsDir "C:\\chris\\") </>
+                             $(mkRelFile "bar.txt")) ==
+                                      basename $(mkRelFile "bar.txt"))
+
+     it "basename ($(mkRelDir parent) </> $(mkRelFile filename)) == basename $(mkRelFile filename) (unit test)"
+             (basename ($(mkRelDir "home\\chris\\") </>
+                                $(mkRelFile "bar.txt")) ==
+                                         basename $(mkRelFile "bar.txt"))
 
 -- | The 'parent' operation.
 operationParent :: Spec
