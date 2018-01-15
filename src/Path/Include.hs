@@ -55,7 +55,7 @@ module Path.PLATFORM_NAME
   ,isProperPrefixOf
   ,parent
   ,filename
-  ,basename
+  ,dropExtension
   ,dirname
   ,fileExtension
   ,addFileExtension
@@ -326,10 +326,10 @@ filename (Path l) =
 --
 -- The following properties hold:
 --
--- @basename (p \<\/> a) == basename a@
+-- @dropExtension (p \<\/> a) == dropExtension a@
 --
-basename :: Path b File -> Path Rel File
-basename (Path l) =
+dropExtension :: Path b File -> Path Rel File
+dropExtension (Path l) =
   Path (FilePath.takeBaseName l)
 
 -- | Extract the last directory name of a path.

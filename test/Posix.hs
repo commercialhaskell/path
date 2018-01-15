@@ -29,7 +29,7 @@ spec =
      describe "Operations: isProperPrefixOf" operationIsProperPrefixOf
      describe "Operations: parent" operationParent
      describe "Operations: filename" operationFilename
-     describe "Operations: basename" operationBasename
+     describe "Operations: dropExtension" operationDropExtension
      describe "Operations: dirname" operationDirname
      describe "Operations: addFileExtension" operationAddFileExtension
      describe "Operations: setFileExtension" operationSetFileExtension
@@ -91,21 +91,21 @@ operationFilename =
                                 $(mkRelFile "bar.txt")) ==
                                          filename $(mkRelFile "bar.txt"))
 
--- | The 'basename' operation.
-operationBasename :: Spec
-operationBasename =
-  do it "basename ($(mkAbsDir parent) </> $(mkRelFile filename)) == basename $(mkRelFile filename) (unit test)"
-          (basename ($(mkAbsDir "/home/chris/") </>
+-- | The 'dropExtension' operation.
+operationDropExtension :: Spec
+operationDropExtension =
+  do it "dropExtension ($(mkAbsDir parent) </> $(mkRelFile filename)) == dropExtension $(mkRelFile filename) (unit test)"
+          (dropExtension ($(mkAbsDir "/home/chris/") </>
                              $(mkRelFile "bar.txt")) ==
-                                      basename $(mkRelFile "bar.txt"))
+                                      dropExtension $(mkRelFile "bar.txt"))
 
-     it "basename ($(mkRelDir parent) </> $(mkRelFile filename)) == basename $(mkRelFile filename) (unit test)"
-             (basename ($(mkRelDir "home/chris/") </>
+     it "dropExtension ($(mkRelDir parent) </> $(mkRelFile filename)) == dropExtension $(mkRelFile filename) (unit test)"
+             (dropExtension ($(mkRelDir "home/chris/") </>
                                 $(mkRelFile "bar.txt")) ==
-                                         basename $(mkRelFile "bar.txt"))
+                                         dropExtension $(mkRelFile "bar.txt"))
 
-     it "basename ('bar.txt.jpg') == 'bar.txt' (unit test)"
-             (basename ($(mkRelFile "bar.txt.jpg")) == $(mkRelFile "bar.txt"))
+     it "dropExtension ('bar.txt.jpg') == 'bar.txt' (unit test)"
+             (dropExtension ($(mkRelFile "bar.txt.jpg")) == $(mkRelFile "bar.txt"))
 
 -- | The 'parent' operation.
 operationParent :: Spec

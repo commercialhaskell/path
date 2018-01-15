@@ -1,5 +1,5 @@
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell     #-}
 
 -- | Test suite.
 
@@ -34,7 +34,7 @@ spec = parallel $ do
      describe "Operations: isProperPrefixOf" operationIsParentOf
      describe "Operations: parent" operationParent
      describe "Operations: filename" operationFilename
-     describe "Operations: basename" operationBasename
+     describe "Operations: dropExtension" operationDropExtension
 
 -- | The 'filename' operation.
 operationFilename :: Spec
@@ -55,24 +55,24 @@ operationFilename = do
      it "produces a valid path on when passed a valid relative path" $ do
         producesValidsOnValids (filename :: Path Rel File -> Path Rel File)
 
--- | The 'basename' operation.
-operationBasename :: Spec
-operationBasename = do
-     it "basename ($(mkAbsDir parent) </> $(mkRelFile filename)) == basename $(mkRelFile filename)" $
+-- | The 'dropExtension' operation.
+operationDropExtension :: Spec
+operationDropExtension = do
+     it "dropExtension ($(mkAbsDir parent) </> $(mkRelFile filename)) == dropExtension $(mkRelFile filename)" $
          forAllShrink genValid shrinkValidAbsDir $ \parent ->
              forAllShrink genValid shrinkValidRelFile $ \file ->
-                 basename (parent </> file) `shouldBe` basename file
+                 dropExtension (parent </> file) `shouldBe` dropExtension file
 
-     it "basename ($(mkRelDir parent) </> $(mkRelFile filename)) == basename $(mkRelFile filename)" $
+     it "dropExtension ($(mkRelDir parent) </> $(mkRelFile filename)) == dropExtension $(mkRelFile filename)" $
          forAllShrink genValid shrinkValidRelDir $ \parent ->
              forAllShrink genValid shrinkValidRelFile $ \file ->
-                 basename (parent </> file) `shouldBe` basename file
+                 dropExtension (parent </> file) `shouldBe` dropExtension file
 
      it "produces a valid path on when passed a valid absolute path" $ do
-        producesValidsOnValids (basename :: Path Abs File -> Path Rel File)
+        producesValidsOnValids (dropExtension :: Path Abs File -> Path Rel File)
 
      it "produces a valid path on when passed a valid relative path" $ do
-        producesValidsOnValids (basename :: Path Rel File -> Path Rel File)
+        producesValidsOnValids (dropExtension :: Path Rel File -> Path Rel File)
 
 -- | The 'parent' operation.
 operationParent :: Spec

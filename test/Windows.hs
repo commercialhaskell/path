@@ -29,7 +29,7 @@ spec =
      describe "Operations: isProperPrefixOf" operationIsProperPrefixOf
      describe "Operations: parent" operationParent
      describe "Operations: filename" operationFilename
-     describe "Operations: basename" operationBasename
+     describe "Operations: dropExtension" operationDropExtension
      describe "Operations: dirname" operationDirname
      describe "Operations: addFileExtension" operationAddFileExtension
      describe "Operations: setFileExtension" operationSetFileExtension
@@ -89,17 +89,17 @@ operationFilename =
                                          filename $(mkRelFile "bar.txt"))
 
 -- | The 'filename' operation.
-operationBasename :: Spec
-operationBasename =
-  do it "basename ($(mkAbsDir parent) </> $(mkRelFile filename)) == basename $(mkRelFile filename) (unit test)"
-          (basename ($(mkAbsDir "C:\\chris\\") </>
+operationDropExtension :: Spec
+operationDropExtension =
+  do it "dropExtension ($(mkAbsDir parent) </> $(mkRelFile filename)) == dropExtension $(mkRelFile filename) (unit test)"
+          (dropExtension ($(mkAbsDir "C:\\chris\\") </>
                              $(mkRelFile "bar.txt")) ==
-                                      basename $(mkRelFile "bar.txt"))
+                                      dropExtension $(mkRelFile "bar.txt"))
 
-     it "basename ($(mkRelDir parent) </> $(mkRelFile filename)) == basename $(mkRelFile filename) (unit test)"
-             (basename ($(mkRelDir "home\\chris\\") </>
+     it "dropExtension ($(mkRelDir parent) </> $(mkRelFile filename)) == dropExtension $(mkRelFile filename) (unit test)"
+             (dropExtension ($(mkRelDir "home\\chris\\") </>
                                 $(mkRelFile "bar.txt")) ==
-                                         basename $(mkRelFile "bar.txt"))
+                                         dropExtension $(mkRelFile "bar.txt"))
 
 -- | The 'parent' operation.
 operationParent :: Spec
