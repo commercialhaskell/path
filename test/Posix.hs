@@ -1,20 +1,20 @@
-{-# LANGUAGE LambdaCase          #-}
-{-# LANGUAGE QuasiQuotes         #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 -- | Test suite.
 
 module Posix (spec) where
 
-import           Control.Applicative
-import           Control.Monad
-import           Data.Aeson
+import Control.Applicative
+import Control.Monad
+import Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as LBS
-import           Data.Maybe
-import           Path
-import           Path.Internal
-import           Test.Hspec
+import Data.Maybe
+import Path
+import Path.Internal
+import Test.Hspec
 
 -- | Test suite (Posix version).
 spec :: Spec
@@ -330,13 +330,13 @@ parserTest :: (Show a1,Show a,Eq a1)
 parserTest parser input expected =
   it ((case expected of
          Nothing -> "Failing: "
-         Just{}  -> "Succeeding: ") ++
+         Just{} -> "Succeeding: ") ++
       "Parsing " ++
       show input ++
       " " ++
       case expected of
         Nothing -> "should fail."
-        Just x  -> "should succeed with: " ++ show x)
+        Just x -> "should succeed with: " ++ show x)
      (actual `shouldBe` expected)
   where actual = parser input
 

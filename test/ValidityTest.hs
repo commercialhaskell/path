@@ -1,22 +1,22 @@
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell     #-}
 
 -- | Test suite.
 
 module Main where
 
-import           Control.Applicative
-import           Control.Monad
-import           Data.Aeson
+import Control.Applicative
+import Control.Monad
+import Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as LBS
-import           Data.Maybe
-import           Path
-import           Path.Internal
-import           Test.Hspec
-import           Test.QuickCheck
-import           Test.Validity.Property
+import Data.Maybe
+import Path
+import Path.Internal
+import Test.Hspec
+import Test.QuickCheck
+import Test.Validity.Property
 
-import           Path.Gen
+import Path.Gen
 
 -- | Test suite entry point, returns exit failure if any test fails.
 main :: IO ()
