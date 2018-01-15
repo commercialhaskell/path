@@ -9,14 +9,19 @@ maintainer:          Chris Done <chrisdone@fpcomplete.com>
 copyright:           2015–2017 FP Complete
 category:            System, Filesystem
 build-type:          Simple
-cabal-version:       >=1.10
-tested-with:         GHC==7.8.4, GHC==7.10.3, GHC==8.0.2, GHC==8.2.1
-extra-source-files:  README.md, CHANGELOG
+cabal-version:       >=1.18
+tested-with:         GHC==7.8.4, GHC==7.10.3, GHC==8.0.2, GHC==8.2.2
+extra-source-files:  README.md
+                   , CHANGELOG
+                   , src/Path/Include.hs
 
 library
   hs-source-dirs:    src
   ghc-options:       -Wall -O2
-  exposed-modules:   Path, Path.Internal
+  exposed-modules:   Path
+                   , Path.Internal
+                   , Path.Posix
+                   , Path.Windows
   build-depends:     aeson
                    , base       >= 4.7     && < 5
                    , deepseq
