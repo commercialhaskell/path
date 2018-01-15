@@ -101,9 +101,6 @@ operationBasename =
                                 $(mkRelFile "bar.txt")) ==
                                          basename $(mkRelFile "bar.txt"))
 
-     it "basename ('bar.txt.jpg') == 'bar.txt' (unit test)"
-             (basename ($(mkRelFile "bar.txt.jpg")) == $(mkRelFile "bar.txt"))
-
 -- | The 'parent' operation.
 operationParent :: Spec
 operationParent =
