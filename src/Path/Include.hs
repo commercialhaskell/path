@@ -100,6 +100,10 @@ import           Language.Haskell.TH.Quote (QuasiQuoter(..))
 import           Path.Internal
 import qualified System.FilePath.PLATFORM_NAME as FilePath
 
+-- Setup code for doctest.
+-- $setup
+-- >>> :set -XTemplateHaskell
+
 --------------------------------------------------------------------------------
 -- Types
 
