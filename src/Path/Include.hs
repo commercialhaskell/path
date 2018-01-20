@@ -343,7 +343,7 @@ fileExtension = FilePath.takeExtension . toFilePath
 -- | Add extension to given file path. Throws if the
 -- resulting filename does not parse.
 --
--- >>> addFileExtension "txt $(mkRelFile "foo")
+-- >>> addFileExtension "txt" $(mkRelFile "foo")
 -- "foo.txt"
 -- >>> addFileExtension "symbols" $(mkRelFile "Data.List")
 -- "Data.List.symbols"
