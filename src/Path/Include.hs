@@ -91,8 +91,10 @@ import           Control.Monad.Catch (MonadThrow(..))
 import           Data.Aeson (FromJSON (..))
 import qualified Data.Aeson.Types as Aeson
 import           Data.Data
+import           Data.Functor.Identity
 import           Data.List
 import           Data.Maybe
+import qualified Data.Traversable
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Quote (QuasiQuoter(..))
 import           Path.Internal
@@ -361,12 +363,8 @@ addFileExtension :: MonadThrow m
   => String            -- ^ Extension to add
   -> Path b File       -- ^ Old file name
   -> m (Path b File)   -- ^ New file name with the desired extension added at the end
-addFileExtension ext (Path path) =
-  if FilePath.isAbsolute path
-    then liftM coercePath (parseAbsFile (FilePath.addExtension path ext))
-    else liftM coercePath (parseRelFile (FilePath.addExtension path ext))
-  where coercePath :: Path a b -> Path a' b'
-        coercePath (Path a) = Path a
+addFileExtension ext =
+  liftM runIdentity . liftFilePathFunc (Identity . (`FilePath.addExtension` ext))
 
 -- | A synonym for 'addFileExtension' in the form of an operator.
 -- See more examples there.
@@ -392,12 +390,8 @@ setFileExtension :: MonadThrow m
   => String            -- ^ Extension to set
   -> Path b File       -- ^ Old file name
   -> m (Path b File)   -- ^ New file name with the desired extension
-setFileExtension ext (Path path) =
-  if FilePath.isAbsolute path
-    then liftM coercePath (parseAbsFile (FilePath.replaceExtension path ext))
-    else liftM coercePath (parseRelFile (FilePath.replaceExtension path ext))
-  where coercePath :: Path a b -> Path a' b'
-        coercePath (Path a) = Path a
+setFileExtension ext =
+  liftM runIdentity . liftFilePathFunc (Identity . (`FilePath.replaceExtension` ext))
 
 -- | A synonym for 'setFileExtension' in the form of an operator.
 --
@@ -408,6 +402,19 @@ infixr 7 -<.>
   -> String            -- ^ Extension to set
   -> m (Path b File)   -- ^ New file name with the desired extension
 (-<.>) = flip setFileExtension
+
+liftFilePathFunc
+  :: (MonadThrow m, Data.Traversable.Traversable f)
+  => (FilePath -> f FilePath)
+  -> Path a File
+  -> m (f (Path a File))
+liftFilePathFunc f = \(Path path) ->
+  if FilePath.isAbsolute path
+  then Data.Traversable.mapM (liftM coercePath . parseAbsFile) $ f path
+  else Data.Traversable.mapM (liftM coercePath . parseRelFile) $ f path
+  where
+    coercePath :: Path x File -> Path x' File
+    coercePath (Path x) = Path x
 
 --------------------------------------------------------------------------------
 -- Parsers
