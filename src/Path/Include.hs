@@ -61,6 +61,7 @@ module Path.PLATFORM_NAME
   ,(<.>)
   ,setFileExtension
   ,(-<.>)
+  ,stripFileExtension
    -- * Parsing
   ,parseAbsDir
   ,parseRelDir
@@ -406,6 +407,48 @@ infixr 7 -<.>
   -> String            -- ^ Extension to set
   -> m (Path b File)   -- ^ New file name with the desired extension
 (-<.>) = flip setFileExtension
+
+-- | Tries to remove specific extension from given file path. Throws if the
+-- resulting filename does not parse.
+--
+-- >>> stripFileExtension "txt" $(mkRelFile "foo")
+-- Nothing
+-- >>> stripFileExtension "baz" $(mkRelFile "foo.bar.baz")
+-- Just "foo.bar"
+-- >>> stripFileExtension ".baz" $(mkRelFile "foo.bar.baz")
+-- Just "foo.bar"
+-- >>> stripFileExtension "bar.baz" $(mkRelFile "foo.bar.baz")
+-- Just "foo"
+-- >>> stripFileExtension ".bar.baz" $(mkRelFile "foo.bar.baz")
+-- Just "foo"
+-- >>> stripFileExtension "foo.bar.baz" $(mkRelFile ".foo.bar.baz")
+-- *** Exception: InvalidRelFile ""
+--
+-- @since 0.6.2
+stripFileExtension
+  :: MonadThrow m
+  => String                  -- ^ Extension to strip
+  -> Path b File             -- ^ Old file name
+  -> m (Maybe (Path b File)) -- ^ New file name without extension
+stripFileExtension ext =
+#if MIN_VERSION_filepath(1,4,1)
+  liftFilePathFunc (FilePath.stripExtension ext)
+#else
+  liftFilePathFunc stripExt
+  where
+    stripExt :: FilePath -> Maybe FilePath
+    stripExt =
+      case ext of
+        []  -> Just
+        c:_ -> stripSuffix dotExt
+          where
+            dotExt
+              | FilePath.isExtSeparator c = ext
+              | otherwise                 = FilePath.extSeparator : ext
+    stripSuffix :: Eq a => [a] -> [a] -> Maybe [a]
+    stripSuffix xs ys =
+      fmap reverse $ stripPrefix (reverse xs) (reverse ys)
+#endif
 
 liftFilePathFunc
   :: (MonadThrow m, Data.Traversable.Traversable f)
