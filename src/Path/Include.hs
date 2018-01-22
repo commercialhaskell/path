@@ -61,6 +61,7 @@ module Path.PLATFORM_NAME
   ,(<.>)
   ,setFileExtension
   ,(-<.>)
+  ,stripFileExtension
    -- * Parsing
   ,parseAbsDir
   ,parseRelDir
@@ -91,12 +92,18 @@ import           Control.Monad.Catch (MonadThrow(..))
 import           Data.Aeson (FromJSON (..))
 import qualified Data.Aeson.Types as Aeson
 import           Data.Data
+import           Data.Functor.Identity
 import           Data.List
 import           Data.Maybe
+import qualified Data.Traversable
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Quote (QuasiQuoter(..))
 import           Path.Internal
 import qualified System.FilePath.PLATFORM_NAME as FilePath
+
+-- Setup code for doctest.
+-- $setup
+-- >>> :set -XTemplateHaskell
 
 --------------------------------------------------------------------------------
 -- Types
@@ -343,7 +350,7 @@ fileExtension = FilePath.takeExtension . toFilePath
 -- | Add extension to given file path. Throws if the
 -- resulting filename does not parse.
 --
--- >>> addFileExtension "txt $(mkRelFile "foo")
+-- >>> addFileExtension "txt" $(mkRelFile "foo")
 -- "foo.txt"
 -- >>> addFileExtension "symbols" $(mkRelFile "Data.List")
 -- "Data.List.symbols"
@@ -361,12 +368,8 @@ addFileExtension :: MonadThrow m
   => String            -- ^ Extension to add
   -> Path b File       -- ^ Old file name
   -> m (Path b File)   -- ^ New file name with the desired extension added at the end
-addFileExtension ext (Path path) =
-  if FilePath.isAbsolute path
-    then liftM coercePath (parseAbsFile (FilePath.addExtension path ext))
-    else liftM coercePath (parseRelFile (FilePath.addExtension path ext))
-  where coercePath :: Path a b -> Path a' b'
-        coercePath (Path a) = Path a
+addFileExtension ext =
+  liftM runIdentity . liftFilePathFunc (Identity . (`FilePath.addExtension` ext))
 
 -- | A synonym for 'addFileExtension' in the form of an operator.
 -- See more examples there.
@@ -392,12 +395,8 @@ setFileExtension :: MonadThrow m
   => String            -- ^ Extension to set
   -> Path b File       -- ^ Old file name
   -> m (Path b File)   -- ^ New file name with the desired extension
-setFileExtension ext (Path path) =
-  if FilePath.isAbsolute path
-    then liftM coercePath (parseAbsFile (FilePath.replaceExtension path ext))
-    else liftM coercePath (parseRelFile (FilePath.replaceExtension path ext))
-  where coercePath :: Path a b -> Path a' b'
-        coercePath (Path a) = Path a
+setFileExtension ext =
+  liftM runIdentity . liftFilePathFunc (Identity . (`FilePath.replaceExtension` ext))
 
 -- | A synonym for 'setFileExtension' in the form of an operator.
 --
@@ -408,6 +407,61 @@ infixr 7 -<.>
   -> String            -- ^ Extension to set
   -> m (Path b File)   -- ^ New file name with the desired extension
 (-<.>) = flip setFileExtension
+
+-- | Tries to remove specific extension from given file path. Throws if the
+-- resulting filename does not parse.
+--
+-- >>> stripFileExtension "txt" $(mkRelFile "foo")
+-- Nothing
+-- >>> stripFileExtension "baz" $(mkRelFile "foo.bar.baz")
+-- Just "foo.bar"
+-- >>> stripFileExtension ".baz" $(mkRelFile "foo.bar.baz")
+-- Just "foo.bar"
+-- >>> stripFileExtension "bar.baz" $(mkRelFile "foo.bar.baz")
+-- Just "foo"
+-- >>> stripFileExtension ".bar.baz" $(mkRelFile "foo.bar.baz")
+-- Just "foo"
+-- >>> stripFileExtension "foo.bar.baz" $(mkRelFile ".foo.bar.baz")
+-- *** Exception: InvalidRelFile ""
+--
+-- @since 0.6.2
+stripFileExtension
+  :: MonadThrow m
+  => String                  -- ^ Extension to strip
+  -> Path b File             -- ^ Old file name
+  -> m (Maybe (Path b File)) -- ^ New file name without extension
+stripFileExtension ext =
+#if MIN_VERSION_filepath(1,4,1)
+  liftFilePathFunc (FilePath.stripExtension ext)
+#else
+  liftFilePathFunc stripExt
+  where
+    stripExt :: FilePath -> Maybe FilePath
+    stripExt =
+      case ext of
+        []  -> Just
+        c:_ -> stripSuffix dotExt
+          where
+            dotExt
+              | FilePath.isExtSeparator c = ext
+              | otherwise                 = FilePath.extSeparator : ext
+    stripSuffix :: Eq a => [a] -> [a] -> Maybe [a]
+    stripSuffix xs ys =
+      fmap reverse $ stripPrefix (reverse xs) (reverse ys)
+#endif
+
+liftFilePathFunc
+  :: (MonadThrow m, Data.Traversable.Traversable f)
+  => (FilePath -> f FilePath)
+  -> Path a File
+  -> m (f (Path a File))
+liftFilePathFunc f = \(Path path) ->
+  if FilePath.isAbsolute path
+  then Data.Traversable.mapM (liftM coercePath . parseAbsFile) $ f path
+  else Data.Traversable.mapM (liftM coercePath . parseRelFile) $ f path
+  where
+    coercePath :: Path x File -> Path x' File
+    coercePath (Path x) = Path x
 
 --------------------------------------------------------------------------------
 -- Parsers

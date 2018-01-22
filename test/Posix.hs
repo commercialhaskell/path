@@ -12,7 +12,7 @@ import Control.Monad
 import Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as LBS
 import Data.Maybe
-import Path
+import Path.Posix
 import Path.Internal
 import Test.Hspec
 
@@ -32,6 +32,7 @@ spec =
      describe "Operations: dirname" operationDirname
      describe "Operations: addFileExtension" operationAddFileExtension
      describe "Operations: setFileExtension" operationSetFileExtension
+     describe "Operations: stripExtension" operationStripExtension
      describe "Restrictions" restrictions
      describe "Aeson Instances" aesonInstances
      describe "QuasiQuotes" quasiquotes
@@ -218,6 +219,21 @@ operationSetFileExtension = do
   it "replaces extension if the input path already has one" $
     setFileExtension "txt" $(mkRelFile "foo.bar")
       `shouldReturn` $(mkRelFile "foo.txt")
+
+operationStripExtension :: Spec
+operationStripExtension = do
+  it "strips extension if there is one" $
+    stripFileExtension "txt" $(mkRelFile "foo.txt")
+      `shouldReturn` Just $(mkRelFile "foo")
+  it "strips extension specified with dot if there is one" $
+    stripFileExtension ".txt" $(mkRelFile "foo.txt")
+      `shouldReturn` Just $(mkRelFile "foo")
+  it "returns Nothing if extension doesn't match" $
+    stripFileExtension "quux" $(mkRelFile "foo.bar.bazz")
+      `shouldReturn` Nothing
+  it "throws exception if resulting file is empty" $
+    stripFileExtension ".bar.bazz" $(mkRelFile ".bar.bazz")
+      `shouldThrow` (== InvalidRelFile "")
 
 -- | Tests for the tokenizer.
 parseAbsDirSpec :: Spec
