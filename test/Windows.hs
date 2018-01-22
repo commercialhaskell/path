@@ -12,8 +12,8 @@ import Control.Monad
 import Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as LBS
 import Data.Maybe
-import Path
 import Path.Internal
+import Path.Windows
 import Test.Hspec
 
 -- | Test suite (Windows version).
