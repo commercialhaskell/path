@@ -1,6 +1,7 @@
 UNRELEASED:
         * Add 'Path.Posix' and 'Path.Windows' modules for manipulating
           Windows or Posix style paths independently of the current platform.
+	* Add 'stripFileExtension' function
 
 0.6.1:
 	* Add 'addFileExtension' function and its operator form: (<.>).
