@@ -26,12 +26,14 @@ validExtensionsSpec ext file fext = do
 extensionOperations :: String -> Spec
 extensionOperations rootDrive = do
     let ext = ".foo"
+    let extensions = ext : [".foo.", ".foo.."]
 
     -- Only filenames and extensions
-    forM_ filenames $ \f -> do
-        let Just file = parseRelFile f
-        let Just fext = parseRelFile (f ++ ext)
-        (validExtensionsSpec ext file fext)
+    forM_ extensions (\x ->
+        forM_ filenames $ \f -> do
+            let Just file = parseRelFile f
+            let Just fext = parseRelFile (f ++ x)
+            (validExtensionsSpec x file fext))
 
     -- Relative dir paths
     forM_ dirnames (\d -> do
@@ -71,6 +73,7 @@ extensionOperations rootDrive = do
         , "."
         , "x"
         , ".."
+        , "..."
         , "xy"
         , "foo"
         , "foo."

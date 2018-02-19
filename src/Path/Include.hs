@@ -355,10 +355,15 @@ splitExtension path@(Path fpath) =
 
     where
 
+    -- trailing separators are ignored for the split and considered part of the
+    -- second component in the split.
     splitLast isSep str =
         let rstr = reverse str
             notSep = not . isSep
-        in (reverse (dropWhile notSep rstr), reverse (takeWhile notSep rstr))
+            name = (dropWhile notSep . dropWhile isSep) rstr
+            trailingSeps = takeWhile isSep rstr
+            xtn  = (takeWhile notSep . dropWhile isSep) rstr
+        in (reverse name, reverse xtn ++ trailingSeps)
 
     (drv, pth)     = FilePath.splitDrive fpath
     (dir, file)    = splitLast FilePath.isPathSeparator pth
@@ -367,6 +372,8 @@ splitExtension path@(Path fpath) =
 -- | Get extension from given file path.
 --
 -- >>> fileExtension $(mkRelFile "name.foo"     ) == ".foo"
+-- >>> fileExtension $(mkRelFile "name.foo."    ) == ".foo."
+-- >>> fileExtension $(mkRelFile "name.foo.."   ) == ".foo.."
 -- >>> fileExtension $(mkRelFile "name.foo.bar" ) == ".bar"
 -- >>> fileExtension $(mkRelFile ".name.foo"    ) == ".foo"
 -- >>> fileExtension $(mkRelFile "name..foo"    ) == ".foo"
@@ -382,14 +389,17 @@ fileExtension = snd . splitExtension
 
 -- | Add extension to given file path.
 --
--- >>> addFileExtension ".foo" $(mkRelFile "name"     ) == "name.foo"
--- >>> addFileExtension ".bar" $(mkRelFile "name.foo" ) == "name.foo.bar"
+-- >>> addFileExtension ".foo"   $(mkRelFile "name"     ) == "name.foo"
+-- >>> addFileExtension ".foo."  $(mkRelFile "name"     ) == "name.foo."
+-- >>> addFileExtension ".foo.." $(mkRelFile "name"     ) == "name.foo.."
+-- >>> addFileExtension ".bar"   $(mkRelFile "name.foo" ) == "name.foo.bar"
 --
 -- Throws an 'InvalidExtension' exception if the extension is not valid. A
 -- valid extension starts with a @.@ followed by one or more characters not
--- including @.@, moreover, it must be a valid filename, notably it cannot
--- include a path separator. Particularly, @.foo.bar@ is an invalid extension,
--- instead you have to first set @.foo@ and then @.bar@ individually.
+-- including @.@ followed by zero or more @.@s in trailing position. Moreover,
+-- an extension must be a valid filename, notably it cannot include path
+-- separators. Particularly, @.foo.bar@ is an invalid extension, instead you
+-- have to first set @.foo@ and then @.bar@ individually.
 --
 -- The following law holds:
 --
@@ -407,14 +417,28 @@ addFileExtension ext (Path path) = do
     where
 
     validateExtension ex@(sep:xs) = do
+        -- has to start with a "."
         when (not $ FilePath.isExtSeparator sep) $
             throwM $ InvalidExtension ex
+
+        -- just a "." is not a valid extension
         when (xs == []) $
             throwM $ InvalidExtension ex
+
+        -- cannot have path separators
         when (any FilePath.isPathSeparator xs) $
             throwM $ InvalidExtension ex
-        when (any FilePath.isExtSeparator xs) $
+
+        -- All "."s is not a valid extension
+        let ys = dropWhile FilePath.isExtSeparator (reverse xs)
+        when (ys == []) $
             throwM $ InvalidExtension ex
+
+        -- Cannot have "."s except in trailing position
+        when (any FilePath.isExtSeparator ys) $
+            throwM $ InvalidExtension ex
+
+        -- must be valid as a filename
         _ <- parseRelFile ex
         return ()
     validateExtension ex = throwM $ InvalidExtension ex
