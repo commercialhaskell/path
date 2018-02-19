@@ -1,7 +1,21 @@
 UNRELEASED:
-        * Add 'Path.Posix' and 'Path.Windows' modules for manipulating
-          Windows or Posix style paths independently of the current platform.
-        * Add 'Lift' instance for 'Path'.
+	* (BREAKING CHANGE)
+		"addFileExtension" and "setFileExtension" now accept only "valid" extension
+		forms and "fileExtension" also returns the same form.  A valid extension
+		starts with a "." followed by one or more characters not including ".".
+		You may have to replace invalid forms of extensions with valid ones.
+		Especially:
+		* "foo" was earlier equivalent to ".foo" but is now invalid
+		* ".foo.bar" is now invalid, instead set ".foo" and ".bar" separately
+		* "..foo" was earlier valid but is now invalid. The extra dots must be part
+		  of the filename and not the extension.
+		This change allows extension operations to be principled following these
+		laws:
+		* (fileExtension . fromJust . addFileExtension ext) f == ext
+		* (flip setFileExtension f . fileExtension) f) == f
+	* Add 'Path.Posix' and 'Path.Windows' modules for manipulating
+		Windows or Posix style paths independently of the current platform.
+	* Add 'Lift' instance for 'Path'.
 
 0.6.1:
 	* Add 'addFileExtension' function and its operator form: (<.>).

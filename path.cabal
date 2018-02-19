@@ -50,6 +50,7 @@ test-suite test
   main-is:           Main.hs
   other-modules:     Posix
                    , Windows
+                   , Common
   hs-source-dirs:    test
   build-depends:     aeson
                    , base       >= 4.7     && < 5
