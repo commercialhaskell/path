@@ -153,6 +153,7 @@ data PathException
   deriving (Show,Eq,Typeable)
 
 instance Exception PathException where
+#if MIN_VERSION_base(4,8,0)
     displayException (InvalidExtension ext) = concat
         [ "Invalid extension ["
         , ext
@@ -161,6 +162,7 @@ instance Exception PathException where
         , "notably it cannot include a path separator."
         ]
     displayException x = show x
+#endif
 
 --------------------------------------------------------------------------------
 -- QuasiQuoters
