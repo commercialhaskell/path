@@ -4,8 +4,8 @@ sudo: false
 
 cache:
   directories:
-    - ~/.ghc
-    - ~/.cabal
+    - ~/.cabal/packages
+    - ~/.cabal/store
     - ~/.stack
 
 addons:
@@ -36,7 +36,7 @@ install:
   - echo "$(ghc --version) [$(ghc --print-project-git-commit-id 2> /dev/null || echo '?')]"
   - mkdir -pv ~/.local/bin
   - case "$TYPE" in
-      cabal) travis_retry cabal update && cabal install --only-dependencies --enable-tests ;;
+      cabal) travis_retry cabal update ;;
       stack) travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack' ;;
     esac
 
@@ -45,11 +45,10 @@ script:
     set -ex # Error out after first failure and print each command before executing
     case "$TYPE" in
       cabal)
-        cabal configure --enable-tests -v2
-        cabal build
-        cabal test --show-details=always
+        cabal new-build --enable-tests --enable-benchmarks
+        cabal new-test
+        cabal new-haddock
         cabal sdist
-        cabal haddock | grep "100%" | wc -l | grep "4"
         ;;
       stack)
         stack --version
