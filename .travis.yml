@@ -45,7 +45,7 @@ script:
     set -ex # Error out after first failure and print each command before executing
     case "$TYPE" in
       cabal)
-        cabal new-build --enable-tests --enable-benchmarks
+        cabal new-build --enable-tests --enable-benchmarks --flags=dev
         cabal new-test
         cabal new-haddock
         cabal sdist
