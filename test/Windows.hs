@@ -275,7 +275,7 @@ parseAbsFileSpec =
      -- succeeding "C:\\\\\\foo\\\\bar\\.\\\\mu.txt" (Path "C:\\foo\\bar\\mu.txt") FIXME
 
   where failing x = parserTest parseAbsFile x Nothing
-        succeeding x with = parserTest parseAbsFile x (Just with)
+        -- succeeding x with = parserTest parseAbsFile x (Just with)
 
 -- | Tests for the tokenizer.
 parseRelFileSpec :: Spec
