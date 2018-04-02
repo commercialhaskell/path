@@ -1,5 +1,5 @@
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell     #-}
 
 -- | Test suite.
 
@@ -34,6 +34,7 @@ spec = parallel $ do
      describe "Operations: isProperPrefixOf" operationIsParentOf
      describe "Operations: parent" operationParent
      describe "Operations: filename" operationFilename
+     describe "Operations: dropExtension" operationDropExtension
 
 -- | The 'filename' operation.
 operationFilename :: Spec
@@ -53,6 +54,25 @@ operationFilename = do
 
      it "produces a valid path on when passed a valid relative path" $ do
         producesValidsOnValids (filename :: Path Rel File -> Path Rel File)
+
+-- | The 'dropExtension' operation.
+operationDropExtension :: Spec
+operationDropExtension = do
+     it "dropExtension ($(mkAbsDir parent) </> $(mkRelFile filename)) == dropExtension $(mkRelFile filename)" $
+         forAllShrink genValid shrinkValidAbsDir $ \parent ->
+             forAllShrink genValid shrinkValidRelFile $ \file ->
+                 dropExtension (parent </> file) `shouldBe` dropExtension file
+
+     it "dropExtension ($(mkRelDir parent) </> $(mkRelFile filename)) == dropExtension $(mkRelFile filename)" $
+         forAllShrink genValid shrinkValidRelDir $ \parent ->
+             forAllShrink genValid shrinkValidRelFile $ \file ->
+                 dropExtension (parent </> file) `shouldBe` dropExtension file
+
+     it "produces a valid path on when passed a valid absolute path" $ do
+        producesValidsOnValids (dropExtension :: Path Abs File -> Path Rel File)
+
+     it "produces a valid path on when passed a valid relative path" $ do
+        producesValidsOnValids (dropExtension :: Path Rel File -> Path Rel File)
 
 -- | The 'parent' operation.
 operationParent :: Spec

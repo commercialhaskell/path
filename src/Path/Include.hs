@@ -55,6 +55,7 @@ module Path.PLATFORM_NAME
   ,isProperPrefixOf
   ,parent
   ,filename
+  ,dropExtension
   ,dirname
   ,fileExtension
   ,addFileExtension
@@ -320,6 +321,16 @@ parent (Path fp) =
 filename :: Path b File -> Path Rel File
 filename (Path l) =
   Path (FilePath.takeFileName l)
+
+-- | Extract the base file part of a path, i.e. file name without an extension.
+--
+-- The following properties hold:
+--
+-- @dropExtension (p \<\/> a) == dropExtension a@
+--
+dropExtension :: Path b File -> Path Rel File
+dropExtension (Path l) =
+  Path (FilePath.takeBaseName l)
 
 -- | Extract the last directory name of a path.
 --
