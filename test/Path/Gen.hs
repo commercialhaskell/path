@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TemplateHaskell #-}
 module Path.Gen where
 
 import           Data.Functor
@@ -9,7 +10,7 @@ import           Path.Internal
 
 import qualified System.FilePath as FilePath
 
-import           Data.Maybe (mapMaybe)
+import           Data.Maybe (mapMaybe, isJust)
 import           Data.List (isInfixOf)
 import           Data.Validity
 import           Data.GenValidity
@@ -71,6 +72,16 @@ instance GenUnchecked (Path Rel Dir) where
 
 instance GenValid (Path Rel Dir)
 
+data Extension = Extension String deriving Show
+
+instance Validity Extension where
+  isValid (Extension ext) = isJust $ addFileExtension ext $(mkRelFile "x")
+
+instance GenUnchecked Extension where
+  genUnchecked = Extension <$> genFilePath
+
+instance GenValid Extension
+
 -- | Generates 'FilePath's with a high occurence of @'.'@, @'\/'@ and
 -- @'\\'@ characters. The resulting 'FilePath's are not guaranteed to
 -- be valid.
@@ -95,3 +106,8 @@ shrinkValidRelDir p = shrinkValidWith parseRelDir p
 
 shrinkValidWith :: (FilePath -> Maybe (Path a b)) -> Path a b -> [Path a b]
 shrinkValidWith fun (Path s) = mapMaybe fun $ shrink s
+
+shrinkValidExtension :: Extension -> [Extension]
+shrinkValidExtension (Extension s) =
+    map (Extension . drop 1 . toFilePath) $
+        mapMaybe (flip addFileExtension $(mkRelFile "x")) (shrink s)

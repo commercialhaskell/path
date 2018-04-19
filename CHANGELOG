@@ -1,15 +1,19 @@
 UNRELEASED:
 	* (BREAKING CHANGE)
+		ADAPTING YOUR CODE TO THIS CHANGE:
+		* Code that sets an extension not starting with a "." e.g.  "foo", must
+		  be changed such that it starts with a "." i.e. ".foo".
+		* Code that sets multiple extensions in one go e.g. ".tar.gz" must be
+		  changed to set them one at a time instead i.e. add ".tar" first and
+		  then add ".gz".
+		* Code that sets an extension starting with multiple dots e.g.
+		  "..foo" must be changed such as to make the extra dots part of the
+		  file name instead.
+		Details:
 		"addFileExtension" and "setFileExtension" now accept only "valid"
 		extension forms and "fileExtension" also returns the same form.  A
 		valid extension starts with a @.@ followed by one or more characters
 		not including @.@ followed by zero or more @.@s in trailing position.
-		You may have to replace invalid forms of extensions with valid ones.
-		Especially:
-		* "foo" was earlier equivalent to ".foo" but is now invalid
-		* ".foo.bar" is now invalid, instead set ".foo" and ".bar" separately
-		* "..foo" was earlier valid but is now invalid. The extra dots must be
-		  part of the filename and not the extension.
 		This change allows extension operations to be principled following
 		these laws:
 		* (fileExtension . fromJust . addFileExtension ext) f == ext
