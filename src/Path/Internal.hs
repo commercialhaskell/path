@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP                #-}
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE TemplateHaskell    #-}
 
 -- | Internal types and functions.
 
@@ -16,6 +17,7 @@ import Data.Aeson (ToJSON (..))
 import Data.Data
 import Data.Hashable
 import Data.List
+import Language.Haskell.TH.Syntax (Exp(..), Lift(..), Lit(..))
 import qualified System.FilePath as FilePath
 
 -- | Path of some base and type.
@@ -103,3 +105,6 @@ hasParentDir filepath' =
         case FilePath.pathSeparator of
             '/' -> filepath'
             x   -> map (\y -> if x == y then '/' else y) filepath'
+
+instance Lift (Path a b) where
+  lift (Path str) = [|Path $(return (LitE (StringL str)))|]

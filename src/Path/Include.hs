@@ -94,6 +94,7 @@ import           Data.Data
 import           Data.List
 import           Data.Maybe
 import           Language.Haskell.TH
+import           Language.Haskell.TH.Syntax (lift)
 import           Language.Haskell.TH.Quote (QuasiQuoter(..))
 import           Path.Internal
 import qualified System.FilePath.PLATFORM_NAME as FilePath
@@ -539,19 +540,11 @@ fromRelFile = toFilePath
 -- may compile on your platform, but it may not compile on another
 -- platform (Windows).
 mkAbsDir :: FilePath -> Q Exp
-mkAbsDir s =
-  case parseAbsDir s of
-    Left err -> error (show err)
-    Right (Path str) ->
-      [|Path $(return (LitE (StringL str))) :: Path Abs Dir|]
+mkAbsDir = either (error . show) lift . parseAbsDir
 
 -- | Make a 'Path' 'Rel' 'Dir'.
 mkRelDir :: FilePath -> Q Exp
-mkRelDir s =
-  case parseRelDir s of
-    Left err -> error (show err)
-    Right (Path str) ->
-      [|Path $(return (LitE (StringL str))) :: Path Rel Dir|]
+mkRelDir = either (error . show) lift . parseRelDir
 
 -- | Make a 'Path' 'Abs' 'File'.
 --
@@ -559,19 +552,11 @@ mkRelDir s =
 -- may compile on your platform, but it may not compile on another
 -- platform (Windows).
 mkAbsFile :: FilePath -> Q Exp
-mkAbsFile s =
-  case parseAbsFile s of
-    Left err -> error (show err)
-    Right (Path str) ->
-      [|Path $(return (LitE (StringL str))) :: Path Abs File|]
+mkAbsFile = either (error . show) lift . parseAbsFile
 
 -- | Make a 'Path' 'Rel' 'File'.
 mkRelFile :: FilePath -> Q Exp
-mkRelFile s =
-  case parseRelFile s of
-    Left err -> error (show err)
-    Right (Path str) ->
-      [|Path $(return (LitE (StringL str))) :: Path Rel File|]
+mkRelFile = either (error . show) lift . parseRelFile
 
 --------------------------------------------------------------------------------
 -- Internal functions
