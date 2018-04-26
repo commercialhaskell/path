@@ -75,7 +75,7 @@ instance GenValid (Path Rel Dir)
 data Extension = Extension String deriving Show
 
 instance Validity Extension where
-  isValid (Extension ext) = isJust $ addFileExtension ext $(mkRelFile "x")
+  isValid (Extension ext) = isJust $ addExtension ext $(mkRelFile "x")
 
 instance GenUnchecked Extension where
   genUnchecked = Extension <$> genFilePath
@@ -110,4 +110,4 @@ shrinkValidWith fun (Path s) = mapMaybe fun $ shrink s
 shrinkValidExtension :: Extension -> [Extension]
 shrinkValidExtension (Extension s) =
     map (Extension . drop 1 . toFilePath) $
-        mapMaybe (flip addFileExtension $(mkRelFile "x")) (shrink s)
+        mapMaybe (flip addExtension $(mkRelFile "x")) (shrink s)

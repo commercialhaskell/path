@@ -14,14 +14,14 @@ validExtensionsSpec ext file fext = do
     let f = show $ toFilePath file
     let fx = show $ toFilePath fext
 
-    it ("addFileExtension " ++ show ext ++ " " ++ f ++ " == " ++ fx) $
-        addFileExtension ext file `shouldReturn` fext
+    it ("addExtension " ++ show ext ++ " " ++ f ++ " == " ++ fx) $
+        addExtension ext file `shouldReturn` fext
 
     it ("fileExtension " ++ fx ++ " == " ++ ext) $
         fileExtension fext `shouldBe` ext
 
-    it ("setFileExtension " ++ show ext ++ " " ++ fx ++ " == " ++ fx) $
-        setFileExtension ext fext `shouldReturn` fext
+    it ("replaceExtension " ++ show ext ++ " " ++ fx ++ " == " ++ fx) $
+        replaceExtension ext fext `shouldReturn` fext
 
 extensionOperations :: String -> Spec
 extensionOperations rootDrive = do
@@ -54,7 +54,8 @@ extensionOperations rootDrive = do
     -- Invalid extensions
     forM_ invalidExtensions $ \x -> do
         it ("throws InvalidExtension when extension is [" ++ x ++ "]")  $
-            $(mkRelFile "name") <.> x `shouldThrow` (== InvalidExtension x)
+            addExtension x $(mkRelFile "name")
+            `shouldThrow` (== InvalidExtension x)
 
     where
 

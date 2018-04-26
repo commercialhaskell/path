@@ -141,34 +141,34 @@ operationAppend = do
 
 extensionsSpec :: Spec
 extensionsSpec = do
-     it "if addFileExtension a b succeeds then parseRelFile b succeeds - 1" $
+     it "if addExtension a b succeeds then parseRelFile b succeeds - 1" $
          forAll genFilePath addExtGensValidFile
      -- skew the generated path towards a valid extension by prefixing a "."
-     it "if addFileExtension a b succeeds then parseRelFile b succeeds - 2" $
+     it "if addExtension a b succeeds then parseRelFile b succeeds - 2" $
          forAll genFilePath $ addExtGensValidFile . ("." ++)
 
-     it "(toFilePath . fromJust . addFileExtension ext) file \
+     it "(toFilePath . fromJust . addExtension ext) file \
         \== toFilePath a ++ b" $
          forAllShrink genValid shrinkValidRelFile $ \file ->
              forAllShrink genValid shrinkValidExtension $ \(Extension ext) ->
-                (toFilePath . fromJust . addFileExtension ext) file
+                (toFilePath . fromJust . addExtension ext) file
                  `shouldBe` toFilePath file ++ ext
 
-     it "(fileExtension . fromJust . addFileExtension ext) f == ext" $
+     it "(fileExtension . fromJust . addExtension ext) f == ext" $
          forAllShrink genValid shrinkValidRelFile $ \file ->
              forAllShrink genValid shrinkValidExtension $ \(Extension ext) ->
-                 (fileExtension . fromJust . addFileExtension ext) file
+                 (fileExtension . fromJust . addExtension ext) file
                  `shouldBe` ext
 
-     it "(flip setFileExtension f . fileExtension) f) == f" $
+     it "(flip replaceExtension f . fileExtension) f) == f" $
          forAllShrink genValid shrinkValidRelFile $ \file ->
             case fileExtension file of
                 "" -> True
-                ext -> setFileExtension ext file == Just file
+                ext -> replaceExtension ext file == Just file
 
     where
         addExtGensValidFile p =
-            case addFileExtension p $(mkRelFile "x") of
+            case addExtension p $(mkRelFile "x") of
                 Nothing -> True
                 Just x ->
                     case parseRelFile p of

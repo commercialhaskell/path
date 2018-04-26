@@ -57,10 +57,8 @@ module Path.PLATFORM_NAME
   ,filename
   ,dirname
   ,fileExtension
-  ,addFileExtension
-  ,(<.>)
-  ,setFileExtension
-  ,(-<.>)
+  ,addExtension
+  ,replaceExtension
    -- * Parsing
   ,parseAbsDir
   ,parseRelDir
@@ -82,11 +80,15 @@ module Path.PLATFORM_NAME
   ,PathParseException
   ,stripDir
   ,isParentOf
+  ,addFileExtension
+  ,(<.>)
+  ,setFileExtension
+  ,(-<.>)
   )
   where
 
 import           Control.Exception (Exception(..))
-import           Control.Monad (when)
+import           Control.Monad (liftM, when)
 import           Control.Monad.Catch (MonadThrow(..))
 import           Data.Aeson (FromJSON (..))
 import qualified Data.Aeson.Types as Aeson
@@ -391,10 +393,10 @@ fileExtension = snd . splitExtension
 
 -- | Add extension to given file path.
 --
--- >>> addFileExtension ".foo"   $(mkRelFile "name"     ) == "name.foo"
--- >>> addFileExtension ".foo."  $(mkRelFile "name"     ) == "name.foo."
--- >>> addFileExtension ".foo.." $(mkRelFile "name"     ) == "name.foo.."
--- >>> addFileExtension ".bar"   $(mkRelFile "name.foo" ) == "name.foo.bar"
+-- >>> addExtension ".foo"   $(mkRelFile "name"     ) == "name.foo"
+-- >>> addExtension ".foo."  $(mkRelFile "name"     ) == "name.foo."
+-- >>> addExtension ".foo.." $(mkRelFile "name"     ) == "name.foo.."
+-- >>> addExtension ".bar"   $(mkRelFile "name.foo" ) == "name.foo.bar"
 --
 -- Throws an 'InvalidExtension' exception if the extension is not valid. A
 -- valid extension starts with a @.@ followed by one or more characters not
@@ -405,14 +407,14 @@ fileExtension = snd . splitExtension
 --
 -- The following law holds:
 --
--- @(fileExtension . fromJust . addFileExtension ext) f == ext@
+-- @(fileExtension . fromJust . addExtension ext) f == ext@
 --
--- @since 0.6.1
-addFileExtension :: MonadThrow m
+-- @since 0.7.0
+addExtension :: MonadThrow m
   => String            -- ^ Extension to add
   -> Path b File       -- ^ Old file name
   -> m (Path b File)   -- ^ New file name with the desired extension added at the end
-addFileExtension ext (Path path) = do
+addExtension ext (Path path) = do
     validateExtension ext
     return $ Path (path ++ ext)
 
@@ -445,10 +447,46 @@ addFileExtension ext (Path path) = do
         return ()
     validateExtension ex = throwM $ InvalidExtension ex
 
+-- | Add extension to given file path. Throws if the
+-- resulting filename does not parse.
+--
+-- >>> addFileExtension "txt $(mkRelFile "foo")
+-- "foo.txt"
+-- >>> addFileExtension "symbols" $(mkRelFile "Data.List")
+-- "Data.List.symbols"
+-- >>> addFileExtension ".symbols" $(mkRelFile "Data.List")
+-- "Data.List.symbols"
+-- >>> addFileExtension "symbols" $(mkRelFile "Data.List.")
+-- "Data.List..symbols"
+-- >>> addFileExtension ".symbols" $(mkRelFile "Data.List.")
+-- "Data.List..symbols"
+-- >>> addFileExtension "evil/" $(mkRelFile "Data.List")
+-- *** Exception: InvalidRelFile "Data.List.evil/"
+--
+-- @since 0.6.1
+{-# DEPRECATED addFileExtension "Please use addExtension instead." #-}
+addFileExtension :: MonadThrow m
+  => String            -- ^ Extension to add
+  -> Path b File       -- ^ Old file name
+  -> m (Path b File)   -- ^ New file name with the desired extension added at the end
+addFileExtension ext (Path path) =
+  if FilePath.isAbsolute path
+    then liftM coercePath (parseAbsFile (FilePath.addExtension path ext))
+    else liftM coercePath (parseRelFile (FilePath.addExtension path ext))
+  where coercePath :: Path a b -> Path a' b'
+        coercePath (Path a) = Path a
+
 -- | A synonym for 'addFileExtension' in the form of an infix operator.
+-- See more examples there.
+--
+-- >>> $(mkRelFile "Data.List") <.> "symbols"
+-- "Data.List.symbols"
+-- >>> $(mkRelFile "Data.List") <.> "evil/"
+-- *** Exception: InvalidRelFile "Data.List.evil/"
 --
 -- @since 0.6.1
 infixr 7 <.>
+{-# DEPRECATED (<.>) "Please use addExtension instead." #-}
 (<.>) :: MonadThrow m
   => Path b File       -- ^ Old file name
   -> String            -- ^ Extension to add
@@ -463,19 +501,36 @@ infixr 7 <.>
 --
 -- @(flip setFileExtension f . fileExtension) f) == f@
 --
+-- @since 0.7.0
+replaceExtension :: MonadThrow m
+  => String            -- ^ Extension to set
+  -> Path b File       -- ^ Old file name
+  -> m (Path b File)   -- ^ New file name with the desired extension
+replaceExtension ext path =
+    let (name, _) = splitExtension path
+    in addExtension ext name
+
+-- | Replace\/add extension to given file path. Throws if the
+-- resulting filename does not parse.
+--
 -- @since 0.5.11
+{-# DEPRECATED setFileExtension "Please use replaceExtension instead." #-}
 setFileExtension :: MonadThrow m
   => String            -- ^ Extension to set
   -> Path b File       -- ^ Old file name
   -> m (Path b File)   -- ^ New file name with the desired extension
-setFileExtension ext path =
-    let (name, _) = splitExtension path
-    in addFileExtension ext name
+setFileExtension ext (Path path) =
+  if FilePath.isAbsolute path
+    then liftM coercePath (parseAbsFile (FilePath.replaceExtension path ext))
+    else liftM coercePath (parseRelFile (FilePath.replaceExtension path ext))
+  where coercePath :: Path a b -> Path a' b'
+        coercePath (Path a) = Path a
 
 -- | A synonym for 'setFileExtension' in the form of an operator.
 --
 -- @since 0.6.0
 infixr 7 -<.>
+{-# DEPRECATED (-<.>) "Please use replaceExtension instead." #-}
 (-<.>) :: MonadThrow m
   => Path b File       -- ^ Old file name
   -> String            -- ^ Extension to set
