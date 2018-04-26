@@ -18,7 +18,7 @@ validExtensionsSpec ext file fext = do
         addExtension ext file `shouldReturn` fext
 
     it ("fileExtension " ++ fx ++ " == " ++ ext) $
-        fileExtension fext `shouldBe` ext
+        fileExtension fext `shouldReturn` ext
 
     it ("replaceExtension " ++ show ext ++ " " ++ fx ++ " == " ++ fx) $
         replaceExtension ext fext `shouldReturn` fext

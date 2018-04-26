@@ -59,6 +59,7 @@ module Path.PLATFORM_NAME
   ,fileExtension
   ,addExtension
   ,replaceExtension
+  ,splitExtension
    -- * Parsing
   ,parseAbsDir
   ,parseRelDir
@@ -151,6 +152,7 @@ data PathException
   | InvalidAbsFile FilePath
   | InvalidRelFile FilePath
   | NotAProperPrefix FilePath FilePath
+  | HasNoExtension FilePath
   | InvalidExtension String
   deriving (Show,Eq,Typeable)
 
@@ -349,13 +351,22 @@ dirname (Path "") = Path ""
 dirname (Path l) | FilePath.isDrive l = Path ""
 dirname (Path l) = Path (last (FilePath.splitPath l))
 
--- | Split the given file path into a filename and an extension. If the
--- filename has no extension it returns "" as extension.
-splitExtension :: Path b File -> (Path b File, String)
-splitExtension path@(Path fpath) =
+-- | Split the given file path into a filename and an extension.  Throws
+-- 'HasNoExtension' exception if the filename does not have an extension.
+-- 'splitExtension' and 'addExtension' are inverses of each other, the
+-- following laws hold:
+--
+-- @
+-- uncurry addExtension . swap >=> splitExtension == return
+-- splitExtension >=> uncurry addExtension . swap == return
+-- @
+--
+-- @since 0.7.0
+splitExtension :: MonadThrow m => Path b File -> m (Path b File, String)
+splitExtension (Path fpath) =
     if nameDot == [] || ext == [] || all FilePath.isExtSeparator nameDot
-    then (path, "")
-    else (Path (drv ++ dir ++ (init nameDot)), FilePath.extSeparator : ext)
+    then throwM $ HasNoExtension fpath
+    else return (Path (drv ++ dir ++ (init nameDot)), FilePath.extSeparator : ext)
 
     where
 
@@ -373,7 +384,8 @@ splitExtension path@(Path fpath) =
     (dir, file)    = splitLast FilePath.isPathSeparator pth
     (nameDot, ext) = splitLast FilePath.isExtSeparator file
 
--- | Get extension from given file path.
+-- | Get extension from given file path. Throws 'HasNoExtension' exception if
+-- the file does not have an extension.
 --
 -- >>> fileExtension $(mkRelFile "name.foo"     ) == ".foo"
 -- >>> fileExtension $(mkRelFile "name.foo."    ) == ".foo."
@@ -387,9 +399,13 @@ splitExtension path@(Path fpath) =
 -- >>> fileExtension $(mkRelFile ".name"        ) == ""
 -- >>> fileExtension $(mkRelFile "..name"       ) == ""
 --
+-- The following law holds:
+--
+-- @fileExtension == (fmap snd) . splitExtension@
+--
 -- @since 0.5.11
-fileExtension :: Path b File -> String
-fileExtension = snd . splitExtension
+fileExtension :: MonadThrow m => Path b File -> m String
+fileExtension = (fmap snd) . splitExtension
 
 -- | Add extension to given file path.
 --
@@ -407,7 +423,7 @@ fileExtension = snd . splitExtension
 --
 -- The following law holds:
 --
--- @(fileExtension . fromJust . addExtension ext) f == ext@
+-- @flip addExtension file >=> fileExtension == return@
 --
 -- @since 0.7.0
 addExtension :: MonadThrow m
@@ -494,21 +510,20 @@ infixr 7 <.>
 (<.>) = flip addFileExtension
 
 -- | If the file has an extension replace it with the given extension otherwise
--- add the new extension to it. Throws an exception if the new extension is not
--- a valid extension (see 'fileExtension' for validity rules).
+-- add the new extension to it. Throws an 'InvalidExtension' exception if the
+-- new extension is not a valid extension (see 'fileExtension' for validity
+-- rules).
 --
 -- The following law holds:
 --
--- @(flip setFileExtension f . fileExtension) f) == f@
+-- @(fileExtension >=> flip replaceExtension file) file == return file@
 --
 -- @since 0.7.0
 replaceExtension :: MonadThrow m
   => String            -- ^ Extension to set
   -> Path b File       -- ^ Old file name
   -> m (Path b File)   -- ^ New file name with the desired extension
-replaceExtension ext path =
-    let (name, _) = splitExtension path
-    in addExtension ext name
+replaceExtension ext path = splitExtension path >>= addExtension ext . fst
 
 -- | Replace\/add extension to given file path. Throws if the
 -- resulting filename does not parse.
