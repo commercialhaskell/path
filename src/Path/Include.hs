@@ -419,7 +419,7 @@ splitExtension (Path fpath) =
 --
 -- @since 0.5.11
 fileExtension :: MonadThrow m => Path b File -> m String
-fileExtension = (fmap snd) . splitExtension
+fileExtension = (liftM snd) . splitExtension
 
 -- | Add extension to given file path.
 --
