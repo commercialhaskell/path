@@ -16,6 +16,8 @@ import Path.Posix
 import Path.Internal
 import Test.Hspec
 
+import Common (extensionOperations)
+
 -- | Test suite (Posix version).
 spec :: Spec
 spec =
@@ -30,8 +32,7 @@ spec =
      describe "Operations: parent" operationParent
      describe "Operations: filename" operationFilename
      describe "Operations: dirname" operationDirname
-     describe "Operations: addFileExtension" operationAddFileExtension
-     describe "Operations: setFileExtension" operationSetFileExtension
+     describe "Operations: extensions" (extensionOperations "/")
      describe "Restrictions" restrictions
      describe "Aeson Instances" aesonInstances
      describe "QuasiQuotes" quasiquotes
@@ -179,45 +180,6 @@ operationToFilePath =
         (toFilePath $(mkRelDir ".") == "./")
      it "show $(mkRelDir \".\") == \"\\\"./\\\"\""
         (show $(mkRelDir ".") == "\"./\"")
-
-operationAddFileExtension :: Spec
-operationAddFileExtension = do
-  it "adds extension if there is none" $
-    addFileExtension "ext" $(mkAbsFile "/directory/path")
-      `shouldReturn` $(mkAbsFile "/directory/path.ext")
-  it "adds extension if there is already one" $
-    addFileExtension "baz" $(mkRelFile "foo.bar")
-      `shouldReturn` $(mkRelFile "foo.bar.baz")
-  it "adds extension with dot" $
-    addFileExtension ".bar" $(mkRelFile "foo")
-      `shouldReturn` $(mkRelFile "foo.bar")
-  it "adds extension with dot after dot" $
-    $(mkRelFile "foo.") <.> ".bar"
-      `shouldReturn` $(mkRelFile "foo..bar")
-  it "adds extension without dot after dot" $
-    $(mkRelFile "foo.") <.> "bar"
-      `shouldReturn` $(mkRelFile "foo..bar")
-  it "adds extension with separator" $  -- I'm not sure it's okay
-    $(mkRelFile "foo") <.> "evil/extension"
-      `shouldReturn` $(mkRelFile "foo.evil/extension")
-  it "adds extension to file inside dotted directory" $
-    $(mkRelFile "foo.bar/baz") <.> "txt"
-      `shouldReturn` $(mkRelFile "foo.bar/baz.txt")
-  it "throws InvalidRelFile extension if extenstion ends with /" $
-    $(mkRelFile "foo") <.> "evil/"
-      `shouldThrow` (== InvalidRelFile "foo.evil/")
-  it "throws InvalidAbsFile extension if extenstion ends with /" $
-    $(mkAbsFile "/home/cfg") <.> "txt/" -- No Eq instance for PathException
-      `shouldThrow` (== InvalidAbsFile "/home/cfg.txt/")
-
-operationSetFileExtension :: Spec
-operationSetFileExtension = do
-  it "adds extension if there is none" $
-    setFileExtension "txt" $(mkRelFile "foo")
-      `shouldReturn` $(mkRelFile "foo.txt")
-  it "replaces extension if the input path already has one" $
-    setFileExtension "txt" $(mkRelFile "foo.bar")
-      `shouldReturn` $(mkRelFile "foo.txt")
 
 -- | Tests for the tokenizer.
 parseAbsDirSpec :: Spec

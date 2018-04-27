@@ -34,6 +34,7 @@ spec = parallel $ do
      describe "Operations: isProperPrefixOf" operationIsParentOf
      describe "Operations: parent" operationParent
      describe "Operations: filename" operationFilename
+     describe "Extensions" extensionsSpec
 
 -- | The 'filename' operation.
 operationFilename :: Spec
@@ -137,6 +138,42 @@ operationAppend = do
 
      it "produces a valid path on when creating valid relative directory paths" $ do
         producesValidsOnValids2 ((</>) :: Path Rel Dir -> Path Rel Dir -> Path Rel Dir)
+
+extensionsSpec :: Spec
+extensionsSpec = do
+     it "if addExtension a b succeeds then parseRelFile b succeeds - 1" $
+         forAll genFilePath addExtGensValidFile
+     -- skew the generated path towards a valid extension by prefixing a "."
+     it "if addExtension a b succeeds then parseRelFile b succeeds - 2" $
+         forAll genFilePath $ addExtGensValidFile . ("." ++)
+
+     it "(toFilePath . fromJust . addExtension ext) file \
+        \== toFilePath a ++ b" $
+         forAllShrink genValid shrinkValidRelFile $ \file ->
+             forAllShrink genValid shrinkValidExtension $ \(Extension ext) ->
+                (toFilePath . fromJust . addExtension ext) file
+                 `shouldBe` toFilePath file ++ ext
+
+     it "(fileExtension . fromJust . addExtension ext) f == ext" $
+         forAllShrink genValid shrinkValidRelFile $ \file ->
+             forAllShrink genValid shrinkValidExtension $ \(Extension ext) ->
+                 (fileExtension . fromJust . addExtension ext) file
+                 `shouldBe` ext
+
+     it "(flip replaceExtension f . fileExtension) f) == f" $
+         forAllShrink genValid shrinkValidRelFile $ \file ->
+            case fileExtension file of
+                "" -> True
+                ext -> replaceExtension ext file == Just file
+
+    where
+        addExtGensValidFile p =
+            case addExtension p $(mkRelFile "x") of
+                Nothing -> True
+                Just x ->
+                    case parseRelFile p of
+                        Nothing -> False
+                        _ -> True
 
 parserSpec :: (Show p, Validity p) => (FilePath -> Maybe p) -> Spec
 parserSpec parser =

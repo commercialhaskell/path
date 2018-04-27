@@ -1,7 +1,28 @@
 UNRELEASED:
-        * Add 'Path.Posix' and 'Path.Windows' modules for manipulating
-          Windows or Posix style paths independently of the current platform.
-        * Add 'Lift' instance for 'Path'.
+	* Old extension operations "addFileExtension" and "setFileExtension" have
+		been deprecated and replaced by "addExtension" and "replaceExtension"
+		respectively.
+		ADAPTING YOUR CODE TO THIS CHANGE:
+		* Code that sets an extension not starting with a "." e.g.  "foo", must
+		  be changed such that it starts with a "." i.e. ".foo".
+		* Code that sets multiple extensions in one go e.g. ".tar.gz" must be
+		  changed to set them one at a time instead i.e. add ".tar" first and
+		  then add ".gz".
+		* Code that sets an extension starting with multiple dots e.g.
+		  "..foo" must be changed such as to make the extra dots part of the
+		  file name instead.
+		Details:
+		The new operations "addExtension" and "replaceExtension" accept only "valid"
+		extension forms which is exactly the same as what "fileExtension" returns.
+		A valid extension starts with a @.@ followed by one or more characters
+		not including @.@ followed by zero or more @.@s in trailing position.
+		This change allows extension operations to be principled following
+		these laws:
+		* (fileExtension . fromJust . addExtension ext) f == ext
+		* replaceExtension (fileExtension f) f == Just f
+	* Add 'Path.Posix' and 'Path.Windows' modules for manipulating
+		Windows or Posix style paths independently of the current platform.
+	* Add 'Lift' instance for 'Path'.
 
 0.6.1:
 	* Add 'addFileExtension' function and its operator form: (<.>).

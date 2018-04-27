@@ -57,10 +57,8 @@ module Path.PLATFORM_NAME
   ,filename
   ,dirname
   ,fileExtension
-  ,addFileExtension
-  ,(<.>)
-  ,setFileExtension
-  ,(-<.>)
+  ,addExtension
+  ,replaceExtension
    -- * Parsing
   ,parseAbsDir
   ,parseRelDir
@@ -82,11 +80,15 @@ module Path.PLATFORM_NAME
   ,PathParseException
   ,stripDir
   ,isParentOf
+  ,addFileExtension
+  ,(<.>)
+  ,setFileExtension
+  ,(-<.>)
   )
   where
 
-import           Control.Exception (Exception)
-import           Control.Monad
+import           Control.Exception (Exception(..))
+import           Control.Monad (liftM, when)
 import           Control.Monad.Catch (MonadThrow(..))
 import           Data.Aeson (FromJSON (..))
 import qualified Data.Aeson.Types as Aeson
@@ -149,8 +151,20 @@ data PathException
   | InvalidAbsFile FilePath
   | InvalidRelFile FilePath
   | NotAProperPrefix FilePath FilePath
+  | InvalidExtension String
   deriving (Show,Eq,Typeable)
-instance Exception PathException
+
+instance Exception PathException where
+#if MIN_VERSION_base(4,8,0)
+    displayException (InvalidExtension ext) = concat
+        [ "Invalid extension ["
+        , ext
+        , "]. A valid extension starts with a '.' followed by one or more "
+        , "characters other than '.', and it must be a valid filename, "
+        , "notably it cannot include a path separator."
+        ]
+    displayException x = show x
+#endif
 
 --------------------------------------------------------------------------------
 -- QuasiQuoters
@@ -335,11 +349,103 @@ dirname (Path "") = Path ""
 dirname (Path l) | FilePath.isDrive l = Path ""
 dirname (Path l) = Path (last (FilePath.splitPath l))
 
+-- | Split the given file path into a filename and an extension. If the
+-- filename has no extension it returns "" as extension.
+splitExtension :: Path b File -> (Path b File, String)
+splitExtension path@(Path fpath) =
+    if nameDot == [] || ext == [] || all FilePath.isExtSeparator nameDot
+    then (path, "")
+    else (Path (drv ++ dir ++ (init nameDot)), FilePath.extSeparator : ext)
+
+    where
+
+    -- trailing separators are ignored for the split and considered part of the
+    -- second component in the split.
+    splitLast isSep str =
+        let rstr = reverse str
+            notSep = not . isSep
+            name = (dropWhile notSep . dropWhile isSep) rstr
+            trailingSeps = takeWhile isSep rstr
+            xtn  = (takeWhile notSep . dropWhile isSep) rstr
+        in (reverse name, reverse xtn ++ trailingSeps)
+
+    (drv, pth)     = FilePath.splitDrive fpath
+    (dir, file)    = splitLast FilePath.isPathSeparator pth
+    (nameDot, ext) = splitLast FilePath.isExtSeparator file
+
 -- | Get extension from given file path.
+--
+-- >>> fileExtension $(mkRelFile "name.foo"     ) == ".foo"
+-- >>> fileExtension $(mkRelFile "name.foo."    ) == ".foo."
+-- >>> fileExtension $(mkRelFile "name.foo.."   ) == ".foo.."
+-- >>> fileExtension $(mkRelFile "name.foo.bar" ) == ".bar"
+-- >>> fileExtension $(mkRelFile ".name.foo"    ) == ".foo"
+-- >>> fileExtension $(mkRelFile "name..foo"    ) == ".foo"
+-- >>> fileExtension $(mkRelFile "name"         ) == ""
+-- >>> fileExtension $(mkRelFile "name."        ) == ""
+-- >>> fileExtension $(mkRelFile "name.."       ) == ""
+-- >>> fileExtension $(mkRelFile ".name"        ) == ""
+-- >>> fileExtension $(mkRelFile "..name"       ) == ""
 --
 -- @since 0.5.11
 fileExtension :: Path b File -> String
-fileExtension = FilePath.takeExtension . toFilePath
+fileExtension = snd . splitExtension
+
+-- | Add extension to given file path.
+--
+-- >>> addExtension ".foo"   $(mkRelFile "name"     ) == "name.foo"
+-- >>> addExtension ".foo."  $(mkRelFile "name"     ) == "name.foo."
+-- >>> addExtension ".foo.." $(mkRelFile "name"     ) == "name.foo.."
+-- >>> addExtension ".bar"   $(mkRelFile "name.foo" ) == "name.foo.bar"
+--
+-- Throws an 'InvalidExtension' exception if the extension is not valid. A
+-- valid extension starts with a @.@ followed by one or more characters not
+-- including @.@ followed by zero or more @.@s in trailing position. Moreover,
+-- an extension must be a valid filename, notably it cannot include path
+-- separators. Particularly, @.foo.bar@ is an invalid extension, instead you
+-- have to first set @.foo@ and then @.bar@ individually.
+--
+-- The following law holds:
+--
+-- @(fileExtension . fromJust . addExtension ext) f == ext@
+--
+-- @since 0.7.0
+addExtension :: MonadThrow m
+  => String            -- ^ Extension to add
+  -> Path b File       -- ^ Old file name
+  -> m (Path b File)   -- ^ New file name with the desired extension added at the end
+addExtension ext (Path path) = do
+    validateExtension ext
+    return $ Path (path ++ ext)
+
+    where
+
+    validateExtension ex@(sep:xs) = do
+        -- has to start with a "."
+        when (not $ FilePath.isExtSeparator sep) $
+            throwM $ InvalidExtension ex
+
+        -- just a "." is not a valid extension
+        when (xs == []) $
+            throwM $ InvalidExtension ex
+
+        -- cannot have path separators
+        when (any FilePath.isPathSeparator xs) $
+            throwM $ InvalidExtension ex
+
+        -- All "."s is not a valid extension
+        let ys = dropWhile FilePath.isExtSeparator (reverse xs)
+        when (ys == []) $
+            throwM $ InvalidExtension ex
+
+        -- Cannot have "."s except in trailing position
+        when (any FilePath.isExtSeparator ys) $
+            throwM $ InvalidExtension ex
+
+        -- must be valid as a filename
+        _ <- parseRelFile ex
+        return ()
+    validateExtension ex = throwM $ InvalidExtension ex
 
 -- | Add extension to given file path. Throws if the
 -- resulting filename does not parse.
@@ -358,6 +464,7 @@ fileExtension = FilePath.takeExtension . toFilePath
 -- *** Exception: InvalidRelFile "Data.List.evil/"
 --
 -- @since 0.6.1
+{-# DEPRECATED addFileExtension "Please use addExtension instead." #-}
 addFileExtension :: MonadThrow m
   => String            -- ^ Extension to add
   -> Path b File       -- ^ Old file name
@@ -369,7 +476,7 @@ addFileExtension ext (Path path) =
   where coercePath :: Path a b -> Path a' b'
         coercePath (Path a) = Path a
 
--- | A synonym for 'addFileExtension' in the form of an operator.
+-- | A synonym for 'addFileExtension' in the form of an infix operator.
 -- See more examples there.
 --
 -- >>> $(mkRelFile "Data.List") <.> "symbols"
@@ -379,16 +486,35 @@ addFileExtension ext (Path path) =
 --
 -- @since 0.6.1
 infixr 7 <.>
+{-# DEPRECATED (<.>) "Please use addExtension instead." #-}
 (<.>) :: MonadThrow m
   => Path b File       -- ^ Old file name
   -> String            -- ^ Extension to add
   -> m (Path b File)   -- ^ New file name with the desired extension added at the end
 (<.>) = flip addFileExtension
 
+-- | If the file has an extension replace it with the given extension otherwise
+-- add the new extension to it. Throws an exception if the new extension is not
+-- a valid extension (see 'fileExtension' for validity rules).
+--
+-- The following law holds:
+--
+-- @(flip setFileExtension f . fileExtension) f) == f@
+--
+-- @since 0.7.0
+replaceExtension :: MonadThrow m
+  => String            -- ^ Extension to set
+  -> Path b File       -- ^ Old file name
+  -> m (Path b File)   -- ^ New file name with the desired extension
+replaceExtension ext path =
+    let (name, _) = splitExtension path
+    in addExtension ext name
+
 -- | Replace\/add extension to given file path. Throws if the
 -- resulting filename does not parse.
 --
 -- @since 0.5.11
+{-# DEPRECATED setFileExtension "Please use replaceExtension instead." #-}
 setFileExtension :: MonadThrow m
   => String            -- ^ Extension to set
   -> Path b File       -- ^ Old file name
@@ -404,6 +530,7 @@ setFileExtension ext (Path path) =
 --
 -- @since 0.6.0
 infixr 7 -<.>
+{-# DEPRECATED (-<.>) "Please use replaceExtension instead." #-}
 (-<.>) :: MonadThrow m
   => Path b File       -- ^ Old file name
   -> String            -- ^ Extension to set
