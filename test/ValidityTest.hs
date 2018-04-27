@@ -160,6 +160,18 @@ extensionsSpec = do
                 Nothing -> True
                 Just (f, ext) -> toFilePath f ++ ext == toFilePath file
 
+     it "splitExtension generates a valid filename and valid extension" $
+         forAllShrink genValid shrinkValidRelFile $ \file ->
+            case splitExtension file of
+                Nothing -> True
+                Just (f, ext) -> case parseRelFile ext of
+                    Nothing -> False
+                    Just _ -> case parseRelFile (toFilePath f) of
+                        Nothing -> case parseAbsFile (toFilePath f) of
+                            Nothing -> False
+                            Just _ -> True
+                        Just _ -> True
+
      it "splitExtension >=> uncurry addExtension . swap == return" $
          forAllShrink genValid shrinkValidRelFile $ \file ->
             case splitExtension file of

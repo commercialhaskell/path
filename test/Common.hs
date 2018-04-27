@@ -67,6 +67,7 @@ extensionOperations rootDrive = do
         , "..name"
         , "name.name"
         , "name..name"
+        , "..."
         ]
     dirnames = filenames ++ ["."]
     invalidExtensions =
@@ -82,5 +83,5 @@ extensionOperations rootDrive = do
         , "..foo"
         , "...foo"
         , ".foo.bar"
-        , ".evil" ++ [pathSeparator] ++ "foo"
+        , ".foo" ++ [pathSeparator] ++ "bar"
         ]
