@@ -56,8 +56,9 @@ module Path.PLATFORM_NAME
   ,parent
   ,filename
   ,dirname
-  ,fileExtension
   ,addExtension
+  ,splitExtension
+  ,fileExtension
   ,replaceExtension
    -- * Parsing
   ,parseAbsDir
@@ -151,6 +152,7 @@ data PathException
   | InvalidAbsFile FilePath
   | InvalidRelFile FilePath
   | NotAProperPrefix FilePath FilePath
+  | HasNoExtension FilePath
   | InvalidExtension String
   deriving (Show,Eq,Typeable)
 
@@ -349,14 +351,48 @@ dirname (Path "") = Path ""
 dirname (Path l) | FilePath.isDrive l = Path ""
 dirname (Path l) = Path (last (FilePath.splitPath l))
 
--- | Split the given file path into a filename and an extension. If the
--- filename has no extension it returns "" as extension.
-splitExtension :: Path b File -> (Path b File, String)
-splitExtension path@(Path fpath) =
-    if nameDot == [] || ext == [] || all FilePath.isExtSeparator nameDot
-    then (path, "")
-    else (Path (drv ++ dir ++ (init nameDot)), FilePath.extSeparator : ext)
-
+-- | 'splitExtension' is the inverse of 'addExtension'. It splits the given
+-- file path into a valid filename and a valid extension.
+--
+-- >>> splitExtension $(mkRelFile "name.foo"     ) == Just ($(mkRelFile "name"    ), ".foo"  )
+-- >>> splitExtension $(mkRelFile "name.foo."    ) == Just ($(mkRelFile "name"    ), ".foo." )
+-- >>> splitExtension $(mkRelFile "name.foo.."   ) == Just ($(mkRelFile "name"    ), ".foo..")
+-- >>> splitExtension $(mkRelFile "name.bar.foo" ) == Just ($(mkRelFile "name.bar"), ".foo"  )
+-- >>> splitExtension $(mkRelFile ".name.foo"    ) == Just ($(mkRelFile ".name"   ), ".foo"  )
+-- >>> splitExtension $(mkRelFile "name..foo"    ) == Just ($(mkRelFile "name."   ), ".foo"  )
+-- >>> splitExtension $(mkRelFile "....foo"      ) == Just ($(mkRelFile "..."     ), ".foo"  )
+--
+-- Throws 'HasNoExtension' exception if the filename does not have an extension
+-- or in other words it cannot be split into a valid filename and a valid
+-- extension. The following cases throw an exception, please note that "." and
+-- ".." are not valid filenames:
+--
+-- >>> splitExtension $(mkRelFile "name"   )
+-- >>> splitExtension $(mkRelFile "name."  )
+-- >>> splitExtension $(mkRelFile "name.." )
+-- >>> splitExtension $(mkRelFile ".name"  )
+-- >>> splitExtension $(mkRelFile "..name" )
+-- >>> splitExtension $(mkRelFile "...name")
+--
+-- 'splitExtension' and 'addExtension' are inverses of each other, the
+-- following laws hold:
+--
+-- @
+-- uncurry addExtension . swap >=> splitExtension == return
+-- splitExtension >=> uncurry addExtension . swap == return
+-- @
+--
+-- @since 0.7.0
+splitExtension :: MonadThrow m => Path b File -> m (Path b File, String)
+splitExtension (Path fpath) =
+    if nameDot == [] || ext == []
+    then throwM $ HasNoExtension fpath
+    else let fname = init nameDot
+         in if fname == [] || fname == "." || fname == ".."
+            then throwM $ HasNoExtension fpath
+            else return ( Path (drv ++ dir ++ fname)
+                        , FilePath.extSeparator : ext
+                        )
     where
 
     -- trailing separators are ignored for the split and considered part of the
@@ -373,41 +409,40 @@ splitExtension path@(Path fpath) =
     (dir, file)    = splitLast FilePath.isPathSeparator pth
     (nameDot, ext) = splitLast FilePath.isExtSeparator file
 
--- | Get extension from given file path.
+-- | Get extension from given file path. Throws 'HasNoExtension' exception if
+-- the file does not have an extension.  The following laws hold:
 --
--- >>> fileExtension $(mkRelFile "name.foo"     ) == ".foo"
--- >>> fileExtension $(mkRelFile "name.foo."    ) == ".foo."
--- >>> fileExtension $(mkRelFile "name.foo.."   ) == ".foo.."
--- >>> fileExtension $(mkRelFile "name.foo.bar" ) == ".bar"
--- >>> fileExtension $(mkRelFile ".name.foo"    ) == ".foo"
--- >>> fileExtension $(mkRelFile "name..foo"    ) == ".foo"
--- >>> fileExtension $(mkRelFile "name"         ) == ""
--- >>> fileExtension $(mkRelFile "name."        ) == ""
--- >>> fileExtension $(mkRelFile "name.."       ) == ""
--- >>> fileExtension $(mkRelFile ".name"        ) == ""
--- >>> fileExtension $(mkRelFile "..name"       ) == ""
+-- @
+-- flip addExtension file >=> fileExtension == return
+-- fileExtension == (fmap snd) . splitExtension
+-- @
 --
 -- @since 0.5.11
-fileExtension :: Path b File -> String
-fileExtension = snd . splitExtension
+fileExtension :: MonadThrow m => Path b File -> m String
+fileExtension = (liftM snd) . splitExtension
 
 -- | Add extension to given file path.
 --
--- >>> addExtension ".foo"   $(mkRelFile "name"     ) == "name.foo"
--- >>> addExtension ".foo."  $(mkRelFile "name"     ) == "name.foo."
--- >>> addExtension ".foo.." $(mkRelFile "name"     ) == "name.foo.."
--- >>> addExtension ".bar"   $(mkRelFile "name.foo" ) == "name.foo.bar"
+-- >>> addExtension ".foo"   $(mkRelFile "name"     ) == Just $(mkRelFile "name.foo"    )
+-- >>> addExtension ".foo."  $(mkRelFile "name"     ) == Just $(mkRelFile "name.foo."   )
+-- >>> addExtension ".foo.." $(mkRelFile "name"     ) == Just $(mkRelFile "name.foo.."  )
+-- >>> addExtension ".foo"   $(mkRelFile "name.bar" ) == Just $(mkRelFile "name.bar.foo")
+-- >>> addExtension ".foo"   $(mkRelFile ".name"    ) == Just $(mkRelFile ".name.foo"   )
+-- >>> addExtension ".foo"   $(mkRelFile "name."    ) == Just $(mkRelFile "name..foo"   )
+-- >>> addExtension ".foo"   $(mkRelFile "..."      ) == Just $(mkRelFile "....foo"     )
 --
 -- Throws an 'InvalidExtension' exception if the extension is not valid. A
 -- valid extension starts with a @.@ followed by one or more characters not
--- including @.@ followed by zero or more @.@s in trailing position. Moreover,
+-- including @.@ followed by zero or more @.@ in trailing position. Moreover,
 -- an extension must be a valid filename, notably it cannot include path
 -- separators. Particularly, @.foo.bar@ is an invalid extension, instead you
--- have to first set @.foo@ and then @.bar@ individually.
+-- have to first set @.foo@ and then @.bar@ individually. Some examples of
+-- invalid extensions are:
 --
--- The following law holds:
---
--- @(fileExtension . fromJust . addExtension ext) f == ext@
+-- >>> addExtension "foo"      $(mkRelFile "name")
+-- >>> addExtension "..foo"    $(mkRelFile "name")
+-- >>> addExtension ".foo.bar" $(mkRelFile "name")
+-- >>> addExtension ".foo/bar" $(mkRelFile "name")
 --
 -- @since 0.7.0
 addExtension :: MonadThrow m
@@ -494,21 +529,20 @@ infixr 7 <.>
 (<.>) = flip addFileExtension
 
 -- | If the file has an extension replace it with the given extension otherwise
--- add the new extension to it. Throws an exception if the new extension is not
--- a valid extension (see 'fileExtension' for validity rules).
+-- add the new extension to it. Throws an 'InvalidExtension' exception if the
+-- new extension is not a valid extension (see 'fileExtension' for validity
+-- rules).
 --
 -- The following law holds:
 --
--- @(flip setFileExtension f . fileExtension) f) == f@
+-- @(fileExtension >=> flip replaceExtension file) file == return file@
 --
 -- @since 0.7.0
 replaceExtension :: MonadThrow m
   => String            -- ^ Extension to set
   -> Path b File       -- ^ Old file name
   -> m (Path b File)   -- ^ New file name with the desired extension
-replaceExtension ext path =
-    let (name, _) = splitExtension path
-    in addExtension ext name
+replaceExtension ext path = splitExtension path >>= addExtension ext . fst
 
 -- | Replace\/add extension to given file path. Throws if the
 -- resulting filename does not parse.

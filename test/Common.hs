@@ -18,7 +18,7 @@ validExtensionsSpec ext file fext = do
         addExtension ext file `shouldReturn` fext
 
     it ("fileExtension " ++ fx ++ " == " ++ ext) $
-        fileExtension fext `shouldBe` ext
+        fileExtension fext `shouldReturn` ext
 
     it ("replaceExtension " ++ show ext ++ " " ++ fx ++ " == " ++ fx) $
         replaceExtension ext fext `shouldReturn` fext
@@ -67,6 +67,7 @@ extensionOperations rootDrive = do
         , "..name"
         , "name.name"
         , "name..name"
+        , "..."
         ]
     dirnames = filenames ++ ["."]
     invalidExtensions =
@@ -82,5 +83,5 @@ extensionOperations rootDrive = do
         , "..foo"
         , "...foo"
         , ".foo.bar"
-        , ".evil" ++ [pathSeparator] ++ "foo"
+        , ".foo" ++ [pathSeparator] ++ "bar"
         ]

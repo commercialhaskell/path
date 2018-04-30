@@ -154,17 +154,53 @@ extensionsSpec = do
                 (toFilePath . fromJust . addExtension ext) file
                  `shouldBe` toFilePath file ++ ext
 
-     it "(fileExtension . fromJust . addExtension ext) f == ext" $
+     it "splitExtension output joins to result in the original file" $
+         forAllShrink genValid shrinkValidRelFile $ \file ->
+            case splitExtension file of
+                Nothing -> True
+                Just (f, ext) -> toFilePath f ++ ext == toFilePath file
+
+     it "splitExtension generates a valid filename and valid extension" $
+         forAllShrink genValid shrinkValidRelFile $ \file ->
+            case splitExtension file of
+                Nothing -> True
+                Just (f, ext) -> case parseRelFile ext of
+                    Nothing -> False
+                    Just _ -> case parseRelFile (toFilePath f) of
+                        Nothing -> case parseAbsFile (toFilePath f) of
+                            Nothing -> False
+                            Just _ -> True
+                        Just _ -> True
+
+     it "splitExtension >=> uncurry addExtension . swap == return" $
+         forAllShrink genValid shrinkValidRelFile $ \file ->
+            case splitExtension file of
+                Nothing -> True
+                Just (f, ext) -> addExtension ext f == Just file
+
+     it "uncurry addExtension . swap >=> splitExtension == return" $
+         forAllShrink genValid shrinkValidRelFile $ \file ->
+             forAllShrink genValid shrinkValidExtension $ \(Extension ext) ->
+                (addExtension ext file >>= splitExtension)
+                `shouldReturn` (file, ext)
+
+     it "fileExtension == (fmap snd) . splitExtension" $
+         forAllShrink genValid shrinkValidRelFile $ \file ->
+            case splitExtension file of
+                Nothing -> True
+                Just (_, ext) -> fileExtension file == Just ext
+
+     it "flip addExtension file >=> fileExtension == return" $
          forAllShrink genValid shrinkValidRelFile $ \file ->
              forAllShrink genValid shrinkValidExtension $ \(Extension ext) ->
                  (fileExtension . fromJust . addExtension ext) file
-                 `shouldBe` ext
+                 `shouldReturn` ext
 
-     it "(flip replaceExtension f . fileExtension) f) == f" $
+     it "(fileExtension >=> flip replaceExtension file) file == return file" $
          forAllShrink genValid shrinkValidRelFile $ \file ->
             case fileExtension file of
-                "" -> True
-                ext -> replaceExtension ext file == Just file
+                Nothing -> True
+                Just ext -> replaceExtension ext file == Just file
 
     where
         addExtGensValidFile p =
