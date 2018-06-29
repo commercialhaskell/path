@@ -542,7 +542,8 @@ replaceExtension :: MonadThrow m
   => String            -- ^ Extension to set
   -> Path b File       -- ^ Old file name
   -> m (Path b File)   -- ^ New file name with the desired extension
-replaceExtension ext path = splitExtension path >>= addExtension ext . fst
+replaceExtension ext path =
+    addExtension ext (maybe path fst $ splitExtension path)
 
 -- | Replace\/add extension to given file path. Throws if the
 -- resulting filename does not parse.
