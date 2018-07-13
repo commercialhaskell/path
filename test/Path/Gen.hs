@@ -19,66 +19,67 @@ import           Test.QuickCheck
 
 
 instance Validity (Path Abs File) where
-  isValid p@(Path fp)
-    =  FilePath.isAbsolute fp
-    && not (FilePath.hasTrailingPathSeparator fp)
-    && FilePath.isValid fp
-    && not (hasParentDir fp)
-    && (parseAbsFile fp == Just p)
+  validate p@(Path fp) =  check (FilePath.isAbsolute fp)                     "Path is absolute."
+                       <> check (not (FilePath.hasTrailingPathSeparator fp)) "Path does not have trailing seperator."
+                       <> check (FilePath.isValid fp)                        "Path is valid."
+                       <> check (not (hasParentDir fp))                      "Path does not have parent dir."
+                       <> check ((parseAbsFile fp == Just p))                "Path parses."
 
 instance Validity (Path Rel File) where
-  isValid p@(Path fp)
-    =  FilePath.isRelative fp
-    && not (FilePath.hasTrailingPathSeparator fp)
-    && FilePath.isValid fp
-    && fp /= "."
-    && not (hasParentDir fp)
-    && (parseRelFile fp == Just p)
+  validate p@(Path fp) =  check (FilePath.isRelative fp)                     "Path is relative."
+                       <> check (not (FilePath.hasTrailingPathSeparator fp)) "Path does not have trailing seperator."
+                       <> check (FilePath.isValid fp)                        "Path is valid."
+                       <> check (fp /= ".")                                  "Path is not '.' ."
+                       <> check (not (hasParentDir fp))                      "Path does not have parent dir."
+                       <> check ((parseRelFile fp == Just p))                "Path parses."
 
 instance Validity (Path Abs Dir) where
-  isValid p@(Path fp)
-    =  FilePath.isAbsolute fp
-    && FilePath.hasTrailingPathSeparator fp
-    && FilePath.isValid fp
-    && not (hasParentDir fp)
-    && (parseAbsDir fp == Just p)
-
+  validate p@(Path fp) =  check (FilePath.isAbsolute fp)               "Path is absolute."
+                       <> check (FilePath.hasTrailingPathSeparator fp) "Path has trailing seperator."
+                       <> check (FilePath.isValid fp)                  "Path is valid."
+                       <> check (not (hasParentDir fp))                 "Path does not have parent dir."
+                       <> check ((parseAbsDir fp == Just p))           "Path parses."
+                         
 instance Validity (Path Rel Dir) where
-  isValid p =
-    FilePath.isRelative fp
-    && FilePath.hasTrailingPathSeparator fp
-    && FilePath.isValid fp
-    && not (hasParentDir fp)
-    && (parseRelDir fp == Just p)
+  validate p =  check (FilePath.isRelative fp)               "Path is relative."
+             <> check (FilePath.hasTrailingPathSeparator fp) "Path has trailing seperator"
+             <> check (FilePath.isValid fp)                  "Path is valid."
+             <> check (not (hasParentDir fp))                "Path does not have parent dir."
+             <> check ((parseRelDir fp == Just p))           "Path parses."
     where fp = toFilePath p
 
 instance GenUnchecked (Path Abs File) where
   genUnchecked = Path <$> genFilePath
+  shrinkUnchecked (Path p) = Path <$> shrink p
 
 instance GenValid (Path Abs File)
 
 instance GenUnchecked (Path Rel File) where
   genUnchecked = Path <$> genFilePath
+  shrinkUnchecked (Path p) = Path <$> shrink p
 
 instance GenValid (Path Rel File)
 
 instance GenUnchecked (Path Abs Dir) where
   genUnchecked = Path <$> genFilePath
+  shrinkUnchecked (Path p) = Path <$> shrink p
 
 instance GenValid (Path Abs Dir)
 
 instance GenUnchecked (Path Rel Dir) where
   genUnchecked = Path <$> genFilePath
+  shrinkUnchecked (Path p) = Path <$> shrink p
 
 instance GenValid (Path Rel Dir)
 
 data Extension = Extension String deriving Show
 
 instance Validity Extension where
-  isValid (Extension ext) = isJust $ addExtension ext $(mkRelFile "x")
+  validate (Extension ext) = check (isJust $ addExtension ext $(mkRelFile "x")) "Extension is valid."
 
 instance GenUnchecked Extension where
   genUnchecked = Extension <$> genFilePath
+  shrinkUnchecked (Extension ext) = Extension <$> shrink ext
 
 instance GenValid Extension
 
