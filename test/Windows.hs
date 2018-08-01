@@ -190,6 +190,12 @@ parseAbsDirSpec =
      succeeding "C:\\\\\\foo\\\\bar\\\\mu\\" (Path "C:\\foo\\bar\\mu\\")
      succeeding "C:\\\\\\foo\\\\bar\\\\mu" (Path "C:\\foo\\bar\\mu\\")
      succeeding "C:\\\\\\foo\\\\bar\\.\\\\mu" (Path "C:\\foo\\bar\\mu\\")
+     succeeding "\\\\unchost\\share" (Path "\\\\unchost\\share\\")
+     succeeding "\\/unchost\\share" (Path "\\\\unchost\\share\\")
+     succeeding "\\\\unchost\\share\\\\folder\\" (Path "\\\\unchost\\share\\folder\\")
+     succeeding "\\\\?\\C:\\" (Path "\\\\?\\C:\\")
+     succeeding "/\\?\\C:\\" (Path "\\\\?\\C:\\")
+     succeeding "\\\\?\\C:\\\\\\folder\\\\" (Path "\\\\?\\C:\\folder\\")
 
   where failing x = parserTest parseAbsDir x Nothing
         succeeding x with = parserTest parseAbsDir x (Just with)
@@ -205,6 +211,8 @@ parseRelDirSpec =
      failing "\\\\\\foo\\\\bar\\\\mu\\"
      failing "\\\\\\foo\\\\bar\\\\\\\\mu"
      failing "\\\\\\foo\\\\bar\\.\\\\mu"
+     failing "\\\\unchost\\share"
+     failing "\\\\?\\C:\\"
      succeeding ".\\" (Path "")
      succeeding ".\\.\\" (Path "")
      succeeding "..." (Path "...\\")
@@ -235,6 +243,12 @@ parseAbsFileSpec =
      failing "\\foo.txt"
      succeeding "C:\\\\\\foo\\\\bar\\\\\\\\mu.txt" (Path "C:\\foo\\bar\\mu.txt")
      succeeding "C:\\\\\\foo\\\\bar\\.\\\\mu.txt" (Path "C:\\foo\\bar\\mu.txt")
+     succeeding "\\\\unchost\\share\\\\file.txt" (Path "\\\\unchost\\share\\file.txt")
+     succeeding "\\/unchost\\share\\\\file.txt" (Path "\\\\unchost\\share\\file.txt")
+     succeeding "\\\\unchost\\share\\.\\folder\\\\\\file.txt" (Path "\\\\unchost\\share\\folder\\file.txt")
+     succeeding "\\\\?\\C:\\file.txt" (Path "\\\\?\\C:\\file.txt")
+     succeeding "/\\?\\C:\\file.txt" (Path "\\\\?\\C:\\file.txt")
+     succeeding "\\\\?\\C:\\\\\\folder\\.\\\\file.txt" (Path "\\\\?\\C:\\folder\\file.txt")
 
   where failing x = parserTest parseAbsFile x Nothing
         succeeding x with = parserTest parseAbsFile x (Just with)
@@ -256,6 +270,8 @@ parseRelFileSpec =
      failing "\\\\\\foo\\\\bar\\\\mu\\"
      failing "\\\\\\foo\\\\bar\\\\\\\\mu"
      failing "\\\\\\foo\\\\bar\\.\\\\mu"
+     failing "\\\\unchost\\share\\\\file.txt"
+     failing "\\\\?\\C:\\file.txt"
      succeeding "a.." (Path "a..")
      succeeding "..." (Path "...")
      succeeding "foo.txt" (Path "foo.txt")

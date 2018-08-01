@@ -728,7 +728,7 @@ mkRelFile = either (error . show) lift . parseRelFile
 --------------------------------------------------------------------------------
 -- Internal functions
 
--- | Internal use for normalizing a directory.
+-- | Normalizes directory path with file system-specific rules.
 normalizeDir :: FilePath -> FilePath
 normalizeDir =
       normalizeRelDir
@@ -740,7 +740,7 @@ normalizeDir =
       normalizeRelDir p | p == relRootFP = ""
       normalizeRelDir p = p
 
--- | Internal use for replacing consecutive path seps with single sep.
+-- | Replaces consecutive path seps with single sep.
 normalizeAllSeps :: FilePath -> FilePath
 normalizeAllSeps = foldr norm []
   where
@@ -751,21 +751,28 @@ normalizeAllSeps = foldr norm []
         FilePath.isPathSeparator ch = FilePath.pathSeparator:path
       norm ch path = ch:path
 
--- | Internal use for replacing consecutive path seps at the beginning of a path.
+-- | Replaces consecutive path seps with single sep except at the beginning of a path.
+normalizeSepsExceptLeading :: FilePath -> FilePath
+normalizeSepsExceptLeading path = normLeadingSeps ++ normalizeAllSeps rest
+  where leadingSeps = takeWhile FilePath.isPathSeparator path
+        normLeadingSeps = replicate (min 2 (length leadingSeps)) FilePath.pathSeparator
+        rest = dropWhile FilePath.isPathSeparator path
+
+-- | Replaces consecutive path seps with single sep at the beginning of a path.
 normalizeLeadingSeps :: FilePath -> FilePath
 normalizeLeadingSeps (p0:p1:ps) |
   FilePath.isPathSeparator p0 && FilePath.isPathSeparator p1 =
     normalizeLeadingSeps (FilePath.pathSeparator:ps)
 normalizeLeadingSeps path = path
 
--- | Internal use for replacing consecutive path seps at the end of a path.
+-- | Replaces consecutive path seps at the end of a path.
 normalizeTrailingSeps :: FilePath -> FilePath
 normalizeTrailingSeps = reverse . normalizeLeadingSeps . reverse
 
--- | Internal use for applying sep normalization following FilePath.normalise.
+-- | Applies file system-specific sep normalization following @FilePath.normalise@.
 normalizeFilePath :: FilePath -> FilePath
 normalizeFilePath
-  | IS_WINDOWS = normalizeAllSeps . FilePath.normalise
+  | IS_WINDOWS = normalizeSepsExceptLeading . FilePath.normalise
   | otherwise  = normalizeLeadingSeps . FilePath.normalise
 
 --------------------------------------------------------------------------------
