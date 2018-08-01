@@ -184,11 +184,12 @@ parseAbsDirSpec =
   do failing ""
      failing ".\\"
      failing "foo.txt"
+     failing "C:"
      succeeding "C:\\" (Path "C:\\")
-     succeeding "C:\\\\" (Path "C:\\\\")
-     -- succeeding "C:\\\\\\foo\\\\bar\\\\mu\\" (Path "C:\\foo\\bar\\mu\\") FIXME
-     -- succeeding "C:\\\\\\foo\\\\bar\\\\mu" (Path "C:\\foo\\bar\\mu\\") FIXME
-     -- succeeding "C:\\\\\\foo\\\\bar\\.\\\\mu" (Path "C:\\foo\\bar\\mu\\") FIXME
+     succeeding "C:\\\\" (Path "C:\\")
+     succeeding "C:\\\\\\foo\\\\bar\\\\mu\\" (Path "C:\\foo\\bar\\mu\\")
+     succeeding "C:\\\\\\foo\\\\bar\\\\mu" (Path "C:\\foo\\bar\\mu\\")
+     succeeding "C:\\\\\\foo\\\\bar\\.\\\\mu" (Path "C:\\foo\\bar\\mu\\")
 
   where failing x = parserTest parseAbsDir x Nothing
         succeeding x with = parserTest parseAbsDir x (Just with)
@@ -197,16 +198,15 @@ parseAbsDirSpec =
 parseRelDirSpec :: Spec
 parseRelDirSpec =
   do failing ""
-     -- failing "/" FIXME
-     -- failing "//" FIXME
-     -- succeeding "~/" (Path "~/") -- https://github.com/chrisdone/path/issues/19
-     -- failing "\\" FIXME
-     succeeding ".\\" (Path "")
-     succeeding ".\\.\\" (Path "")
+     failing "/"
+     failing "//"
+     failing "\\"
      failing "\\\\"
      failing "\\\\\\foo\\\\bar\\\\mu\\"
      failing "\\\\\\foo\\\\bar\\\\\\\\mu"
      failing "\\\\\\foo\\\\bar\\.\\\\mu"
+     succeeding ".\\" (Path "")
+     succeeding ".\\.\\" (Path "")
      succeeding "..." (Path "...\\")
      succeeding "foo.bak" (Path "foo.bak\\")
      succeeding ".\\foo" (Path "foo\\")
@@ -231,13 +231,13 @@ parseAbsFileSpec =
      failing "\\"
      failing "\\\\"
      failing "\\\\\\foo\\\\bar\\\\mu\\"
-     -- succeeding "\\..." (Path "\\...") FIXME
-     -- succeeding "\\foo.txt" (Path "\\foo.txt") FIXME
-     -- succeeding "C:\\\\\\foo\\\\bar\\\\\\\\mu.txt" (Path "C:\\foo\\bar\\mu.txt") FIXME
-     -- succeeding "C:\\\\\\foo\\\\bar\\.\\\\mu.txt" (Path "C:\\foo\\bar\\mu.txt") FIXME
+     failing "\\..."
+     failing "\\foo.txt"
+     succeeding "C:\\\\\\foo\\\\bar\\\\\\\\mu.txt" (Path "C:\\foo\\bar\\mu.txt")
+     succeeding "C:\\\\\\foo\\\\bar\\.\\\\mu.txt" (Path "C:\\foo\\bar\\mu.txt")
 
   where failing x = parserTest parseAbsFile x Nothing
-        -- succeeding x with = parserTest parseAbsFile x (Just with)
+        succeeding x with = parserTest parseAbsFile x (Just with)
 
 -- | Tests for the tokenizer.
 parseRelFileSpec :: Spec
