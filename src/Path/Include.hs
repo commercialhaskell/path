@@ -740,7 +740,8 @@ normalizeDir =
       normalizeRelDir p | p == relRootFP = ""
       normalizeRelDir p = p
 
--- | Replaces consecutive path seps with single sep.
+-- | Replaces consecutive path seps with single sep
+-- | and replaces alt sep with standard sep.
 normalizeAllSeps :: FilePath -> FilePath
 normalizeAllSeps = foldr norm []
   where
@@ -751,21 +752,21 @@ normalizeAllSeps = foldr norm []
         FilePath.isPathSeparator ch = FilePath.pathSeparator:path
       norm ch path = ch:path
 
--- | Replaces consecutive path seps with single sep except at the beginning of a path.
+-- | Normalizes seps except at the beginning of path.
 normalizeSepsExceptLeading :: FilePath -> FilePath
 normalizeSepsExceptLeading path = normLeadingSeps ++ normalizeAllSeps rest
   where leadingSeps = takeWhile FilePath.isPathSeparator path
         normLeadingSeps = replicate (min 2 (length leadingSeps)) FilePath.pathSeparator
         rest = dropWhile FilePath.isPathSeparator path
 
--- | Replaces consecutive path seps with single sep at the beginning of a path.
+-- | Normalizes seps only at the beginning of a path.
 normalizeLeadingSeps :: FilePath -> FilePath
 normalizeLeadingSeps (p0:p1:ps) |
   FilePath.isPathSeparator p0 && FilePath.isPathSeparator p1 =
     normalizeLeadingSeps (FilePath.pathSeparator:ps)
 normalizeLeadingSeps path = path
 
--- | Replaces consecutive path seps at the end of a path.
+-- | Normalizes seps only at the end of a path.
 normalizeTrailingSeps :: FilePath -> FilePath
 normalizeTrailingSeps = reverse . normalizeLeadingSeps . reverse
 
