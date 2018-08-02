@@ -11,6 +11,7 @@ import Control.Applicative
 import Control.Monad
 import Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as LBS
+import Data.Function (on)
 import Data.Maybe
 import Path.Windows
 import Path.Internal
@@ -58,35 +59,51 @@ restrictions =
 
 -- | The 'dirname' operation.
 operationDirname :: Spec
-operationDirname = do
-  it
-    "dirname ($(mkAbsDir parent) </> $(mkRelFile dirname)) == dirname $(mkRelFile dirname) (unit test)"
-    (dirname ($(mkAbsDir "C:\\chris\\") </> $(mkRelDir "bar")) ==
-     dirname $(mkRelDir "bar"))
-  it
-    "dirname ($(mkRelDir parent) </> $(mkRelFile dirname)) == dirname $(mkRelFile dirname) (unit test)"
-    (dirname ($(mkRelDir "home\\chris\\") </> $(mkRelDir "bar")) ==
-     dirname $(mkRelDir "bar"))
-  it
-    "dirname $(mkRelDir .) == $(mkRelDir .)"
-    (dirname $(mkRelDir ".") == $(mkRelDir "."))
-  it
-    "dirname C:\\ must be a Rel path"
-    ((parseAbsDir $ show $ dirname (fromJust (parseAbsDir "C:\\"))
-     :: Maybe (Path Abs Dir)) == Nothing)
+operationDirname =
+  do it "dirname ($(mkAbsDir parent) </> $(mkRelFile dirname)) == dirname $(mkRelFile dirname) (absolute)"
+        (dirnamesShouldBeEqual
+          ($(mkAbsDir "C:\\chris\\") </> $(mkRelDir "bar"))
+           $(mkRelDir "bar"))
+     it "dirname ($(mkRelDir parent) </> $(mkRelFile dirname)) == dirname $(mkRelFile dirname) (relative)"
+        (dirnamesShouldBeEqual
+          ($(mkRelDir "home\\chris\\") </> $(mkRelDir "bar"))
+           $(mkRelDir "bar"))
+     it "dirname ($(mkAbsDir parent) </> $(mkRelFile dirname)) == dirname $(mkRelFile dirname) (UNC)"
+        (dirnamesShouldBeEqual
+          ($(mkAbsDir "\\\\home\\chris\\") </> $(mkRelDir "bar"))
+           $(mkRelDir "bar"))
+     it "dirname ($(mkAbsDir parent) </> $(mkRelFile dirname)) == dirname $(mkRelFile dirname) (Unicode)"
+        (dirnamesShouldBeEqual
+          ($(mkAbsDir "\\\\?\\C:\\home\\chris\\") </> $(mkRelDir "bar"))
+           $(mkRelDir "bar"))
+     it "dirname $(mkRelDir .) == $(mkRelDir .)"
+        (dirnamesShouldBeEqual
+          $(mkRelDir ".")
+          $(mkRelDir "."))
+     it "dirname C:\\ must be a Rel path"
+        ((parseAbsDir $ show $ dirname (fromJust (parseAbsDir "C:\\")) :: Maybe (Path Abs Dir)) == Nothing)
+  where dirnamesShouldBeEqual = (==) `on` dirname
 
 -- | The 'filename' operation.
 operationFilename :: Spec
 operationFilename =
-  do it "filename ($(mkAbsDir parent) </> $(mkRelFile filename)) == filename $(mkRelFile filename) (unit test)"
-          (filename ($(mkAbsDir "C:\\chris\\") </>
-                             $(mkRelFile "bar.txt")) ==
-                                      filename $(mkRelFile "bar.txt"))
-
-     it "filename ($(mkRelDir parent) </> $(mkRelFile filename)) == filename $(mkRelFile filename) (unit test)"
-             (filename ($(mkRelDir "home\\chris\\") </>
-                                $(mkRelFile "bar.txt")) ==
-                                         filename $(mkRelFile "bar.txt"))
+  do it "filename ($(mkAbsDir parent) </> $(mkRelFile filename)) == filename $(mkRelFile filename) (absolute)"
+        (filenamesShouldBeEqual
+          ($(mkAbsDir "C:\\chris\\") </> $(mkRelFile "bar.txt"))
+           $(mkRelFile "bar.txt"))
+     it "filename ($(mkRelDir parent) </> $(mkRelFile filename)) == filename $(mkRelFile filename) (relative)"
+        (filenamesShouldBeEqual
+          ($(mkRelDir "home\\chris\\") </> $(mkRelFile "bar.txt"))
+           $(mkRelFile "bar.txt"))
+     it "filename ($(mkAbsDir parent) </> $(mkRelFile filename)) == filename $(mkRelFile filename) (UNC)"
+        (filenamesShouldBeEqual
+          ($(mkAbsDir "\\\\host\\share\\chris\\") </> $(mkRelFile "bar.txt"))
+           $(mkRelFile "bar.txt"))
+     it "filename ($(mkAbsDir parent) </> $(mkRelFile filename)) == filename $(mkRelFile filename) (Unicode)"
+        (filenamesShouldBeEqual
+          ($(mkAbsDir "\\\\?\\C:\\home\\chris\\") </> $(mkRelFile "bar.txt"))
+           $(mkRelFile "bar.txt"))
+  where filenamesShouldBeEqual = (==) `on` filename
 
 -- | The 'parent' operation.
 operationParent :: Spec
@@ -110,66 +127,102 @@ operationIsProperPrefixOf =
   do it "isProperPrefixOf parent (parent </> child) (absolute)"
         (isProperPrefixOf
            $(mkAbsDir "C:\\\\\\bar\\")
-           ($(mkAbsDir "C:\\\\\\bar\\") </>
-            $(mkRelFile "bar\\foo.txt")))
-
+          ($(mkAbsDir "C:\\\\\\bar\\") </> $(mkRelFile "bar\\foo.txt")))
      it "isProperPrefixOf parent (parent </> child) (relative)"
         (isProperPrefixOf
            $(mkRelDir "bar\\")
-           ($(mkRelDir "bar\\") </>
-            $(mkRelFile "bob\\foo.txt")))
-
+          ($(mkRelDir "bar\\") </> $(mkRelFile "bob\\foo.txt")))
+     it "isProperPrefixOf parent (parent </> child) (UNC)"
+        (isProperPrefixOf
+           $(mkAbsDir "\\\\host\\share\\")
+          ($(mkAbsDir "\\\\host\\share\\") </> $(mkRelFile "bob\\foo.txt")))
+     it "isProperPrefixOf parent (parent </> child) (Unicode)"
+        (isProperPrefixOf
+           $(mkAbsDir "\\\\?\\C:\\folder\\")
+          ($(mkAbsDir "\\\\?\\C:\\folder\\") </> $(mkRelFile "bob\\foo.txt")))
      it "not (x `isProperPrefixOf` x)"
         (not (isProperPrefixOf $(mkRelDir "x") $(mkRelDir "x")))
-
      it "not (\\ `isProperPrefixOf` \\)"
         (not (isProperPrefixOf $(mkAbsDir "C:\\") $(mkAbsDir "C:\\")))
 
 -- | The 'stripProperPrefix' operation.
 operationStripProperPrefix :: Spec
 operationStripProperPrefix =
-  do it "stripProperPrefix parent (parent </> child) = child (unit test)"
-        (stripProperPrefix $(mkAbsDir "C:\\\\\\bar\\")
-                  ($(mkAbsDir "C:\\\\\\bar\\") </>
-                   $(mkRelFile "bar\\foo.txt")) ==
-         Just $(mkRelFile "bar\\foo.txt"))
-
-     it "stripProperPrefix parent (parent </> child) = child (unit test)"
-        (stripProperPrefix $(mkRelDir "bar\\")
-                  ($(mkRelDir "bar\\") </>
-                   $(mkRelFile "bob\\foo.txt")) ==
-         Just $(mkRelFile "bob\\foo.txt"))
-
+  do it "stripProperPrefix parent (parent </> child) = child (absolute)"
+        (remainingPathShouldBe
+          $(mkAbsDir "C:\\\\\\bar\\")
+         ($(mkAbsDir "C:\\\\\\bar\\") </> $(mkRelFile "bar\\foo.txt"))
+         (Just $(mkRelFile "bar\\foo.txt")))
+     it "stripProperPrefix parent (parent </> child) = child (relative)"
+        (remainingPathShouldBe
+          $(mkRelDir "bar\\")
+         ($(mkRelDir "bar\\") </> $(mkRelFile "bob\\foo.txt"))
+         (Just $(mkRelFile "bob\\foo.txt")))
+     it "stripProperPrefix parent (parent </> child) = child (UNC)"
+        (remainingPathShouldBe
+          $(mkAbsDir "\\\\host\\share\\")
+         ($(mkAbsDir "\\\\host\\share\\") </> $(mkRelFile "bob\\foo.txt"))
+         (Just $(mkRelFile "bob\\foo.txt")))
+     it "stripProperPrefix parent (parent </> child) = child (Unicode)"
+        (remainingPathShouldBe
+          $(mkAbsDir "\\\\?\\C:\\folder\\")
+         ($(mkAbsDir "\\\\?\\C:\\folder\\") </> $(mkRelFile "bob\\foo.txt"))
+         (Just $(mkRelFile "bob\\foo.txt")))
      it "stripProperPrefix parent parent = _|_"
-        (stripProperPrefix $(mkAbsDir "C:\\home\\chris\\foo")
-                  $(mkAbsDir "C:\\home\\chris\\foo") ==
-         Nothing)
+        (remainingPathShouldBe
+          $(mkAbsDir "C:\\home\\chris\\foo")
+          $(mkAbsDir "C:\\home\\chris\\foo")
+          Nothing)
+  where remainingPathShouldBe prefix path suffix =
+          stripProperPrefix prefix path == suffix
 
 -- | The '</>' operation.
 operationAppend :: Spec
 operationAppend =
   do it "AbsDir + RelDir = AbsDir"
-        ($(mkAbsDir "C:\\home\\") </>
-         $(mkRelDir "chris") ==
-         $(mkAbsDir "C:\\home\\chris\\"))
+        (shouldBe
+         ($(mkAbsDir "C:\\home\\") </> $(mkRelDir "chris"))
+          $(mkAbsDir "C:\\home\\chris\\"))
      it "AbsDir + RelFile = AbsFile"
-        ($(mkAbsDir "C:\\home\\") </>
-         $(mkRelFile "chris\\test.txt") ==
-         $(mkAbsFile "C:\\home\\chris\\test.txt"))
+        (shouldBe
+         ($(mkAbsDir "C:\\home\\") </> $(mkRelFile "chris\\test.txt"))
+          $(mkAbsFile "C:\\home\\chris\\test.txt"))
      it "RelDir + RelDir = RelDir"
-        ($(mkRelDir "home\\") </>
-         $(mkRelDir "chris") ==
-         $(mkRelDir "home\\chris"))
+        (shouldBe
+         ($(mkRelDir "home\\") </> $(mkRelDir "chris"))
+          $(mkRelDir "home\\chris"))
      it ". + . = ."
-        ($(mkRelDir ".\\") </> $(mkRelDir ".") == $(mkRelDir "."))
+        (shouldBe
+         ($(mkRelDir ".\\") </> $(mkRelDir "."))
+          $(mkRelDir "."))
      it ". + x = x"
-        ($(mkRelDir ".") </> $(mkRelDir "x") == $(mkRelDir "x"))
+        (shouldBe
+         ($(mkRelDir ".") </> $(mkRelDir "x"))
+          $(mkRelDir "x"))
      it "x + . = x"
-        ($(mkRelDir "x") </> $(mkRelDir ".\\") == $(mkRelDir "x"))
+        (shouldBe
+         ($(mkRelDir "x") </> $(mkRelDir ".\\"))
+          $(mkRelDir "x"))
      it "RelDir + RelFile = RelFile"
-        ($(mkRelDir "home\\") </>
-         $(mkRelFile "chris\\test.txt") ==
-         $(mkRelFile "home\\chris\\test.txt"))
+        (shouldBe
+         ($(mkRelDir "home\\") </> $(mkRelFile "chris\\test.txt"))
+          $(mkRelFile "home\\chris\\test.txt"))
+     it "AbsDir(UNC) + RelDir = AbsDir(UNC)"
+        (shouldBe
+         ($(mkAbsDir "\\\\host\\share\\") </> $(mkRelDir "folder\\"))
+          $(mkAbsDir "\\\\host\\share\\folder\\"))
+     it "AbsDir(UNC) + RelFile = AbsFile(UNC)"
+        (shouldBe
+         ($(mkAbsDir "\\\\host\\share\\") </> $(mkRelFile "folder\\file.txt"))
+          $(mkAbsFile "\\\\host\\share\\folder\\file.txt"))
+     it "AbsDir(Unicode) + RelDir = AbsDir(Unicode)"
+        (shouldBe
+         ($(mkAbsDir "\\\\?\\C:\\folder\\") </> $(mkRelDir "another\\"))
+          $(mkAbsDir "\\\\?\\C:\\folder\\another\\"))
+     it "AbsDir(Unicode) + RelFile = AbsFile(Unicode)"
+        (shouldBe
+         ($(mkAbsDir "\\\\?\\C:\\folder\\") </> $(mkRelFile "file.txt"))
+          $(mkAbsFile "\\\\?\\C:\\folder\\file.txt"))
 
 operationToFilePath :: Spec
 operationToFilePath =
