@@ -611,7 +611,7 @@ parseRelDir filepath =
   if not (FilePath.isAbsolute filepath) &&
      not (hasParentDir filepath) &&
      not (null filepath) &&
-     not (and $ map FilePath.isPathSeparator filepath) &&
+     not (all FilePath.isPathSeparator filepath) &&
      FilePath.isValid filepath
      then return (Path (normalizeDir filepath))
      else throwM (InvalidRelDir filepath)
@@ -728,49 +728,44 @@ mkRelFile = either (error . show) lift . parseRelFile
 --------------------------------------------------------------------------------
 -- Internal functions
 
--- | Normalizes directory path with file system-specific rules.
+-- | Normalizes directory path with platform-specific rules.
 normalizeDir :: FilePath -> FilePath
 normalizeDir =
       normalizeRelDir
     . FilePath.addTrailingPathSeparator
     . normalizeFilePath
-  where
-      -- Represent a "." in relative dir path as "" internally so that it
-      -- composes without having to renormalize the path.
-      normalizeRelDir p | p == relRootFP = ""
-      normalizeRelDir p = p
+  where -- Represent a "." in relative dir path as "" internally so that it
+        -- composes without having to renormalize the path.
+        normalizeRelDir p
+          | p == relRootFP = ""
+          | otherwise = p
 
--- | Replaces consecutive path seps with single sep
--- | and replaces alt sep with standard sep.
+-- | Replaces consecutive path seps with single sep and replaces alt sep with standard sep.
 normalizeAllSeps :: FilePath -> FilePath
-normalizeAllSeps = foldr norm []
-  where
-      norm ch [] = [ch]
-      norm ch path@(p0:_) |
-        FilePath.isPathSeparator ch && FilePath.isPathSeparator p0 = path
-      norm ch path |
-        FilePath.isPathSeparator ch = FilePath.pathSeparator:path
-      norm ch path = ch:path
+normalizeAllSeps = foldr normSeps []
+  where normSeps ch [] = [ch]
+        normSeps ch path@(p0:_)
+          | FilePath.isPathSeparator ch && FilePath.isPathSeparator p0 = path
+          | FilePath.isPathSeparator ch = FilePath.pathSeparator:path
+          | otherwise = ch:path
 
 -- | Normalizes seps except at the beginning of path.
 normalizeSepsExceptLeading :: FilePath -> FilePath
 normalizeSepsExceptLeading path = normLeadingSeps ++ normalizeAllSeps rest
-  where leadingSeps = takeWhile FilePath.isPathSeparator path
+  where (leadingSeps, rest) = span FilePath.isPathSeparator path
         normLeadingSeps = replicate (min 2 (length leadingSeps)) FilePath.pathSeparator
-        rest = dropWhile FilePath.isPathSeparator path
 
 -- | Normalizes seps only at the beginning of a path.
 normalizeLeadingSeps :: FilePath -> FilePath
-normalizeLeadingSeps (p0:p1:ps) |
-  FilePath.isPathSeparator p0 && FilePath.isPathSeparator p1 =
-    normalizeLeadingSeps (FilePath.pathSeparator:ps)
-normalizeLeadingSeps path = path
+normalizeLeadingSeps path = normLeadingSep ++ rest
+  where (leadingSeps, rest) = span FilePath.isPathSeparator path
+        normLeadingSep = replicate (min 1 (length leadingSeps)) FilePath.pathSeparator
 
 -- | Normalizes seps only at the end of a path.
 normalizeTrailingSeps :: FilePath -> FilePath
 normalizeTrailingSeps = reverse . normalizeLeadingSeps . reverse
 
--- | Applies file system-specific sep normalization following @FilePath.normalise@.
+-- | Applies platform-specific sep normalization following @FilePath.normalise@.
 normalizeFilePath :: FilePath -> FilePath
 normalizeFilePath
   | IS_WINDOWS = normalizeSepsExceptLeading . FilePath.normalise
