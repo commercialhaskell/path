@@ -30,6 +30,10 @@ UNRELEASED:
 	* Add 'Path.Posix' and 'Path.Windows' modules for manipulating
 		Windows or Posix style paths independently of the current platform.
 	* Add 'Lift' instance for 'Path'.
+	* `Path.Windows` normalizes path separators throughout path,
+		including immediately following drive letter.
+	* `Path.Windows` handles UNC (`\\host\share\`) and Unicode (`\\?\C:\`) path
+		without breaking the double-separator prefix.
 
 0.6.1:
 	* Add 'addFileExtension' function and its operator form: (<.>).
