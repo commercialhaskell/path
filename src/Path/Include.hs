@@ -390,7 +390,7 @@ splitExtension (Path fpath) =
     else let fname = init nameDot
          in if fname == [] || fname == "." || fname == ".."
             then throwM $ HasNoExtension fpath
-            else return ( Path (drv ++ dir ++ fname)
+            else return ( Path (normalizeDrive drv ++ dir ++ fname)
                         , FilePath.extSeparator : ext
                         )
     where
@@ -404,6 +404,9 @@ splitExtension (Path fpath) =
             trailingSeps = takeWhile isSep rstr
             xtn  = (takeWhile notSep . dropWhile isSep) rstr
         in (reverse name, reverse xtn ++ trailingSeps)
+    normalizeDrive
+        | IS_WINDOWS = normalizeTrailingSeps
+        | otherwise  = id
 
     (drv, pth)     = FilePath.splitDrive fpath
     (dir, file)    = splitLast FilePath.isPathSeparator pth
@@ -600,6 +603,7 @@ parseAbsDir filepath =
 -- * is @""@
 -- * contains a @..@ path component representing the parent directory
 -- * is not a valid path (See 'FilePath.isValid')
+-- * is all path separators
 --
 parseRelDir :: MonadThrow m
             => FilePath -> m (Path Rel Dir)
@@ -607,6 +611,7 @@ parseRelDir filepath =
   if not (FilePath.isAbsolute filepath) &&
      not (hasParentDir filepath) &&
      not (null filepath) &&
+     not (all FilePath.isPathSeparator filepath) &&
      FilePath.isValid filepath
      then return (Path (normalizeDir filepath))
      else throwM (InvalidRelDir filepath)
@@ -723,31 +728,49 @@ mkRelFile = either (error . show) lift . parseRelFile
 --------------------------------------------------------------------------------
 -- Internal functions
 
--- | Internal use for normalizing a directory.
+-- | Normalizes directory path with platform-specific rules.
 normalizeDir :: FilePath -> FilePath
 normalizeDir =
       normalizeRelDir
     . FilePath.addTrailingPathSeparator
     . normalizeFilePath
-  where
-      -- Represent a "." in relative dir path as "" internally so that it
-      -- composes without having to renormalize the path.
-      normalizeRelDir p | p == relRootFP = ""
-      normalizeRelDir p = p
+  where -- Represent a "." in relative dir path as "" internally so that it
+        -- composes without having to renormalize the path.
+        normalizeRelDir p
+          | p == relRootFP = ""
+          | otherwise = p
 
+-- | Replaces consecutive path seps with single sep and replaces alt sep with standard sep.
+normalizeAllSeps :: FilePath -> FilePath
+normalizeAllSeps = foldr normSeps []
+  where normSeps ch [] = [ch]
+        normSeps ch path@(p0:_)
+          | FilePath.isPathSeparator ch && FilePath.isPathSeparator p0 = path
+          | FilePath.isPathSeparator ch = FilePath.pathSeparator:path
+          | otherwise = ch:path
+
+-- | Normalizes seps in whole path, but if there are 2+ seps at the beginning,
+--   they are normalized to exactly 2 to preserve UNC and Unicode prefixed paths.
+normalizeWindowsSeps :: FilePath -> FilePath
+normalizeWindowsSeps path = normLeadingSeps ++ normalizeAllSeps rest
+  where (leadingSeps, rest) = span FilePath.isPathSeparator path
+        normLeadingSeps = replicate (min 2 (length leadingSeps)) FilePath.pathSeparator
+
+-- | Normalizes seps only at the beginning of a path.
+normalizeLeadingSeps :: FilePath -> FilePath
+normalizeLeadingSeps path = normLeadingSep ++ rest
+  where (leadingSeps, rest) = span FilePath.isPathSeparator path
+        normLeadingSep = replicate (min 1 (length leadingSeps)) FilePath.pathSeparator
+
+-- | Normalizes seps only at the end of a path.
+normalizeTrailingSeps :: FilePath -> FilePath
+normalizeTrailingSeps = reverse . normalizeLeadingSeps . reverse
+
+-- | Applies platform-specific sep normalization following @FilePath.normalise@.
 normalizeFilePath :: FilePath -> FilePath
-#if MIN_VERSION_filepath(1,4,0)
-normalizeFilePath = FilePath.normalise
-#else
 normalizeFilePath
-  | IS_WINDOWS = FilePath.normalise
-  | otherwise = normalizeLeadingSeparators . FilePath.normalise
-    where
-        sep = FilePath.pathSeparator
-        normalizeLeadingSeparators (x1:x2:xs) | x1 == sep && x2 == sep
-            = normalizeLeadingSeparators (sep:xs)
-        normalizeLeadingSeparators x = x
-#endif
+  | IS_WINDOWS = normalizeWindowsSeps . FilePath.normalise
+  | otherwise  = normalizeLeadingSeps . FilePath.normalise
 
 --------------------------------------------------------------------------------
 -- Deprecated
