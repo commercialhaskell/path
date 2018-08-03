@@ -603,7 +603,7 @@ parseAbsDir filepath =
 -- * is @""@
 -- * contains a @..@ path component representing the parent directory
 -- * is not a valid path (See 'FilePath.isValid')
--- * is not all path separators
+-- * is all path separators
 --
 parseRelDir :: MonadThrow m
             => FilePath -> m (Path Rel Dir)
@@ -749,9 +749,10 @@ normalizeAllSeps = foldr normSeps []
           | FilePath.isPathSeparator ch = FilePath.pathSeparator:path
           | otherwise = ch:path
 
--- | Normalizes seps except at the beginning of path.
-normalizeSepsExceptLeading :: FilePath -> FilePath
-normalizeSepsExceptLeading path = normLeadingSeps ++ normalizeAllSeps rest
+-- | Normalizes seps in whole path, but if there are 2+ seps at the beginning,
+--   they are normalized to exactly 2 to preserve UNC and Unicode prefixed paths.
+normalizeWindowsSeps :: FilePath -> FilePath
+normalizeWindowsSeps path = normLeadingSeps ++ normalizeAllSeps rest
   where (leadingSeps, rest) = span FilePath.isPathSeparator path
         normLeadingSeps = replicate (min 2 (length leadingSeps)) FilePath.pathSeparator
 
@@ -768,7 +769,7 @@ normalizeTrailingSeps = reverse . normalizeLeadingSeps . reverse
 -- | Applies platform-specific sep normalization following @FilePath.normalise@.
 normalizeFilePath :: FilePath -> FilePath
 normalizeFilePath
-  | IS_WINDOWS = normalizeSepsExceptLeading . FilePath.normalise
+  | IS_WINDOWS = normalizeWindowsSeps . FilePath.normalise
   | otherwise  = normalizeLeadingSeps . FilePath.normalise
 
 --------------------------------------------------------------------------------
