@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP                #-}
+{-# LANGUAGE DeriveGeneric      #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE TemplateHaskell    #-}
 
@@ -14,6 +15,7 @@ module Path.Internal
 
 import Control.DeepSeq (NFData (..))
 import Data.Aeson (ToJSON (..))
+import GHC.Generics (Generic)
 import Data.Data
 import Data.Hashable
 import Data.List
@@ -35,7 +37,7 @@ import qualified System.FilePath as FilePath
 -- All directories end in a trailing separator. There are no duplicate
 -- path separators @\/\/@, no @..@, no @.\/@, no @~\/@, etc.
 newtype Path b t = Path FilePath
-  deriving (Typeable)
+  deriving (Data, Typeable, Generic)
 
 -- | String equality.
 --
