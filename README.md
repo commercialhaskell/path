@@ -92,7 +92,7 @@ Here is the type:
 
 ```haskell
 newtype Path b t = Path FilePath
-  deriving (Typeable)
+  deriving (Data, Typeable, Generic)
 ```
 
 The type variables are:
@@ -269,7 +269,7 @@ dirname :: Path b Dir -> Path Rel Dir
 Stripping the parent directory from a path:
 
 ```haskell
-stripDir :: MonadThrow m => Path b Dir -> Path b t -> m (Path Rel t)
+stripProperPrefix :: MonadThrow m => Path b Dir -> Path b t -> m (Path Rel t)
 ```
 
 ## Review
