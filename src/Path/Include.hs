@@ -260,7 +260,7 @@ relfile = qq mkRelFile
 --
 infixr 5 </>
 (</>) :: Path b Dir -> Path Rel t -> Path b t
-(</>) (Path a) (Path b) = Path (a ++ dropWhile FilePath.isPathSeparator b)
+(</>) (Path a) (Path b) = Path (a ++ b)
 
 -- | If the directory in the first argument is a proper prefix of the path in
 -- the second argument strip it from the second argument, generating a path
