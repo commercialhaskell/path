@@ -60,6 +60,15 @@ module Path.PLATFORM_NAME
   ,splitExtension
   ,fileExtension
   ,replaceExtension
+   -- * Validation
+  ,isValidAbsDir
+  ,isValidRelDir
+  ,isValidAbsFile
+  ,isValidRelFile
+  ,isNormalizedAbsDir
+  ,isNormalizedRelDir
+  ,isNormalizedAbsFile
+  ,isNormalizedRelFile
    -- * Parsing
   ,parseAbsDir
   ,parseRelDir
@@ -576,6 +585,65 @@ infixr 7 -<.>
 (-<.>) = flip setFileExtension
 
 --------------------------------------------------------------------------------
+-- Validation
+
+-- | Is the string a valid absolute directory?
+isValidAbsDir :: FilePath -> Bool
+isValidAbsDir filepath =
+  FilePath.isValid filepath &&
+  FilePath.isAbsolute filepath &&
+  not (hasParentDir filepath)
+
+-- | Is the string a valid relative directory?
+isValidRelDir :: FilePath -> Bool
+isValidRelDir filepath =
+  FilePath.isValid filepath &&
+  FilePath.isRelative filepath &&
+  not (hasParentDir filepath) &&
+  not (null filepath)
+
+-- | Is the string a valid absolute file?
+isValidAbsFile :: FilePath -> Bool
+isValidAbsFile filepath =
+  FilePath.isValid filepath &&
+  FilePath.isAbsolute filepath &&
+  not (FilePath.hasTrailingPathSeparator filepath) &&
+  not (hasParentDir filepath)
+
+-- | Is the string a valid relative file?
+isValidRelFile :: FilePath -> Bool
+isValidRelFile filepath =
+  FilePath.isValid filepath &&
+  FilePath.isRelative filepath &&
+  not (FilePath.hasTrailingPathSeparator filepath) &&
+  not (hasParentDir filepath) &&
+  not (null filepath)
+
+-- | Is the string a valid, normalized absolute directory?
+isNormalizedAbsDir :: FilePath -> Bool
+isNormalizedAbsDir filepath =
+  isValidAbsDir filepath &&
+  FilePath.hasTrailingPathSeparator filepath
+
+-- | Is the string a valid, normalized relative directory?
+isNormalizedRelDir :: FilePath -> Bool
+isNormalizedRelDir filepath =
+  isValidRelDir filepath &&
+  FilePath.hasTrailingPathSeparator filepath
+
+-- | Is the string a valid, normalized absolute file?
+isNormalizedAbsFile :: FilePath -> Bool
+isNormalizedAbsFile filepath =
+  isValidAbsFile filepath &&
+  filepath /= "."
+
+-- | Is the string a valid, normalized relative file?
+isNormalizedRelFile :: FilePath -> Bool
+isNormalizedRelFile filepath =
+  isValidRelFile filepath &&
+  filepath /= "."
+
+--------------------------------------------------------------------------------
 -- Parsers
 
 -- | Convert an absolute 'FilePath' to a normalized absolute dir 'Path'.
@@ -589,11 +657,11 @@ infixr 7 -<.>
 parseAbsDir :: MonadThrow m
             => FilePath -> m (Path Abs Dir)
 parseAbsDir filepath =
-  if FilePath.isAbsolute filepath &&
-     not (hasParentDir filepath) &&
-     FilePath.isValid filepath
-     then return (Path (normalizeDir filepath))
-     else throwM (InvalidAbsDir filepath)
+  case isValidAbsDir filepath of
+    True
+      | normalized <- normalizeDir filepath
+      , isNormalizedAbsDir normalized -> return (Path normalized)
+    _ -> throwM (InvalidAbsDir filepath)
 
 -- | Convert a relative 'FilePath' to a normalized relative dir 'Path'.
 --
@@ -608,13 +676,11 @@ parseAbsDir filepath =
 parseRelDir :: MonadThrow m
             => FilePath -> m (Path Rel Dir)
 parseRelDir filepath =
-  if not (FilePath.isAbsolute filepath) &&
-     not (hasParentDir filepath) &&
-     not (null filepath) &&
-     not (all FilePath.isPathSeparator filepath) &&
-     FilePath.isValid filepath
-     then return (Path (normalizeDir filepath))
-     else throwM (InvalidRelDir filepath)
+  case isValidRelDir filepath of
+    True
+      | normalized <- normalizeDir filepath
+      , isNormalizedRelDir normalized -> return (Path normalized)
+    _ -> throwM (InvalidRelDir filepath)
 
 -- | Convert an absolute 'FilePath' to a normalized absolute file 'Path'.
 --
@@ -632,20 +698,11 @@ parseRelDir filepath =
 parseAbsFile :: MonadThrow m
              => FilePath -> m (Path Abs File)
 parseAbsFile filepath =
-  case validAbsFile filepath of
+  case isValidAbsFile filepath of
     True
       | normalized <- normalizeFilePath filepath
-      , validAbsFile normalized ->
-        return (Path normalized)
+      , isNormalizedAbsFile normalized -> return (Path normalized)
     _ -> throwM (InvalidAbsFile filepath)
-
--- | Is the string a valid absolute file?
-validAbsFile :: FilePath -> Bool
-validAbsFile filepath =
-  FilePath.isAbsolute filepath &&
-  not (FilePath.hasTrailingPathSeparator filepath) &&
-  not (hasParentDir filepath) &&
-  FilePath.isValid filepath
 
 -- | Convert a relative 'FilePath' to a normalized relative file 'Path'.
 --
@@ -664,20 +721,11 @@ validAbsFile filepath =
 parseRelFile :: MonadThrow m
              => FilePath -> m (Path Rel File)
 parseRelFile filepath =
-  case validRelFile filepath of
+  case isValidRelFile filepath of
     True
       | normalized <- normalizeFilePath filepath
-      , validRelFile normalized -> return (Path normalized)
+      , isNormalizedRelFile normalized -> return (Path normalized)
     _ -> throwM (InvalidRelFile filepath)
-
--- | Is the string a valid relative file?
-validRelFile :: FilePath -> Bool
-validRelFile filepath =
-  not
-    (FilePath.isAbsolute filepath || FilePath.hasTrailingPathSeparator filepath) &&
-  not (null filepath) &&
-  not (hasParentDir filepath) &&
-  filepath /= "." && FilePath.isValid filepath
 
 --------------------------------------------------------------------------------
 -- Conversion
