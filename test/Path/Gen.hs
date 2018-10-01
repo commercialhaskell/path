@@ -17,40 +17,17 @@ import           Data.GenValidity
 
 import           Test.QuickCheck
 
-
 instance Validity (Path Abs File) where
-  isValid p@(Path fp)
-    =  FilePath.isAbsolute fp
-    && not (FilePath.hasTrailingPathSeparator fp)
-    && FilePath.isValid fp
-    && not (hasParentDir fp)
-    && (parseAbsFile fp == Just p)
+  isValid = isValidAbsFile . toFilePath
 
 instance Validity (Path Rel File) where
-  isValid p@(Path fp)
-    =  FilePath.isRelative fp
-    && not (FilePath.hasTrailingPathSeparator fp)
-    && FilePath.isValid fp
-    && fp /= "."
-    && not (hasParentDir fp)
-    && (parseRelFile fp == Just p)
+  isValid = isValidRelFile . toFilePath
 
 instance Validity (Path Abs Dir) where
-  isValid p@(Path fp)
-    =  FilePath.isAbsolute fp
-    && FilePath.hasTrailingPathSeparator fp
-    && FilePath.isValid fp
-    && not (hasParentDir fp)
-    && (parseAbsDir fp == Just p)
+  isValid = isValidAbsDir . toFilePath
 
 instance Validity (Path Rel Dir) where
-  isValid p =
-    FilePath.isRelative fp
-    && FilePath.hasTrailingPathSeparator fp
-    && FilePath.isValid fp
-    && not (hasParentDir fp)
-    && (parseRelDir fp == Just p)
-    where fp = toFilePath p
+  isValid = isValidRelDir . toFilePath
 
 instance GenUnchecked (Path Abs File) where
   genUnchecked = Path <$> genFilePath
