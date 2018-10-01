@@ -33,12 +33,12 @@ spec = parallel $ do
      describe "Parsing: Path Rel Dir" (parserSpec parseRelDir)
      describe "Parsing: Path Abs File" (parserSpec parseAbsFile)
      describe "Parsing: Path Rel File" (parserSpec parseRelFile)
-     -- describe "Operations: (</>)" operationAppend
-     -- describe "Operations: stripProperPrefix" operationStripDir
-     -- describe "Operations: isProperPrefixOf" operationIsParentOf
-     -- describe "Operations: parent" operationParent
-     -- describe "Operations: filename" operationFilename
-     -- describe "Extensions" extensionsSpec
+     describe "Operations: (</>)" operationAppend
+     describe "Operations: stripProperPrefix" operationStripDir
+     describe "Operations: isProperPrefixOf" operationIsParentOf
+     describe "Operations: parent" operationParent
+     describe "Operations: filename" operationFilename
+     describe "Extensions" extensionsSpec
 
 -- | The 'filename' operation.
 operationFilename :: Spec
