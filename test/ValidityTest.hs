@@ -25,16 +25,20 @@ main = hspec spec
 -- | Test suite.
 spec :: Spec
 spec = parallel $ do
+     describe "Validation: Path Abs Dir" (validationSpec isValidAbsDir parseAbsDir)
+     describe "Validation: Path Rel Dir" (validationSpec isValidRelDir parseRelDir)
+     describe "Validation: Path Abs File" (validationSpec isValidAbsFile parseAbsFile)
+     describe "Validation: Path Rel File" (validationSpec isValidRelFile parseRelFile)
      describe "Parsing: Path Abs Dir" (parserSpec parseAbsDir)
      describe "Parsing: Path Rel Dir" (parserSpec parseRelDir)
      describe "Parsing: Path Abs File" (parserSpec parseAbsFile)
      describe "Parsing: Path Rel File" (parserSpec parseRelFile)
-     describe "Operations: (</>)" operationAppend
-     describe "Operations: stripProperPrefix" operationStripDir
-     describe "Operations: isProperPrefixOf" operationIsParentOf
-     describe "Operations: parent" operationParent
-     describe "Operations: filename" operationFilename
-     describe "Extensions" extensionsSpec
+     -- describe "Operations: (</>)" operationAppend
+     -- describe "Operations: stripProperPrefix" operationStripDir
+     -- describe "Operations: isProperPrefixOf" operationIsParentOf
+     -- describe "Operations: parent" operationParent
+     -- describe "Operations: filename" operationFilename
+     -- describe "Extensions" extensionsSpec
 
 -- | The 'filename' operation.
 operationFilename :: Spec
@@ -213,5 +217,19 @@ extensionsSpec = do
 
 parserSpec :: (Show p, Validity p) => (FilePath -> Maybe p) -> Spec
 parserSpec parser =
-     it "Produces valid paths when it succeeds" $
+     it "produces valid paths when it succeeds" $
        validIfSucceedsOnGen parser genFilePath
+
+implies :: Bool -> Bool -> Bool
+implies True = id
+implies False = const True
+
+validationSpec :: Show p
+  => (FilePath -> Bool)
+  -> (FilePath -> Maybe p)
+  -> Spec
+validationSpec isValid parser =
+      it "returning True should guarantee path is parsable" $
+         forAllShrink genValid shrink validGuaranteesParsable
+    where
+      validGuaranteesParsable p = isValid p `shouldBe` isJust (parser p)
