@@ -214,4 +214,4 @@ extensionsSpec = do
 parserSpec :: (Show p, Validity p) => (FilePath -> Maybe p) -> Spec
 parserSpec parser =
      it "Produces valid paths when it succeeds" $
-       validIfSucceedsOnGen parser genFilePath
+       validIfSucceedsOnGen parser genFilePath (const [])
