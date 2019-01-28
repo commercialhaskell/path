@@ -31,6 +31,7 @@ module Path.PLATFORM_NAME
   ,Rel
   ,File
   ,Dir
+  ,SomeBase
    -- * Exceptions
   ,PathException(..)
   -- * QuasiQuoters
@@ -63,12 +64,16 @@ module Path.PLATFORM_NAME
   ,parseRelDir
   ,parseAbsFile
   ,parseRelFile
+  ,parseSomeDir
+  ,parseSomeFile
   -- * Conversion
   ,toFilePath
   ,fromAbsDir
   ,fromRelDir
   ,fromAbsFile
   ,fromRelFile
+  ,fromSomeDir
+  ,fromSomeFile
   -- * TemplateHaskell constructors
   -- | These require the TemplateHaskell language extension.
   ,mkAbsDir
@@ -86,6 +91,7 @@ module Path.PLATFORM_NAME
   )
   where
 
+import           Control.Applicative (Alternative(..))
 import           Control.Exception (Exception(..))
 import           Control.Monad (liftM, when)
 import           Control.Monad.Catch (MonadThrow(..))
@@ -176,6 +182,8 @@ data PathException
   | InvalidRelDir FilePath
   | InvalidAbsFile FilePath
   | InvalidRelFile FilePath
+  | InvalidFile FilePath
+  | InvalidDir FilePath
   | NotAProperPrefix FilePath FilePath
   | HasNoExtension FilePath
   | InvalidExtension String
@@ -794,6 +802,51 @@ normalizeFilePath :: FilePath -> FilePath
 normalizeFilePath
   | IS_WINDOWS = normalizeWindowsSeps . FilePath.normalise
   | otherwise  = normalizeLeadingSeps . FilePath.normalise
+
+-- | Path of some type.  @t@ represents the type, whether file or
+-- directory.  Pattern match to find whether the path is absolute or
+-- relative.
+data SomeBase t = Abs (Path Abs t)
+                | Rel (Path Rel t)
+
+-- | Convert a valid directory to a 'FilePath'.
+fromSomeDir :: SomeBase Dir -> FilePath
+fromSomeDir (Abs p) = fromAbsDir p
+fromSomeDir (Rel p) = fromRelDir p
+
+-- | Convert a valid file to a 'FilePath'.
+fromSomeFile :: SomeBase File -> FilePath
+fromSomeFile (Abs p) = fromAbsFile p
+fromSomeFile (Rel p) = fromRelFile p
+
+-- | Convert an absolute or relative 'FilePath' to a normalized 'SomeBase'
+-- representing a directory.
+--
+-- Throws: 'InvalidDir' when the supplied path:
+--
+-- * contains a @..@ path component representing the parent directory
+-- * is not a valid path (See 'FilePath.isValid')
+parseSomeDir :: MonadThrow m => FilePath -> m (SomeBase Dir)
+parseSomeDir fp = maybe (throwM (InvalidDir fp)) pure
+                $ (Abs <$> parseAbsDir fp)
+              <|> (Rel <$> parseRelDir fp)
+
+-- | Convert an absolute or relative 'FilePath' to a normalized 'SomeBase'
+-- representing a file.
+--
+-- Throws: 'InvalidFile' when the supplied path:
+--
+-- * is a directory path i.e.
+--
+--     * has a trailing path separator
+--     * is @.@ or ends in @/.@
+--
+-- * contains a @..@ path component representing the parent directory
+-- * is not a valid path (See 'FilePath.isValid')
+parseSomeFile :: MonadThrow m => FilePath -> m (SomeBase File)
+parseSomeFile fp = maybe (throwM (InvalidFile fp)) pure
+                 $ (Abs <$> parseAbsFile fp)
+               <|> (Rel <$> parseRelFile fp)
 
 --------------------------------------------------------------------------------
 -- Deprecated
