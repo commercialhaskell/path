@@ -21,6 +21,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE EmptyDataDecls #-}
 {-# LANGUAGE FlexibleInstances #-}
 
@@ -92,15 +93,18 @@ module Path.PLATFORM_NAME
   where
 
 import           Control.Applicative (Alternative(..))
+import           Control.DeepSeq (NFData (..))
 import           Control.Exception (Exception(..))
 import           Control.Monad (liftM, when)
 import           Control.Monad.Catch (MonadThrow(..))
-import           Data.Aeson (FromJSON (..), FromJSONKey(..))
+import           Data.Aeson (FromJSON (..), FromJSONKey(..), ToJSON(..))
 import qualified Data.Aeson.Types as Aeson
 import           Data.Data
 import qualified Data.Text as T
+import           Data.Hashable
 import           Data.List
 import           Data.Maybe
+import           GHC.Generics (Generic)
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Syntax (lift)
 import           Language.Haskell.TH.Quote (QuasiQuoter(..))
@@ -808,16 +812,47 @@ normalizeFilePath
 -- relative.
 data SomeBase t = Abs (Path Abs t)
                 | Rel (Path Rel t)
+  deriving (Typeable, Generic, Eq, Ord)
+
+instance NFData (SomeBase t) where
+  rnf (Abs p) = rnf p
+  rnf (Rel p) = rnf p
+
+instance Show (SomeBase t) where
+  show = show . fromSomeBase
+
+instance ToJSON (SomeBase t) where
+  toJSON = toJSON . fromSomeBase
+  {-# INLINE toJSON #-}
+#if MIN_VERSION_aeson(0,10,0)
+  toEncoding = toEncoding . fromSomeBase
+  {-# INLINE toEncoding #-}
+#endif
+
+instance Hashable (SomeBase t) where
+  -- See 'Hashable' 'Path' instance for details.
+  hashWithSalt n path = hashWithSalt n (fromSomeBase path)
+
+instance FromJSON (SomeBase Dir) where
+  parseJSON = parseJSONWith parseSomeDir
+  {-# INLINE parseJSON #-}
+
+instance FromJSON (SomeBase File) where
+  parseJSON = parseJSONWith parseSomeFile
+  {-# INLINE parseJSON #-}
+
+-- | Convert a valid path to a 'FilePath'.
+fromSomeBase :: SomeBase t -> FilePath
+fromSomeBase (Abs p) = toFilePath p
+fromSomeBase (Rel p) = toFilePath p
 
 -- | Convert a valid directory to a 'FilePath'.
 fromSomeDir :: SomeBase Dir -> FilePath
-fromSomeDir (Abs p) = fromAbsDir p
-fromSomeDir (Rel p) = fromRelDir p
+fromSomeDir = fromSomeBase
 
 -- | Convert a valid file to a 'FilePath'.
 fromSomeFile :: SomeBase File -> FilePath
-fromSomeFile (Abs p) = fromAbsFile p
-fromSomeFile (Rel p) = fromRelFile p
+fromSomeFile = fromSomeBase
 
 -- | Convert an absolute or relative 'FilePath' to a normalized 'SomeBase'
 -- representing a directory.
