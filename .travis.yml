@@ -25,8 +25,8 @@ matrix:
       addons: {apt: {packages: [cabal-install-2.4,ghc-8.2.2], sources: [hvr-ghc]}}
     - env: TYPE=cabal CABALVER=2.4 GHCVER=8.4.4
       addons: {apt: {packages: [cabal-install-2.4,ghc-8.4.4], sources: [hvr-ghc]}}
-    - env: TYPE=cabal CABALVER=2.4 GHCVER=8.6.3
-      addons: {apt: {packages: [cabal-install-2.4,ghc-8.6.3], sources: [hvr-ghc]}}
+    - env: TYPE=cabal CABALVER=2.4 GHCVER=8.6.4
+      addons: {apt: {packages: [cabal-install-2.4,ghc-8.6.4], sources: [hvr-ghc]}}
     - env: TYPE=stack ARGS="--stack-yaml lts-2.yaml"
     - env: TYPE=stack ARGS="--stack-yaml lts-6.yaml"
     - env: TYPE=stack ARGS="--stack-yaml stack.yaml"
