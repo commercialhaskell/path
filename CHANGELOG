@@ -1,4 +1,4 @@
-UNRELEASED:
+0.7.0:
 	* BREAKING CHANGE: "fileExtension" now throws an exception if the file has no
 		extension. You can use the result as a "Maybe" in pure
 		code or handle the exception appropriately in any other monad.
