@@ -34,6 +34,8 @@ UNRELEASED:
 		including immediately following drive letter.
 	* `Path.Windows` handles UNC (`\\host\share\`) and Unicode (`\\?\C:\`) path
 		without breaking the double-separator prefix.
+	* Remove support for old GHC version. The oldest supported version
+	is 8.2.
 
 0.6.1:
 	* Add 'addFileExtension' function and its operator form: (<.>).

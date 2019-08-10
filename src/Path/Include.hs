@@ -2,7 +2,6 @@
 --     PLATFORM_NAME = Posix | Windows
 --     IS_WINDOWS    = False | True
 
-
 -- | This library provides a well-typed representation of paths in a filesystem
 -- directory tree.
 --
@@ -19,7 +18,6 @@
 -- we represent the notion of a relative root by "@.@". The relative root denotes
 -- the directory which contains the first component of a relative path.
 
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE DeriveDataTypeable #-}
@@ -157,16 +155,14 @@ data PathException
   deriving (Show,Eq,Typeable)
 
 instance Exception PathException where
-#if MIN_VERSION_base(4,8,0)
-    displayException (InvalidExtension ext) = concat
-        [ "Invalid extension ["
-        , ext
-        , "]. A valid extension starts with a '.' followed by one or more "
-        , "characters other than '.', and it must be a valid filename, "
-        , "notably it cannot include a path separator."
-        ]
-    displayException x = show x
-#endif
+  displayException (InvalidExtension ext) = concat
+    [ "Invalid extension ["
+    , ext
+    , "]. A valid extension starts with a '.' followed by one or more "
+    , "characters other than '.', and it must be a valid filename, "
+    , "notably it cannot include a path separator."
+    ]
+  displayException x = show x
 
 --------------------------------------------------------------------------------
 -- QuasiQuoters
