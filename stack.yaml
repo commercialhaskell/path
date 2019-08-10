@@ -1,5 +1,2 @@
 extra-deps:
-- genvalidity-0.3.2.0
-- genvalidity-property-0.0.0.0
-- validity-0.3.3.0
-resolver: lts-8.3
+resolver: lts-14.0
