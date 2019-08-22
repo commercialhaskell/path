@@ -89,9 +89,10 @@ module Path.PLATFORM_NAME
 import           Control.Exception (Exception(..))
 import           Control.Monad (liftM, when)
 import           Control.Monad.Catch (MonadThrow(..))
-import           Data.Aeson (FromJSON (..))
+import           Data.Aeson (FromJSON (..), FromJSONKey(..))
 import qualified Data.Aeson.Types as Aeson
 import           Data.Data
+import qualified Data.Text as T
 import           Data.List
 import           Data.Maybe
 import           Language.Haskell.TH
@@ -140,6 +141,32 @@ parseJSONWith f x =
        Right p -> return p
        Left e -> fail (show e)
 {-# INLINE parseJSONWith #-}
+
+instance FromJSONKey (Path Abs File) where
+  fromJSONKey = fromJSONKeyWith parseAbsFile
+  {-# INLINE fromJSONKey #-}
+
+instance FromJSONKey (Path Rel File) where
+  fromJSONKey = fromJSONKeyWith parseRelFile
+  {-# INLINE fromJSONKey #-}
+
+instance FromJSONKey (Path Abs Dir) where
+  fromJSONKey = fromJSONKeyWith parseAbsDir
+  {-# INLINE fromJSONKey #-}
+
+instance FromJSONKey (Path Rel Dir) where
+  fromJSONKey = fromJSONKeyWith parseRelDir
+  {-# INLINE fromJSONKey #-}
+
+fromJSONKeyWith :: (Show e)
+                => (String -> Either e b) -> Aeson.FromJSONKeyFunction b
+fromJSONKeyWith f =
+  Aeson.FromJSONKeyTextParser $ \t ->
+    case f (T.unpack t) of
+      Left e -> fail (show e)
+      Right rf -> pure rf
+
+{-# INLINE fromJSONKeyWith #-}
 
 -- | Exceptions that can occur during path operations.
 --

@@ -14,7 +14,9 @@ module Path.Internal
   where
 
 import Control.DeepSeq (NFData (..))
-import Data.Aeson (ToJSON (..))
+import Data.Aeson (ToJSON (..), ToJSONKey(..))
+import Data.Aeson.Types (toJSONKeyText)
+import qualified Data.Text as T (pack)
 import GHC.Generics (Generic)
 import Data.Data
 import Data.Hashable
@@ -86,6 +88,9 @@ instance ToJSON (Path b t) where
   toEncoding = toEncoding . toFilePath
   {-# INLINE toEncoding #-}
 #endif
+
+instance ToJSONKey (Path b t) where
+  toJSONKey = toJSONKeyText $ T.pack . toFilePath
 
 instance Hashable (Path b t) where
   -- A "." is represented as an empty string ("") internally. Hashing ""
