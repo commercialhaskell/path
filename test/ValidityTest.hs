@@ -214,4 +214,10 @@ extensionsSpec = do
 parserSpec :: (Show p, Validity p) => (FilePath -> Maybe p) -> Spec
 parserSpec parser =
      it "Produces valid paths when it succeeds" $
-       validIfSucceedsOnGen parser genFilePath shrinkUnchecked
+         forAllShrink genFilePath shrinkUnchecked $ \path ->
+              case parser path of
+                  Nothing -> pure ()
+                  Just p ->
+                      case prettyValidate p of
+                          Left err -> expectationFailure err
+                          Right _ -> pure ()
