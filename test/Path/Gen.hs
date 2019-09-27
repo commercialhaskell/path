@@ -28,15 +28,16 @@ import Test.QuickCheck
 -- * Its path does not contain '..'.
 -- * Parsing the path and rendering it again results in the same path.
 instance Validity (Path Abs File) where
-  validate p@(Path fp) =
-    mconcat
+  validate p =
+    let fp = toFilePath p
+    in mconcat
       [ declare "The path is absolute." $ FilePath.isAbsolute fp
       , declare "The path has no trailing path separator." $
         not (FilePath.hasTrailingPathSeparator fp)
       , declare "System.FilePath considers the path valid." $ FilePath.isValid fp
       , declare "The path does not end in /." $ not ("/." `isSuffixOf` fp)
       , declare "The path does not equal \".\"" $ fp /= "."
-      , declare "The path does not a parent directory." $ not (hasParentDir fp)
+      , declare "The path does not have a parent directory." $ not (hasParentDir fp)
       , declare "The path can be identically parsed as an absolute file path." $
         parseAbsFile fp == Just p
       ]
@@ -53,8 +54,9 @@ instance Validity (Path Abs File) where
 -- * Its path does not contain '..'.
 -- * Parsing the path and rendering it again results in the same path.
 instance Validity (Path Rel File) where
-  validate p@(Path fp) =
-    mconcat
+  validate p =
+    let fp = toFilePath p
+    in mconcat
       [ declare "The path is relative." $ FilePath.isRelative fp
       , declare "The path has no trailing path separator." $
         not (FilePath.hasTrailingPathSeparator fp)
@@ -62,7 +64,7 @@ instance Validity (Path Rel File) where
       , declare "The path does not equal \".\"" $ fp /= "."
       , declare "The path is not empty" $ not (null fp)
       , declare "The path does not end in /." $ not ("/." `isSuffixOf` fp)
-      , declare "The path does not a parent directory." $ not (hasParentDir fp)
+      , declare "The path does not have a parent directory." $ not (hasParentDir fp)
       , declare "The path can be identically parsed as a relative file path." $
         parseRelFile fp == Just p
       ]
@@ -75,12 +77,13 @@ instance Validity (Path Rel File) where
 -- * Its path does not contain '..'.
 -- * Parsing the path and rendering it again results in the same path.
 instance Validity (Path Abs Dir) where
-  validate p@(Path fp) =
-    mconcat
+  validate p =
+    let fp = toFilePath p
+    in mconcat
       [ declare "The path is absolute." $ FilePath.isAbsolute fp
       , declare "The path has a trailing path separator." $ FilePath.hasTrailingPathSeparator fp
       , declare "System.FilePath considers the path valid." $ FilePath.isValid fp
-      , declare "The path does not a parent directory." $ not (hasParentDir fp)
+      , declare "The path does not have a parent directory." $ not (hasParentDir fp)
       , declare "The path can be identically parsed as an absolute directory path." $
         parseAbsDir fp == Just p
       ]
@@ -93,9 +96,9 @@ instance Validity (Path Abs Dir) where
 -- * Its path does not contain '..'.
 -- * Parsing the path and rendering it again results in the same path.
 instance Validity (Path Rel Dir) where
-  validate (Path "./") = valid
-  validate p@(Path fp) =
-    mconcat
+  validate p =
+    let fp = toFilePath p
+    in mconcat
       [ declare "The path is relative." $ FilePath.isRelative fp
       , declare "The path has a trailing path separator." $ FilePath.hasTrailingPathSeparator fp
       , declare "System.FilePath considers the path valid." $ FilePath.isValid fp
