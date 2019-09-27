@@ -93,7 +93,7 @@ instance Validity (Path Abs Dir) where
 -- * Its path does not contain '..'.
 -- * Parsing the path and rendering it again results in the same path.
 instance Validity (Path Rel Dir) where
-  validate (Path "./") = valid
+  validate (Path "") = valid
   validate p@(Path fp) =
     mconcat
       [ declare "The path is relative." $ FilePath.isRelative fp
