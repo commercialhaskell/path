@@ -108,22 +108,26 @@ instance Validity (Path Rel Dir) where
 instance GenUnchecked (Path Abs File) where
   genUnchecked = Path <$> genFilePath
 
-instance GenValid (Path Abs File)
+instance GenValid (Path Abs File) where
+  shrinkValid = shrinkValidWith parseAbsFile
 
 instance GenUnchecked (Path Rel File) where
   genUnchecked = Path <$> genFilePath
 
-instance GenValid (Path Rel File)
+instance GenValid (Path Rel File) where
+  shrinkValid = shrinkValidWith parseRelFile
 
 instance GenUnchecked (Path Abs Dir) where
   genUnchecked = Path <$> genFilePath
 
-instance GenValid (Path Abs Dir)
+instance GenValid (Path Abs Dir) where
+  shrinkValid = shrinkValidWith parseAbsDir
 
 instance GenUnchecked (Path Rel Dir) where
   genUnchecked = Path <$> genFilePath
 
-instance GenValid (Path Rel Dir)
+instance GenValid (Path Rel Dir) where
+  shrinkValid = shrinkValidWith parseRelDir
 
 data Extension =
   Extension String
@@ -152,21 +156,8 @@ genFilePath = listOf genPathyChar
 genPathyChar :: Gen Char
 genPathyChar = frequency [(2, arbitrary), (1, elements "./\\")]
 
-shrinkValidAbsFile :: Path Abs File -> [Path Abs File]
-shrinkValidAbsFile = shrinkValidWith parseAbsFile
-
-shrinkValidAbsDir :: Path Abs Dir -> [Path Abs Dir]
-shrinkValidAbsDir = shrinkValidWith parseAbsDir
-
-shrinkValidRelFile :: Path Rel File -> [Path Rel File]
-shrinkValidRelFile = shrinkValidWith parseRelFile
-
-shrinkValidRelDir :: Path Rel Dir -> [Path Rel Dir]
-shrinkValidRelDir (Path []) = []
-shrinkValidRelDir p = shrinkValidWith parseRelDir p
-
 shrinkValidWith :: (FilePath -> Maybe (Path a b)) -> Path a b -> [Path a b]
-shrinkValidWith fun (Path s) = mapMaybe fun $ shrink s
+shrinkValidWith fun (Path f) = mapMaybe fun $ shrinkUnchecked f
 
 shrinkValidExtension :: Extension -> [Extension]
 shrinkValidExtension (Extension s) =
