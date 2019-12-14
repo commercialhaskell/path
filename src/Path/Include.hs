@@ -724,7 +724,7 @@ fromRelFile = toFilePath
 --------------------------------------------------------------------------------
 -- Constructors
 
--- | Make a 'Path' 'Abs' Dir'.
+-- | Make a 'Path' 'Abs' 'Dir'.
 --
 -- Remember: due to the nature of absolute paths this (e.g. @\/home\/foo@)
 -- may compile on your platform, but it may not compile on another
