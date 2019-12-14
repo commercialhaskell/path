@@ -154,10 +154,10 @@ genFilePath :: Gen FilePath
 genFilePath = listOf genPathyChar
 
 genPathyChar :: Gen Char
-genPathyChar = frequency [(2, arbitrary), (1, elements "./\\")]
+genPathyChar = frequency [(2, choose (minBound, maxBound)), (1, elements "./\\")]
 
 shrinkValidWith :: (FilePath -> Maybe (Path a b)) -> Path a b -> [Path a b]
-shrinkValidWith fun (Path f) = mapMaybe fun $ shrinkUnchecked f
+shrinkValidWith fun (Path f) = filter (/= (Path f)) . mapMaybe fun $ shrinkUnchecked f
 
 shrinkValidExtension :: Extension -> [Extension]
 shrinkValidExtension (Extension s) =
