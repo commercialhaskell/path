@@ -1,6 +1,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- | Test suite.
 module Main where
@@ -13,12 +14,11 @@ import Data.Maybe
 import Path
 import Path.Internal
 import Test.Hspec
+import Test.Hspec.QuickCheck
 import Test.QuickCheck
-import Test.Validity.Property
+import Test.Validity
 
 import Path.Gen
-
-import Debug.Trace
 
 -- | Test suite entry point, returns exit failure if any test fails.
 main :: IO ()
@@ -27,7 +27,16 @@ main = hspec spec
 -- | Test suite.
 spec :: Spec
 spec =
+  modifyMaxShrinks (const 100) $
   parallel $ do
+    genValidSpec @(Path Abs File)
+    shrinkValidSpec @(Path Abs File)
+    genValidSpec @(Path Rel File)
+    shrinkValidSpec @(Path Rel File)
+    genValidSpec @(Path Abs Dir)
+    shrinkValidSpec @(Path Abs Dir)
+    genValidSpec @(Path Rel Dir)
+    shrinkValidSpec @(Path Rel Dir)
     describe "Parsing" $ do
       describe "Path Abs Dir" (parserSpec parseAbsDir)
       describe "Path Rel Dir" (parserSpec parseRelDir)
@@ -56,7 +65,7 @@ operationFilename = do
 operationDirname :: Spec
 operationDirname = do
   forAllDirs "dirname parent </> $(mkRelDir dirname)) == dirname $(mkRelDir dirname)" $ \parent ->
-    forAllValid $ \dir -> dirname (parent </> dir) `shouldBe` dirname (traceShowId dir)
+    forAllValid $ \dir -> dirname (parent </> dir) `shouldBe` dirname dir
   it "produces a valid path on when passed a valid absolute path" $ do
     producesValidsOnValids (dirname :: Path Abs Dir -> Path Rel Dir)
   it "produces a valid path on when passed a valid relative path" $ do
