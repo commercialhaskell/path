@@ -65,7 +65,7 @@ operationFilename = do
 operationDirname :: Spec
 operationDirname = do
   forAllDirs "dirname parent </> $(mkRelDir dirname)) == dirname $(mkRelDir dirname)" $ \parent ->
-    forAllValid $ \dir -> dirname (parent </> dir) `shouldBe` dirname dir
+    forAllValid $ \dir -> if dir == Path [] then pure () else dirname (parent </> dir) `shouldBe` dirname dir
   it "produces a valid path on when passed a valid absolute path" $ do
     producesValidsOnValids (dirname :: Path Abs Dir -> Path Rel Dir)
   it "produces a valid path on when passed a valid relative path" $ do
