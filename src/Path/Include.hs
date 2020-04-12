@@ -93,7 +93,7 @@ import           Data.Aeson (FromJSON (..), FromJSONKey(..))
 import qualified Data.Aeson.Types as Aeson
 import           Data.Data
 import qualified Data.Text as T
-import           Data.List
+import qualified Data.List as L
 import           Data.Maybe
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Syntax (lift)
@@ -307,7 +307,7 @@ infixr 5 </>
 stripProperPrefix :: MonadThrow m
          => Path b Dir -> Path b t -> m (Path Rel t)
 stripProperPrefix (Path p) (Path l) =
-  case stripPrefix p l of
+  case L.stripPrefix p l of
     Nothing -> throwM (NotAProperPrefix p l)
     Just "" -> throwM (NotAProperPrefix p l)
     Just ok -> return (Path ok)
