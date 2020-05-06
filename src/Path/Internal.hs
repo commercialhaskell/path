@@ -20,8 +20,8 @@ import qualified Data.Text as T (pack)
 import GHC.Generics (Generic)
 import Data.Data
 import Data.Hashable
-import Data.List
-import Language.Haskell.TH.Syntax (Exp(..), Lift(..), Lit(..))
+import qualified Data.List as L
+import qualified Language.Haskell.TH.Syntax as TH
 import qualified System.FilePath as FilePath
 
 -- | Path of some base and type.
@@ -104,14 +104,17 @@ instance Hashable (Path b t) where
 hasParentDir :: FilePath -> Bool
 hasParentDir filepath' =
      (filepath' == "..") ||
-     ("/.." `isSuffixOf` filepath) ||
-     ("/../" `isInfixOf` filepath) ||
-     ("../" `isPrefixOf` filepath)
+     ("/.." `L.isSuffixOf` filepath) ||
+     ("/../" `L.isInfixOf` filepath) ||
+     ("../" `L.isPrefixOf` filepath)
   where
     filepath =
         case FilePath.pathSeparator of
             '/' -> filepath'
             x   -> map (\y -> if x == y then '/' else y) filepath'
 
-instance Lift (Path a b) where
-  lift (Path str) = [|Path $(return (LitE (StringL str)))|]
+instance TH.Lift (Path a b) where
+  lift (Path str) = [|Path $(return (TH.LitE (TH.StringL str)))|]
+#if MIN_VERSION_template_haskell(2,16,0)
+  liftTyped = TH.unsafeTExpCoerce . TH.lift
+#endif

@@ -10,7 +10,7 @@ copyright:           2015–2018 FP Complete
 category:            System, Filesystem
 build-type:          Simple
 cabal-version:       1.18
-tested-with:         GHC==8.2.2, GHC==8.4.4, GHC==8.6.5
+tested-with:         GHC==8.6.5, GHC==8.8.3, GHC==8.10.1
 extra-source-files:  README.md
                    , CHANGELOG
                    , src/Path/Include.hs
@@ -27,11 +27,11 @@ library
                    , Path.Posix
                    , Path.Windows
   build-depends:     aeson
-                   , base       >= 4.10     && < 5
+                   , base       >= 4.12     && < 5
                    , deepseq
                    , exceptions >= 0.4     && < 0.11
                    , filepath   < 1.2.0.1  || >= 1.3
-                   , hashable   >= 1.2     && < 1.3
+                   , hashable   >= 1.2     && < 1.4
                    , text
                    , template-haskell
   if flag(dev)
@@ -43,7 +43,6 @@ library
                       -Wincomplete-record-updates
                       -Wincomplete-uni-patterns
                       -Wnoncanonical-monad-instances
-                      -Wnoncanonical-monadfail-instances
   default-language:  Haskell2010
 
 test-suite test
@@ -54,7 +53,7 @@ test-suite test
                    , Common
   hs-source-dirs:    test
   build-depends:     aeson
-                   , base       >= 4.10     && < 5
+                   , base       >= 4.12     && < 5
                    , bytestring
                    , filepath   < 1.2.0.1  || >= 1.3
                    , hspec      >= 2.0     && < 3
@@ -73,15 +72,16 @@ test-suite validity-test
   hs-source-dirs:    test
   build-depends:     QuickCheck
                    , aeson
-                   , base       >= 4.10 && < 5
+                   , base       >= 4.12 && < 5
                    , bytestring
                    , filepath   < 1.2.0.1  || >= 1.3
-                   , genvalidity >= 0.3 && < 0.4
-                   , genvalidity-property >= 0.0 && < 0.1
+                   , genvalidity >= 0.8
+                   , genvalidity-property >= 0.4
+                   , genvalidity-hspec >= 0.7
                    , hspec      >= 2.0     && < 3
                    , mtl        >= 2.0     && < 3
                    , path
-                   , validity   >= 0.3.1.1 && < 0.4
+                   , validity   >= 0.8.0.0
   default-language:  Haskell2010
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
 

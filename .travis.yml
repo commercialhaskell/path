@@ -15,12 +15,12 @@ addons:
 
 matrix:
   include:
-    - env: TYPE=cabal CABALVER=2.4 GHCVER=8.2.2
-      addons: {apt: {packages: [cabal-install-2.4,ghc-8.2.2], sources: [hvr-ghc]}}
-    - env: TYPE=cabal CABALVER=2.4 GHCVER=8.4.4
-      addons: {apt: {packages: [cabal-install-2.4,ghc-8.4.4], sources: [hvr-ghc]}}
-    - env: TYPE=cabal CABALVER=2.4 GHCVER=8.6.5
-      addons: {apt: {packages: [cabal-install-2.4,ghc-8.6.5], sources: [hvr-ghc]}}
+    - env: TYPE=cabal CABALVER=3.0 GHCVER=8.6.5
+      addons: {apt: {packages: [cabal-install-3.0,ghc-8.6.5], sources: [hvr-ghc]}}
+    - env: CABALVER=3.0 GHCVER=8.8.3
+      addons: {apt: {packages: [cabal-install-3.0,ghc-8.8.3], sources: [hvr-ghc]}}
+    - env: TYPE=cabal CABALVER=3.0 GHCVER=8.10.1
+      addons: {apt: {packages: [cabal-install-3.0,ghc-8.10.1], sources: [hvr-ghc]}}
     - env: TYPE=stack ARGS="--stack-yaml stack.yaml"
 
 before_install:
@@ -42,7 +42,7 @@ script:
         cabal new-build --enable-tests --enable-benchmarks --flags=dev
         cabal new-test --enable-tests --enable-benchmarks --flags=dev
         cabal new-haddock
-        cabal sdist
+        cabal new-sdist
         ;;
       stack)
         stack --version
