@@ -32,7 +32,7 @@ module Path.PLATFORM_NAME
   ,Rel
   ,File
   ,Dir
-  ,SomeBase
+  ,SomeBase(..)
    -- * Exceptions
   ,PathException(..)
   -- * QuasiQuoters
