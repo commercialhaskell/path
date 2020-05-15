@@ -113,8 +113,26 @@ hasParentDir filepath' =
             '/' -> filepath'
             x   -> map (\y -> if x == y then '/' else y) filepath'
 
-instance TH.Lift (Path a b) where
-  lift (Path str) = [|Path $(return (TH.LitE (TH.StringL str)))|]
+instance (Typeable a, Typeable b) => TH.Lift (Path a b) where
+  lift p@(Path str) = do
+    let btc = typeRepTyCon $ typeRep $ mkBaseProxy p
+        ttc = typeRepTyCon $ typeRep $ mkTypeProxy p
+    bn <- lookupTypeNameThrow $ tyConName btc
+    tn <- lookupTypeNameThrow $ tyConName ttc
+    [|Path $(return (TH.LitE (TH.StringL str))) :: Path
+      $(return $ TH.ConT bn)
+      $(return $ TH.ConT tn)
+      |]
+    where
+      mkBaseProxy :: Path a b -> Proxy a
+      mkBaseProxy _ = Proxy
+
+      mkTypeProxy :: Path a b -> Proxy b
+      mkTypeProxy _ = Proxy
+
+      lookupTypeNameThrow n = TH.lookupTypeName n
+        >>= maybe (fail $ "Not in scope: type constructor ‘" ++ n ++ "’") return
+
 #if MIN_VERSION_template_haskell(2,16,0)
   liftTyped = TH.unsafeTExpCoerce . TH.lift
 #endif
