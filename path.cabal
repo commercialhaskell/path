@@ -51,6 +51,7 @@ test-suite test
   other-modules:     Posix
                    , Windows
                    , Common
+                   , TH
   hs-source-dirs:    test
   build-depends:     aeson
                    , base       >= 4.12     && < 5
@@ -59,6 +60,7 @@ test-suite test
                    , hspec      >= 2.0     && < 3
                    , mtl        >= 2.0     && < 3
                    , path
+                   , template-haskell
   if flag(dev)
     ghc-options:      -Wall -Werror
   else

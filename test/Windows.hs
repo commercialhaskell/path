@@ -11,7 +11,6 @@ import Control.Applicative
 import Control.Monad
 import Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as LBS
-import Data.Function (on)
 import Data.Maybe
 import Path.Windows
 import Path.Internal
@@ -82,7 +81,7 @@ operationDirname =
           $(mkRelDir "."))
      it "dirname C:\\ must be a Rel path"
         ((parseAbsDir $ show $ dirname (fromJust (parseAbsDir "C:\\")) :: Maybe (Path Abs Dir)) == Nothing)
-  where dirnamesShouldBeEqual = (==) `on` dirname
+  where dirnamesShouldBeEqual x y = dirname x == dirname y
 
 -- | The 'filename' operation.
 operationFilename :: Spec
@@ -103,7 +102,7 @@ operationFilename =
         (filenamesShouldBeEqual
           ($(mkAbsDir "\\\\?\\C:\\home\\chris\\") </> $(mkRelFile "bar.txt"))
           $(mkRelFile "bar.txt"))
-  where filenamesShouldBeEqual = (==) `on` filename
+  where filenamesShouldBeEqual x y = filename x == filename y
 
 -- | The 'parent' operation.
 operationParent :: Spec
