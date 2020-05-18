@@ -1,3 +1,8 @@
+0.7.1:
+	* Test with GHC 8.8.2, 8.8.3, 8.10.1.
+	* Export SomeBase constructor.
+	* Fix Lift severe Lift instance bug
+
 0.7.0:
 	* BREAKING CHANGE: "fileExtension" now throws an exception if the file has no
 		extension. You can use the result as a "Maybe" in pure
