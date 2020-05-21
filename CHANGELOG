@@ -1,3 +1,6 @@
+0.8.0
+  * Rerelease of 0.7.1 with better version number
+
 0.7.1:
 	* Test with GHC 8.8.2, 8.8.3, 8.10.1.
 	* Export SomeBase constructor.
