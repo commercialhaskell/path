@@ -1,6 +1,8 @@
 -- This template expects CPP definitions for:
 --     PLATFORM_NAME = Posix | Windows
 --     IS_WINDOWS    = False | True
+--     MONAD_PATH    = MonadThrow | MonadError PathException
+--     THROW         = throwM | throwError
 
 -- | This library provides a well-typed representation of paths in a filesystem
 -- directory tree.
@@ -23,9 +25,11 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE EmptyDataDecls #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# OPTIONS_GHC -Wno-unused-imports #-}
 
-module Path.PLATFORM_NAME
+module PREFIX.PLATFORM_NAME
   (-- * Types
    Path
   ,Abs
@@ -97,13 +101,14 @@ import           Control.DeepSeq (NFData (..))
 import           Control.Exception (Exception(..))
 import           Control.Monad (liftM, when)
 import           Control.Monad.Catch (MonadThrow(..))
+import           Control.Monad.Except (MonadError(..))
 import           Data.Aeson (FromJSON (..), FromJSONKey(..), ToJSON(..))
 import qualified Data.Aeson.Types as Aeson
 import           Data.Data
+import           Data.Either
 import qualified Data.Text as T
 import           Data.Hashable
 import qualified Data.List as L
-import           Data.Maybe
 import           GHC.Generics (Generic)
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Syntax (lift)
@@ -316,12 +321,12 @@ infixr 5 </>
 -- In other words the bases must match.
 --
 -- @since 0.6.0
-stripProperPrefix :: MonadThrow m
+stripProperPrefix :: MONAD_PATH m
          => Path b Dir -> Path b t -> m (Path Rel t)
 stripProperPrefix (Path p) (Path l) =
   case L.stripPrefix p l of
-    Nothing -> throwM (NotAProperPrefix p l)
-    Just "" -> throwM (NotAProperPrefix p l)
+    Nothing -> THROW (NotAProperPrefix p l)
+    Just "" -> THROW (NotAProperPrefix p l)
     Just ok -> return (Path ok)
 
 -- | Determines if the path in the first parameter is a proper prefix of the
@@ -335,7 +340,7 @@ stripProperPrefix (Path p) (Path l) =
 --
 -- @since 0.6.0
 isProperPrefixOf :: Path b Dir -> Path b t -> Bool
-isProperPrefixOf p l = isJust (stripProperPrefix p l)
+isProperPrefixOf p l = isRight (stripProperPrefix p l)
 
 -- | Take the parent path component from a path.
 --
@@ -418,13 +423,13 @@ dirname (Path l) = Path (last (FilePath.splitPath l))
 -- @
 --
 -- @since 0.7.0
-splitExtension :: MonadThrow m => Path b File -> m (Path b File, String)
+splitExtension :: MONAD_PATH m => Path b File -> m (Path b File, String)
 splitExtension (Path fpath) =
     if nameDot == [] || ext == []
-    then throwM $ HasNoExtension fpath
+    then THROW $ HasNoExtension fpath
     else let fname = init nameDot
          in if fname == [] || fname == "." || fname == ".."
-            then throwM $ HasNoExtension fpath
+            then THROW $ HasNoExtension fpath
             else return ( Path (normalizeDrive drv ++ dir ++ fname)
                         , FilePath.extSeparator : ext
                         )
@@ -456,7 +461,7 @@ splitExtension (Path fpath) =
 -- @
 --
 -- @since 0.5.11
-fileExtension :: MonadThrow m => Path b File -> m String
+fileExtension :: MONAD_PATH m => Path b File -> m String
 fileExtension = (liftM snd) . splitExtension
 
 -- | Add extension to given file path.
@@ -483,7 +488,7 @@ fileExtension = (liftM snd) . splitExtension
 -- >>> addExtension ".foo/bar" $(mkRelFile "name")
 --
 -- @since 0.7.0
-addExtension :: MonadThrow m
+addExtension :: MONAD_PATH m
   => String            -- ^ Extension to add
   -> Path b File       -- ^ Old file name
   -> m (Path b File)   -- ^ New file name with the desired extension added at the end
@@ -496,29 +501,29 @@ addExtension ext (Path path) = do
     validateExtension ex@(sep:xs) = do
         -- has to start with a "."
         when (not $ FilePath.isExtSeparator sep) $
-            throwM $ InvalidExtension ex
+            THROW $ InvalidExtension ex
 
         -- just a "." is not a valid extension
         when (xs == []) $
-            throwM $ InvalidExtension ex
+            THROW $ InvalidExtension ex
 
         -- cannot have path separators
         when (any FilePath.isPathSeparator xs) $
-            throwM $ InvalidExtension ex
+            THROW $ InvalidExtension ex
 
         -- All "."s is not a valid extension
         let ys = dropWhile FilePath.isExtSeparator (reverse xs)
         when (ys == []) $
-            throwM $ InvalidExtension ex
+            THROW $ InvalidExtension ex
 
         -- Cannot have "."s except in trailing position
         when (any FilePath.isExtSeparator ys) $
-            throwM $ InvalidExtension ex
+            THROW $ InvalidExtension ex
 
         -- must be valid as a filename
         _ <- parseRelFile ex
         return ()
-    validateExtension ex = throwM $ InvalidExtension ex
+    validateExtension ex = THROW $ InvalidExtension ex
 
 -- | Add extension to given file path. Throws if the
 -- resulting filename does not parse.
@@ -538,7 +543,7 @@ addExtension ext (Path path) = do
 --
 -- @since 0.6.1
 {-# DEPRECATED addFileExtension "Please use addExtension instead." #-}
-addFileExtension :: MonadThrow m
+addFileExtension :: MONAD_PATH m
   => String            -- ^ Extension to add
   -> Path b File       -- ^ Old file name
   -> m (Path b File)   -- ^ New file name with the desired extension added at the end
@@ -560,7 +565,7 @@ addFileExtension ext (Path path) =
 -- @since 0.6.1
 infixr 7 <.>
 {-# DEPRECATED (<.>) "Please use addExtension instead." #-}
-(<.>) :: MonadThrow m
+(<.>) :: MONAD_PATH m
   => Path b File       -- ^ Old file name
   -> String            -- ^ Extension to add
   -> m (Path b File)   -- ^ New file name with the desired extension added at the end
@@ -576,19 +581,19 @@ infixr 7 <.>
 -- @(fileExtension >=> flip replaceExtension file) file == return file@
 --
 -- @since 0.7.0
-replaceExtension :: MonadThrow m
+replaceExtension :: MONAD_PATH m
   => String            -- ^ Extension to set
   -> Path b File       -- ^ Old file name
   -> m (Path b File)   -- ^ New file name with the desired extension
 replaceExtension ext path =
-    addExtension ext (maybe path fst $ splitExtension path)
+    addExtension ext (either (const path) fst $ splitExtension path)
 
 -- | Replace\/add extension to given file path. Throws if the
 -- resulting filename does not parse.
 --
 -- @since 0.5.11
 {-# DEPRECATED setFileExtension "Please use replaceExtension instead." #-}
-setFileExtension :: MonadThrow m
+setFileExtension :: MONAD_PATH m
   => String            -- ^ Extension to set
   -> Path b File       -- ^ Old file name
   -> m (Path b File)   -- ^ New file name with the desired extension
@@ -604,7 +609,7 @@ setFileExtension ext (Path path) =
 -- @since 0.6.0
 infixr 7 -<.>
 {-# DEPRECATED (-<.>) "Please use replaceExtension instead." #-}
-(-<.>) :: MonadThrow m
+(-<.>) :: MONAD_PATH m
   => Path b File       -- ^ Old file name
   -> String            -- ^ Extension to set
   -> m (Path b File)   -- ^ New file name with the desired extension
@@ -621,14 +626,14 @@ infixr 7 -<.>
 -- * contains a @..@ path component representing the parent directory
 -- * is not a valid path (See 'FilePath.isValid')
 --
-parseAbsDir :: MonadThrow m
+parseAbsDir :: MONAD_PATH m
             => FilePath -> m (Path Abs Dir)
 parseAbsDir filepath =
   if FilePath.isAbsolute filepath &&
      not (hasParentDir filepath) &&
      FilePath.isValid filepath
      then return (Path (normalizeDir filepath))
-     else throwM (InvalidAbsDir filepath)
+     else THROW (InvalidAbsDir filepath)
 
 -- | Convert a relative 'FilePath' to a normalized relative dir 'Path'.
 --
@@ -640,7 +645,7 @@ parseAbsDir filepath =
 -- * is not a valid path (See 'FilePath.isValid')
 -- * is all path separators
 --
-parseRelDir :: MonadThrow m
+parseRelDir :: MONAD_PATH m
             => FilePath -> m (Path Rel Dir)
 parseRelDir filepath =
   if not (FilePath.isAbsolute filepath) &&
@@ -649,7 +654,7 @@ parseRelDir filepath =
      not (all FilePath.isPathSeparator filepath) &&
      FilePath.isValid filepath
      then return (Path (normalizeDir filepath))
-     else throwM (InvalidRelDir filepath)
+     else THROW (InvalidRelDir filepath)
 
 -- | Convert an absolute 'FilePath' to a normalized absolute file 'Path'.
 --
@@ -664,7 +669,7 @@ parseRelDir filepath =
 -- * contains a @..@ path component representing the parent directory
 -- * is not a valid path (See 'FilePath.isValid')
 --
-parseAbsFile :: MonadThrow m
+parseAbsFile :: MONAD_PATH m
              => FilePath -> m (Path Abs File)
 parseAbsFile filepath =
   case validAbsFile filepath of
@@ -672,7 +677,7 @@ parseAbsFile filepath =
       | normalized <- normalizeFilePath filepath
       , validAbsFile normalized ->
         return (Path normalized)
-    _ -> throwM (InvalidAbsFile filepath)
+    _ -> THROW (InvalidAbsFile filepath)
 
 -- | Is the string a valid absolute file?
 validAbsFile :: FilePath -> Bool
@@ -696,14 +701,14 @@ validAbsFile filepath =
 -- * contains a @..@ path component representing the parent directory
 -- * is not a valid path (See 'FilePath.isValid')
 --
-parseRelFile :: MonadThrow m
+parseRelFile :: MONAD_PATH m
              => FilePath -> m (Path Rel File)
 parseRelFile filepath =
   case validRelFile filepath of
     True
       | normalized <- normalizeFilePath filepath
       , validRelFile normalized -> return (Path normalized)
-    _ -> throwM (InvalidRelFile filepath)
+    _ -> THROW (InvalidRelFile filepath)
 
 -- | Is the string a valid relative file?
 validRelFile :: FilePath -> Bool
@@ -861,10 +866,10 @@ fromSomeFile = fromSomeBase
 --
 -- * contains a @..@ path component representing the parent directory
 -- * is not a valid path (See 'FilePath.isValid')
-parseSomeDir :: MonadThrow m => FilePath -> m (SomeBase Dir)
-parseSomeDir fp = maybe (throwM (InvalidDir fp)) pure
-                $ (Abs <$> parseAbsDir fp)
-              <|> (Rel <$> parseRelDir fp)
+parseSomeDir :: MONAD_PATH m => FilePath -> m (SomeBase Dir)
+parseSomeDir fp = maybe (THROW (InvalidDir fp)) pure
+                $ (either (const Nothing) (Just . Abs) (parseAbsDir fp))
+              <|> (either (const Nothing) (Just . Rel) (parseRelDir fp))
 
 -- | Convert an absolute or relative 'FilePath' to a normalized 'SomeBase'
 -- representing a file.
@@ -878,10 +883,10 @@ parseSomeDir fp = maybe (throwM (InvalidDir fp)) pure
 --
 -- * contains a @..@ path component representing the parent directory
 -- * is not a valid path (See 'FilePath.isValid')
-parseSomeFile :: MonadThrow m => FilePath -> m (SomeBase File)
-parseSomeFile fp = maybe (throwM (InvalidFile fp)) pure
-                 $ (Abs <$> parseAbsFile fp)
-               <|> (Rel <$> parseRelFile fp)
+parseSomeFile :: MONAD_PATH m => FilePath -> m (SomeBase File)
+parseSomeFile fp = maybe (THROW (InvalidFile fp)) pure
+                 $ (either (const Nothing) (Just . Abs) (parseAbsFile fp))
+               <|> (either (const Nothing) (Just . Rel) (parseRelFile fp))
 
 --------------------------------------------------------------------------------
 -- Deprecated
@@ -892,7 +897,7 @@ type PathParseException = PathException
 
 {-# DEPRECATED stripDir "Please use stripProperPrefix instead." #-}
 -- | Same as 'stripProperPrefix'.
-stripDir :: MonadThrow m
+stripDir :: MONAD_PATH m
          => Path b Dir -> Path b t -> m (Path Rel t)
 stripDir = stripProperPrefix
 
