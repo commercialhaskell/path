@@ -53,6 +53,7 @@ module Path.PLATFORM_NAME
   ,(</>)
   ,stripProperPrefix
   ,isProperPrefixOf
+  ,replaceProperPrefix
   ,parent
   ,filename
   ,dirname
@@ -336,6 +337,15 @@ stripProperPrefix (Path p) (Path l) =
 -- @since 0.6.0
 isProperPrefixOf :: Path b Dir -> Path b t -> Bool
 isProperPrefixOf p l = isJust (stripProperPrefix p l)
+
+-- | Change from one directory prefix to another.
+--
+-- Throw 'NotAProperPrefix' if the first argument is not a proper prefix of the
+-- path.
+--
+-- >>> replaceProperPrefix $(mkRelDir "foo") $(mkRelDir "bar") $(mkRelFile "foo/file.txt") == $(mkRelFile "bar/file.txt")
+replaceProperPrefix :: MonadThrow m => Path b Dir -> Path b' Dir -> Path b t -> m (Path b' t)
+replaceProperPrefix src dst fp = (dst </>) <$> stripProperPrefix src fp
 
 -- | Take the parent path component from a path.
 --
