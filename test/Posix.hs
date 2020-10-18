@@ -13,7 +13,7 @@ import Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as LBS
 import Data.Maybe
 import Path.Posix
-import Path.Internal
+import Path.Internal.Posix
 import Test.Hspec
 
 import Common (extensionOperations)

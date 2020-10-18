@@ -108,7 +108,7 @@ import           GHC.Generics (Generic)
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Syntax (lift)
 import           Language.Haskell.TH.Quote (QuasiQuoter(..))
-import           Path.Internal
+import           Path.Internal.PLATFORM_NAME
 import qualified System.FilePath.PLATFORM_NAME as FilePath
 
 --------------------------------------------------------------------------------
