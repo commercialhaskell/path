@@ -5,14 +5,14 @@ build: off
 cache:
 - "c:\\sr"
 
-before_test:
-- curl -sS -ostack.zip -L --insecure http://www.stackage.org/stack/windows-i386
-- 7z x stack.zip stack.exe
-
 clone_folder: "c:\\stack"
 environment:
   global:
     STACK_ROOT: "c:\\sr"
+
+install:
+- curl -sSL -ostack.zip https://get.haskellstack.org/stable/windows-x86_64.zip
+- 7z x stack.zip stack.exe
 
 test_script:
 - stack setup > nul
