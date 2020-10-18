@@ -4,6 +4,7 @@
 
 module Common (extensionOperations) where
 
+import Data.Maybe (isJust, fromJust)
 import Control.Monad
 import Path
 import System.FilePath (pathSeparator)
@@ -25,39 +26,41 @@ validExtensionsSpec ext file fext = do
 
 extensionOperations :: String -> Spec
 extensionOperations rootDrive = do
-    let ext = ".foo"
-    let extensions = ext : [".foo.", ".foo.."]
+    let extension = ".foo"
+    let extensions = extension : [".foo.", ".foo.."]
 
     -- Only filenames and extensions
-    forM_ extensions (\x ->
+    forM_ extensions (\ext ->
         forM_ filenames $ \f -> do
-            let Just file = parseRelFile f
-            let Just fext = parseRelFile (f ++ x)
-            (validExtensionsSpec x file fext))
+            runTests parseRelFile f ext)
 
     -- Relative dir paths
     forM_ dirnames (\d -> do
         forM_ filenames (\f -> do
             let f1 = d ++ [pathSeparator] ++ f
-            let Just file = parseRelFile f1
-            let Just fext = parseRelFile (f1 ++ ext)
-            validExtensionsSpec ext file fext))
+            runTests parseRelFile f1 extension))
 
     -- Absolute dir paths
     forM_ dirnames (\d -> do
         forM_ filenames (\f -> do
             let f1 = rootDrive ++ d ++ [pathSeparator] ++ f
-            let Just file = parseAbsFile f1
-            let Just fext = parseAbsFile (f1 ++ ext)
-            validExtensionsSpec ext file fext))
+            runTests parseAbsFile f1 extension))
 
     -- Invalid extensions
-    forM_ invalidExtensions $ \x -> do
-        it ("throws InvalidExtension when extension is [" ++ x ++ "]")  $
-            addExtension x $(mkRelFile "name")
-            `shouldThrow` (== InvalidExtension x)
+    forM_ invalidExtensions $ \ext -> do
+        it ("throws InvalidExtension when extension is [" ++ ext ++ "]")  $
+            addExtension ext $(mkRelFile "name")
+            `shouldThrow` (== InvalidExtension ext)
 
     where
+
+    runTests parse file ext = do
+        let maybeFile = parse file
+        let maybeFileWithExt = parse (file ++ ext)
+        it ("Files " ++ file ++ " and " ++ (file ++ ext) ++ " are parsed successfully.") $
+            (isJust maybeFile, isJust maybeFileWithExt) `shouldBe` (True, True)
+        when (isJust maybeFile && isJust maybeFileWithExt) $
+            validExtensionsSpec ext (fromJust maybeFile) (fromJust maybeFileWithExt)
 
     filenames =
         [ "name"

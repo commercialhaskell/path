@@ -1,15 +1,12 @@
-{-# LANGUAGE CPP #-}
-
 module Main (main) where
 
-#ifdef mingw32_HOST_OS
-import Windows (spec)
-#else
-import Posix (spec)
-#endif
+import qualified Windows
+import qualified Posix
 
 import Test.Hspec
 
 -- | Test suite entry point, returns exit failure if any test fails.
 main :: IO ()
-main = hspec spec
+main = hspec $ do
+    describe "Path.Windows" Windows.spec
+    describe "Path.Posix" Posix.spec
