@@ -16,7 +16,7 @@ import Path.Windows
 import Path.Internal.Windows
 import Test.Hspec
 
-import Common (extensionOperations)
+import Common.Windows (extensionOperations)
 
 -- | Test suite (Windows version).
 spec :: Spec

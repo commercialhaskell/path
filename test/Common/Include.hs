@@ -1,13 +1,17 @@
+-- This template expects CPP definitions for:
+--     PLATFORM_NAME = Posix | Windows
+--     IS_WINDOWS    = False | True
+
 {-# LANGUAGE TemplateHaskell #-}
 
 -- | Test functions that are common to Posix and Windows
 
-module Common (extensionOperations) where
+module Common.PLATFORM_NAME (extensionOperations) where
 
 import Data.Maybe (isJust, fromJust)
 import Control.Monad
-import Path
-import System.FilePath (pathSeparator)
+import Path.PLATFORM_NAME
+import System.FilePath.PLATFORM_NAME (pathSeparator)
 import Test.Hspec
 
 validExtensionsSpec :: String -> Path b File -> Path b File -> Spec
@@ -29,22 +33,22 @@ extensionOperations rootDrive = do
     let extension = ".foo"
     let extensions = extension : [".foo.", ".foo.."]
 
-    -- Only filenames and extensions
-    forM_ extensions (\ext ->
-        forM_ filenames $ \f -> do
-            runTests parseRelFile f ext)
+    describe "Only filenames and extensions" $
+      forM_ extensions $ \ext ->
+          forM_ filenames $ \f -> do
+              runTests parseRelFile f ext
 
-    -- Relative dir paths
-    forM_ dirnames (\d -> do
-        forM_ filenames (\f -> do
-            let f1 = d ++ [pathSeparator] ++ f
-            runTests parseRelFile f1 extension))
+    describe "Relative dir paths" $
+      forM_ dirnames $ \d -> do
+          forM_ filenames $ \f -> do
+              let f1 = d ++ [pathSeparator] ++ f
+              runTests parseRelFile f1 extension
 
-    -- Absolute dir paths
-    forM_ dirnames (\d -> do
-        forM_ filenames (\f -> do
-            let f1 = rootDrive ++ d ++ [pathSeparator] ++ f
-            runTests parseAbsFile f1 extension))
+    describe "Absolute dir paths" $
+      forM_ dirnames $ \d -> do
+          forM_ filenames $ \f -> do
+              let f1 = rootDrive ++ d ++ [pathSeparator] ++ f
+              runTests parseAbsFile f1 extension
 
     -- Invalid extensions
     forM_ invalidExtensions $ \ext -> do
