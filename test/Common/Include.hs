@@ -62,9 +62,10 @@ extensionOperations rootDrive = do
         let maybePathFileWithExt = parse (file ++ ext)
         case (maybePathFile, maybePathFileWithExt) of
             (Just pathFile, Just pathFileWithExt) -> validExtensionsSpec ext pathFile pathFileWithExt
-            _ -> it ("Files " ++ file ++ " and/or " ++ (file ++ ext) ++ " should parse successfully.") $
-                     -- NOTE: Guaranteed to fail, but we are still doing this check to print information.
-                     show (maybePathFile, maybePathFileWithExt) `shouldBe` "(Just _, Just _)"
+            _ -> it ("Files " ++ show file ++ " and/or " ++ show (file ++ ext) ++ " should parse successfully.") $
+                     expectationFailure $
+                         show file ++ " parsed to " ++ show maybePathFile ++ ", "
+                         ++ show (file ++ ext) ++ " parsed to " ++ show maybePathFileWithExt
 
     filenames =
         [ "name"
