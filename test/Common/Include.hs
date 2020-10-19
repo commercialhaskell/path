@@ -8,7 +8,6 @@
 
 module Common.PLATFORM_NAME (extensionOperations) where
 
-import Data.Maybe (isJust, fromJust)
 import Control.Monad
 import Path.PLATFORM_NAME
 import System.FilePath.PLATFORM_NAME (pathSeparator)
@@ -59,12 +58,13 @@ extensionOperations rootDrive = do
     where
 
     runTests parse file ext = do
-        let maybeFile = parse file
-        let maybeFileWithExt = parse (file ++ ext)
-        it ("Files " ++ file ++ " and " ++ (file ++ ext) ++ " are parsed successfully.") $
-            (isJust maybeFile, isJust maybeFileWithExt) `shouldBe` (True, True)
-        when (isJust maybeFile && isJust maybeFileWithExt) $
-            validExtensionsSpec ext (fromJust maybeFile) (fromJust maybeFileWithExt)
+        let maybePathFile = parse file
+        let maybePathFileWithExt = parse (file ++ ext)
+        case (maybePathFile, maybePathFileWithExt) of
+            (Just pathFile, Just pathFileWithExt) -> validExtensionsSpec ext pathFile pathFileWithExt
+            _ -> it ("Files " ++ file ++ " and/or " ++ (file ++ ext) ++ " should parse successfully.") $
+                     -- NOTE: Guaranteed to fail, but we are still doing this check to print information.
+                     show (maybePathFile, maybePathFileWithExt) `shouldBe` "(Just _, Just _)"
 
     filenames =
         [ "name"
