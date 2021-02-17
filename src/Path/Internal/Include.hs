@@ -5,6 +5,7 @@
 {-# LANGUAGE CPP                #-}
 {-# LANGUAGE DeriveGeneric      #-}
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell    #-}
 
 -- | Internal types and functions.
@@ -117,26 +118,21 @@ instance Hashable (Path b t) where
   -- converted back to a ".".
   hashWithSalt n path = hashWithSalt n (toFilePath path)
 
-instance (Typeable a, Typeable b) => TH.Lift (Path a b) where
-  lift p@(Path str) = do
-    let btc = typeRepTyCon $ typeRep $ mkBaseProxy p
-        ttc = typeRepTyCon $ typeRep $ mkTypeProxy p
-    bn <- lookupTypeNameThrow $ tyConName btc
-    tn <- lookupTypeNameThrow $ tyConName ttc
-    [|Path $(return (TH.LitE (TH.StringL str))) :: Path
-      $(return $ TH.ConT bn)
-      $(return $ TH.ConT tn)
-      |]
+instance forall b t. (Typeable b, Typeable t) => TH.Lift (Path b t) where
+  lift (Path str) = do
+    let b = TH.ConT $ getTCName (Proxy :: Proxy b)
+        t = TH.ConT $ getTCName (Proxy :: Proxy t)
+    [|Path $(pure (TH.LitE (TH.StringL str))) :: Path $(pure b) $(pure t) |]
     where
-      mkBaseProxy :: Path a b -> Proxy a
-      mkBaseProxy _ = Proxy
+      getTCName :: Typeable a => proxy a -> TH.Name
+      getTCName a = TH.Name occ flav
+        where
+        tc   = typeRepTyCon (typeRep a)
+        occ  = TH.OccName (tyConName tc)
+        flav = TH.NameG TH.TcClsName (TH.PkgName (tyConPackage tc)) (TH.ModName (tyConModule tc))
 
-      mkTypeProxy :: Path a b -> Proxy b
-      mkTypeProxy _ = Proxy
-
-      lookupTypeNameThrow n = TH.lookupTypeName n
-        >>= maybe (fail $ "Not in scope: type constructor ‘" ++ n ++ "’") return
-
-#if MIN_VERSION_template_haskell(2,16,0)
+#if MIN_VERSION_template_haskell(2,17,0)
+  liftTyped = TH.unsafeCodeCoerce . TH.lift
+#elif MIN_VERSION_template_haskell(2,16,0)
   liftTyped = TH.unsafeTExpCoerce . TH.lift
 #endif
