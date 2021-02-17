@@ -13,10 +13,10 @@ import Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as LBS
 import Data.Maybe
 import Path.Windows
-import Path.Internal
+import Path.Internal.Windows
 import Test.Hspec
 
-import Common (extensionOperations)
+import Common.Windows (extensionOperations)
 
 -- | Test suite (Windows version).
 spec :: Spec

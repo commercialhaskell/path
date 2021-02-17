@@ -23,9 +23,11 @@ flag dev
 library
   hs-source-dirs:    src
   exposed-modules:   Path
-                   , Path.Internal
                    , Path.Posix
                    , Path.Windows
+                   , Path.Internal
+                   , Path.Internal.Posix
+                   , Path.Internal.Windows
   build-depends:     aeson
                    , base       >= 4.12     && < 5
                    , deepseq
@@ -50,7 +52,8 @@ test-suite test
   main-is:           Main.hs
   other-modules:     Posix
                    , Windows
-                   , Common
+                   , Common.Posix
+                   , Common.Windows
                    , TH
   hs-source-dirs:    test
   build-depends:     aeson

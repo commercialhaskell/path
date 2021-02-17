@@ -5,8 +5,8 @@
 module TH where
 
 import qualified Language.Haskell.TH.Syntax as TH
-import Path
-import Path.Internal
+import Path.Posix
+import Path.Internal.Posix
 
 
 
