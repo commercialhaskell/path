@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Path.Gen where
 
@@ -12,9 +13,8 @@ import Path.Internal
 import qualified System.FilePath as FilePath
 
 import Data.GenValidity
-import Data.List (isInfixOf, isSuffixOf)
+import Data.List (isSuffixOf)
 import Data.Maybe (isJust, mapMaybe)
-import Data.Validity
 
 import Test.QuickCheck
 

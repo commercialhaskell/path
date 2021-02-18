@@ -2,14 +2,11 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
+{-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 
 -- | Test suite.
 module Main where
 
-import Control.Applicative
-import Control.Monad
-import Data.Aeson
-import qualified Data.ByteString.Lazy.Char8 as LBS
 import Data.Maybe
 import Path
 import Path.Internal
@@ -170,7 +167,7 @@ extensionsSpec = do
     addExtGensValidFile p =
       case addExtension p $(mkRelFile "x") of
         Nothing -> True
-        Just x ->
+        Just _ ->
           case parseRelFile p of
             Nothing -> False
             _ -> True
