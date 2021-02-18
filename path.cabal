@@ -56,7 +56,6 @@ test-suite test
                    , Windows
                    , Common.Posix
                    , Common.Windows
-                   , TH
   hs-source-dirs:    test
   build-depends:     aeson
                    , base       >= 4.12     && < 5

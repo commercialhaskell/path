@@ -2,6 +2,8 @@
 --     PLATFORM_NAME = Posix | Windows
 --     IS_WINDOWS    = False | True
 
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 -- | Test functions that are common to Posix and Windows
@@ -9,9 +11,38 @@
 module Common.PLATFORM_NAME (extensionOperations) where
 
 import Control.Monad
+import qualified Language.Haskell.TH.Syntax as TH
+import Path.Internal.PLATFORM_NAME
 import Path.PLATFORM_NAME
 import System.FilePath.PLATFORM_NAME (pathSeparator)
 import Test.Hspec
+
+class Foo a b where
+    foo :: Path a b -> FilePath
+    foo = toFilePath
+
+instance Foo Abs Dir
+instance Foo Abs File
+instance Foo Rel Dir
+instance Foo Rel File
+
+qqRelDir :: FilePath
+qqRelDir = foo [reldir|foo/|]
+
+qqRelFile :: FilePath
+qqRelFile = foo [relfile|foo|]
+
+thRelDir :: FilePath
+thRelDir = foo $(mkRelDir "foo/")
+
+thRelFile :: FilePath
+thRelFile = foo $(mkRelFile "foo")
+
+liftRelDir :: FilePath
+liftRelDir = foo $(TH.lift (Path "foo/" :: Path Rel Dir))
+
+liftRelFile :: FilePath
+liftRelFile = foo $(TH.lift (Path "foo" :: Path Rel File))
 
 validExtensionsSpec :: String -> Path b File -> Path b File -> Spec
 validExtensionsSpec ext file fext = do
