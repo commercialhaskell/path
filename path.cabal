@@ -14,6 +14,8 @@ tested-with:         GHC==8.6.5, GHC==8.8.3, GHC==8.10.1
 extra-source-files:  README.md
                    , CHANGELOG
                    , src/Path/Include.hs
+                   , src/Path/Internal/Include.hs
+                   , test/Common/Include.hs
 
 flag dev
   description:        Turn on development settings.
