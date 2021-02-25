@@ -1,7 +1,6 @@
 # Path
 
-[![Travis Build Status](https://travis-ci.org/commercialhaskell/path.svg)](https://travis-ci.org/commercialhaskell/path)
-[![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/github/commercialhaskell/path?svg=true)](https://ci.appveyor.com/project/chrisdone/path)
+![CI](https://github.com/commercialhaskell/path/workflows/CI/badge.svg?branch=master)
 [![Hackage](https://img.shields.io/hackage/v/path.svg)](https://hackage.haskell.org/package/path)
 [![Stackage LTS](http://stackage.org/package/path/badge/lts)](http://stackage.org/lts/package/path)
 [![Stackage Nightly](http://stackage.org/package/path/badge/nightly)](http://stackage.org/nightly/package/path)
