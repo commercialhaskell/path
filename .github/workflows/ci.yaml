@@ -64,7 +64,11 @@ jobs:
 
     - name: Test
       run: |
-        cabal test all
+        cabal test path:test
+
+    # - name: Test
+    #   run: |
+    #     cabal test path:validity-test
 
   stack:
     name: stack / ghc ${{ matrix.ghc }}
