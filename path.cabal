@@ -1,5 +1,5 @@
 name:                path
-version:             0.8.0
+version:             0.9.0
 synopsis:            Support for well-typed paths
 description:         Support for well-typed paths.
 license:             BSD3
