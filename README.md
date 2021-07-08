@@ -524,6 +524,20 @@ and there are no functions like parent. But there’s not much to complain
 about. It’s a fine library, but I didn’t feel the need to drop my own in
 favor of it. Check it out and decide for yourself.
 
+### strong-path
+
+[strong-path](https://hackage.haskell.org/package/strong-path) is
+greatly inspired by `path` and is really a layer on top of it,
+replicating most of its API and using it for implementation details
+while also adding to it, with main additions being:
+ * Differentiation between path standards (system, posix and windows) at type level,
+   they can't be accidentally mixed.
+ * Naming of directories and files at type level.
+ * Support at type level for describing what are relative paths exactly relative to,
+   so you e.g. can't concatenate wrong paths.
+ * Support for `../` at the start of a relative path.
+
+
 ## Summary
 
 There’s a growing interest in making practical use of well-typed file path
