@@ -58,6 +58,10 @@ instance Validity (Path Rel Dir) where
           parseRelDir fp == Just p || fp == ""
       ]
 
+instance Validity (SomeBase Dir)
+
+instance Validity (SomeBase File)
+
 validateCommon :: Path b t -> Validation
 validateCommon (Path fp) = mconcat
   [ declare "System.FilePath considers the path valid if it's not empty." $ FilePath.isValid fp || fp == ""
@@ -101,6 +105,14 @@ instance GenValid (Path Rel File) where
 instance GenValid (Path Rel Dir) where
   genValid = (Path . (++ "/") <$> genFilePath) `suchThat` isValid
   shrinkValid = filter isValid . shrinkValidWith parseRelDir
+
+instance GenValid (SomeBase Dir) where
+  genValid = genValidStructurallyWithoutExtraChecking
+  shrinkValid = shrinkValidStructurallyWithoutExtraFiltering
+
+instance GenValid (SomeBase File) where
+  genValid = genValidStructurallyWithoutExtraChecking
+  shrinkValid = shrinkValidStructurallyWithoutExtraFiltering
 
 -- | Generates 'FilePath's with a high occurence of @'.'@, @'\/'@ and
 -- @'\\'@ characters. The resulting 'FilePath's are not guaranteed to

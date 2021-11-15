@@ -18,12 +18,14 @@
 -- we represent the notion of a relative root by "@.@". The relative root denotes
 -- the directory which contains the first component of a relative path.
 
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE EmptyDataDecls #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE PatternGuards #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Path.PLATFORM_NAME
   (-- * Types
@@ -61,6 +63,8 @@ module Path.PLATFORM_NAME
   ,splitExtension
   ,fileExtension
   ,replaceExtension
+  ,mapSomeBase
+  ,prjSomeBase
    -- * Parsing
   ,parseAbsDir
   ,parseRelDir
@@ -851,10 +855,27 @@ instance FromJSON (SomeBase File) where
   parseJSON = parseJSONWith parseSomeFile
   {-# INLINE parseJSON #-}
 
+-- | Helper to project the contents out of a SomeBase object.
+--
+-- >>> prjSomeBase toFilePath (Abs [absfile|/foo/bar/cow.moo|]) == "/foo/bar/cow.moo"
+--
+prjSomeBase :: (forall b . Path b t -> a) -> SomeBase t -> a
+prjSomeBase f = \case
+  Abs a -> f a
+  Rel r -> f r
+
+-- | Helper to apply a function to the SomeBase object
+--
+-- >>> mapSomeBase parent (Abs [absfile|/foo/bar/cow.moo|]) == Abs [absdir|"/foo/bar"|]
+--
+mapSomeBase :: (forall b . Path b t -> Path b t') -> SomeBase t -> SomeBase t'
+mapSomeBase f = \case
+  Abs a -> Abs $ f a
+  Rel r -> Rel $ f r
+
 -- | Convert a valid path to a 'FilePath'.
 fromSomeBase :: SomeBase t -> FilePath
-fromSomeBase (Abs p) = toFilePath p
-fromSomeBase (Rel p) = toFilePath p
+fromSomeBase = prjSomeBase toFilePath
 
 -- | Convert a valid directory to a 'FilePath'.
 fromSomeDir :: SomeBase Dir -> FilePath
