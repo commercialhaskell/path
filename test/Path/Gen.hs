@@ -105,6 +105,14 @@ instance Validity (Path Rel Dir) where
         parseRelDir fp == Just p
       ]
 
+instance Validity (SomeBase Dir) where
+  validate (Abs d) = validate d
+  validate (Rel d) = validate d
+
+instance Validity (SomeBase File) where
+  validate (Abs d) = validate d
+  validate (Rel d) = validate d
+
 instance GenUnchecked (Path Abs File) where
   genUnchecked = Path <$> genFilePath
 
@@ -128,6 +136,19 @@ instance GenUnchecked (Path Rel Dir) where
 
 instance GenValid (Path Rel Dir) where
   shrinkValid = shrinkValidWith parseRelDir
+
+instance GenUnchecked (SomeBase Dir) where
+  genUnchecked = oneof [ Abs <$> genUnchecked
+                       , Rel <$> genUnchecked
+                       ]
+instance GenValid (SomeBase Dir)
+
+instance GenUnchecked (SomeBase File) where
+  genUnchecked = oneof [ Abs <$> genUnchecked
+                       , Rel <$> genUnchecked
+                       ]
+
+instance GenValid (SomeBase File)
 
 data Extension =
   Extension String

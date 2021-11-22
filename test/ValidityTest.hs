@@ -34,11 +34,17 @@ spec =
     shrinkValidSpec @(Path Abs Dir)
     genValidSpec @(Path Rel Dir)
     shrinkValidSpec @(Path Rel Dir)
+    genValidSpec @(SomeBase Dir)
+    shrinkValidSpec @(SomeBase Dir)
+    genValidSpec @(SomeBase File)
+    shrinkValidSpec @(SomeBase File)
     describe "Parsing" $ do
       describe "Path Abs Dir" (parserSpec parseAbsDir)
       describe "Path Rel Dir" (parserSpec parseRelDir)
       describe "Path Abs File" (parserSpec parseAbsFile)
       describe "Path Rel File" (parserSpec parseRelFile)
+      describe "SomeBase Dir" (parserSpec parseSomeDir)
+      describe "SomeBase file" (parserSpec parseSomeFile)
     describe "Operations" $ do
       describe "(</>)" operationAppend
       describe "stripProperPrefix" operationStripDir
@@ -51,30 +57,46 @@ spec =
 -- | The 'filename' operation.
 operationFilename :: Spec
 operationFilename = do
-  forAllDirs "filename parent </> $(mkRelFile filename)) == filename $(mkRelFile filename)" $ \parent ->
+  forAllDirs "filename (parent </> $(mkRelFile filename)) == filename $(mkRelFile filename)" $ \parent ->
     forAllValid $ \file -> filename (parent </> file) `shouldBe` filename file
+  forSomeDirs "filename (some:parent </> $(mkRelFile filename)) == filename $(mkRelFile filename)" $ \someParent ->
+    forAllValid $ \file ->
+    prjSomeBase filename (mapSomeBase (</> file) someParent) `shouldBe` filename file
   it "produces a valid path on when passed a valid absolute path" $ do
     producesValidsOnValids (filename :: Path Abs File -> Path Rel File)
   it "produces a valid path on when passed a valid relative path" $ do
     producesValidsOnValids (filename :: Path Rel File -> Path Rel File)
+  it "produces a valid filename when passed some valid base path" $
+    producesValidsOnValids (prjSomeBase filename :: SomeBase File -> Path Rel File)
 
 -- | The 'dirname' operation.
 operationDirname :: Spec
 operationDirname = do
   forAllDirs "dirname parent </> $(mkRelDir dirname)) == dirname $(mkRelDir dirname)" $ \parent ->
     forAllValid $ \dir -> if dir == Path [] then pure () else dirname (parent </> dir) `shouldBe` dirname dir
+  forSomeDirs "dirname (some:parent </> $(mkRelDir dirname)) == dirname $(mkRelDir dirname)" $ \someParent ->
+    forAllValid $ \dir -> if dir == Path []
+                          then pure ()
+                          else prjSomeBase dirname (mapSomeBase (</> dir) someParent) `shouldBe` dirname dir
   it "produces a valid path on when passed a valid absolute path" $ do
     producesValidsOnValids (dirname :: Path Abs Dir -> Path Rel Dir)
   it "produces a valid path on when passed a valid relative path" $ do
     producesValidsOnValids (dirname :: Path Rel Dir -> Path Rel Dir)
+  it "produces a valid path when passed some valid longer path" $
+    producesValidsOnValids (prjSomeBase dirname :: SomeBase Dir -> Path Rel Dir)
 
 -- | The 'parent' operation.
 operationParent :: Spec
 operationParent = do
-  it "produces a valid path on when passed a valid file path" $ do
+  it "produces a valid path on when passed a valid abs file path" $ do
     producesValidsOnValids (parent :: Path Abs File -> Path Abs Dir)
-  it "produces a valid path on when passed a valid directory path" $ do
+  it "produces a valid path on when passed a valid rel file path" $ do
+    producesValidsOnValids (parent :: Path Rel File -> Path Rel Dir)
+  it "produces a valid path on when passed a valid abs directory path" $ do
     producesValidsOnValids (parent :: Path Abs Dir -> Path Abs Dir)
+  it "produces a valid path on when passed a valid rel directory path" $ do
+    producesValidsOnValids (parent :: Path Rel Dir -> Path Rel Dir)
+
 
 -- | The 'isProperPrefixOf' operation.
 operationIsParentOf :: Spec
@@ -181,6 +203,10 @@ forAllDirs :: Testable a => String -> (forall b. Path b Dir -> a) -> Spec
 forAllDirs n func = do
   it (unwords [n, "Path Abs Dir"]) $ forAllValid $ \(parent :: Path Abs Dir) -> func parent
   it (unwords [n, "Path Rel Dir"]) $ forAllValid $ \(parent :: Path Rel Dir) -> func parent
+
+forSomeDirs :: Testable a => String -> (SomeBase Dir -> a) -> Spec
+forSomeDirs n func = do
+  it (unwords [n, "SomeBase Dir"]) $ forAllValid $ \(parent :: SomeBase Dir) -> func parent
 
 forAllParentsAndChildren ::
      Testable a => String -> (forall b t. Path b Dir -> Path Rel t -> a) -> Spec
