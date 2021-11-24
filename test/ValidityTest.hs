@@ -54,9 +54,9 @@ operationFilename = do
   forAllDirs "filename parent </> $(mkRelFile filename)) == filename $(mkRelFile filename)" $ \parent ->
     forAllValid $ \file -> filename (parent </> file) `shouldBe` filename file
   it "produces a valid path on when passed a valid absolute path" $ do
-    producesValidsOnValids (filename :: Path Abs File -> Path Rel File)
+    producesValid (filename :: Path Abs File -> Path Rel File)
   it "produces a valid path on when passed a valid relative path" $ do
-    producesValidsOnValids (filename :: Path Rel File -> Path Rel File)
+    producesValid (filename :: Path Rel File -> Path Rel File)
 
 -- | The 'dirname' operation.
 operationDirname :: Spec
@@ -64,17 +64,17 @@ operationDirname = do
   forAllDirs "dirname parent </> $(mkRelDir dirname)) == dirname $(mkRelDir dirname)" $ \parent ->
     forAllValid $ \dir -> if dir == Path [] then pure () else dirname (parent </> dir) `shouldBe` dirname dir
   it "produces a valid path on when passed a valid absolute path" $ do
-    producesValidsOnValids (dirname :: Path Abs Dir -> Path Rel Dir)
+    producesValid (dirname :: Path Abs Dir -> Path Rel Dir)
   it "produces a valid path on when passed a valid relative path" $ do
-    producesValidsOnValids (dirname :: Path Rel Dir -> Path Rel Dir)
+    producesValid (dirname :: Path Rel Dir -> Path Rel Dir)
 
 -- | The 'parent' operation.
 operationParent :: Spec
 operationParent = do
   it "produces a valid path on when passed a valid file path" $ do
-    producesValidsOnValids (parent :: Path Abs File -> Path Abs Dir)
+    producesValid (parent :: Path Abs File -> Path Abs Dir)
   it "produces a valid path on when passed a valid directory path" $ do
-    producesValidsOnValids (parent :: Path Abs Dir -> Path Abs Dir)
+    producesValid (parent :: Path Abs Dir -> Path Abs Dir)
 
 -- | The 'isProperPrefixOf' operation.
 operationIsParentOf :: Spec
@@ -92,42 +92,49 @@ operationStripDir = do
       then pure () -- TODO do we always need this condition?
       else stripProperPrefix parent (parent </> child) `shouldBe` Just child
   it "produces a valid path on when passed a valid absolute file paths" $ do
-    producesValidsOnValids2
+    producesValid2
       (stripProperPrefix :: Path Abs Dir -> Path Abs File -> Maybe (Path Rel File))
   it "produces a valid path on when passed a valid absolute directory paths" $ do
-    producesValidsOnValids2
+    producesValid2
       (stripProperPrefix :: Path Abs Dir -> Path Abs Dir -> Maybe (Path Rel Dir))
   it "produces a valid path on when passed a valid relative file paths" $ do
-    producesValidsOnValids2
+    producesValid2
       (stripProperPrefix :: Path Rel Dir -> Path Rel File -> Maybe (Path Rel File))
   it "produces a valid path on when passed a valid relative directory paths" $ do
-    producesValidsOnValids2
+    producesValid2
       (stripProperPrefix :: Path Rel Dir -> Path Rel Dir -> Maybe (Path Rel Dir))
 
 -- | The '</>' operation.
 operationAppend :: Spec
 operationAppend = do
   it "produces a valid path on when creating valid absolute file paths" $ do
-    producesValidsOnValids2 ((</>) :: Path Abs Dir -> Path Rel File -> Path Abs File)
+    producesValid2 ((</>) :: Path Abs Dir -> Path Rel File -> Path Abs File)
   it "produces a valid path on when creating valid absolute directory paths" $ do
-    producesValidsOnValids2 ((</>) :: Path Abs Dir -> Path Rel Dir -> Path Abs Dir)
+    producesValid2 ((</>) :: Path Abs Dir -> Path Rel Dir -> Path Abs Dir)
   it "produces a valid path on when creating valid relative file paths" $ do
-    producesValidsOnValids2 ((</>) :: Path Rel Dir -> Path Rel File -> Path Rel File)
+    producesValid2 ((</>) :: Path Rel Dir -> Path Rel File -> Path Rel File)
   it "produces a valid path on when creating valid relative directory paths" $ do
-    producesValidsOnValids2 ((</>) :: Path Rel Dir -> Path Rel Dir -> Path Rel Dir)
+    producesValid2 ((</>) :: Path Rel Dir -> Path Rel Dir -> Path Rel Dir)
 
 extensionsSpec :: Spec
 extensionsSpec = do
+  let addExtGensValidFile p =
+        case addExtension p $(mkRelFile "x") of
+          Nothing -> True
+          Just _ ->
+            case parseRelFile p of
+              Nothing -> False
+              _ -> True
   it "if addExtension a b succeeds then parseRelFile b succeeds - 1" $
     forAll genFilePath addExtGensValidFile
-     -- skew the generated path towards a valid extension by prefixing a "."
+  -- skew the generated path towards a valid extension by prefixing a "."
   it "if addExtension a b succeeds then parseRelFile b succeeds - 2" $
     forAll genFilePath $ addExtGensValidFile . ("." ++)
-  forAllFiles
-    "(toFilePath . fromJust . addExtension ext) file \
-        \== toFilePath a ++ b" $ \file ->
-    forAllValid $ \(Extension ext) ->
-      (toFilePath . fromJust . addExtension ext) file `shouldBe` toFilePath file ++ ext
+  forAllFiles "Adding an extension is like adding the extension to the end if it succeeds" $ \file ->
+    forAllValid $ \ext ->
+      case addExtension ext file of
+        Nothing -> pure () -- Fine
+        Just p -> toFilePath p `shouldBe` toFilePath file ++ ext
   forAllFiles "splitExtension output joins to result in the original file" $ \file ->
     case splitExtension file of
       Nothing -> pure ()
@@ -149,28 +156,24 @@ extensionsSpec = do
     case splitExtension file of
       Nothing -> pure ()
       Just (f, ext) -> addExtension ext f `shouldBe` Just file
-  forAllFiles "uncurry addExtension . swap >=> splitExtension == return" $ \file ->
-    forAllValid $ \(Extension ext) ->
-      (addExtension ext file >>= splitExtension) `shouldReturn` (file, ext)
+  forAllFiles "an extension that was added can be split off again" $ \file ->
+    forAllValid $ \ext ->
+      case addExtension ext file of
+        Nothing -> pure () -- Fine
+        Just p -> splitExtension p `shouldBe` Just (file, ext)
   forAllFiles "fileExtension == (fmap snd) . splitExtension" $ \file ->
     case splitExtension file of
       Nothing -> pure ()
       Just (_, ext) -> fileExtension file `shouldBe` Just ext
-  forAllFiles "flip addExtension file >=> fileExtension == return" $ \file ->
-    forAllValid $ \(Extension ext) ->
-      (fileExtension . fromJust . addExtension ext) file `shouldReturn` ext
+  forAllFiles "an extension that was added is considered to be there" $ \file ->
+    forAllValid $ \ext ->
+      case addExtension ext file of
+        Nothing -> pure () -- Fine
+        Just p -> fileExtension p `shouldBe` Just ext
   forAllFiles "(fileExtension >=> flip replaceExtension file) file == return file" $ \file ->
     case fileExtension file of
       Nothing -> pure ()
       Just ext -> replaceExtension ext file `shouldBe` Just file
-  where
-    addExtGensValidFile p =
-      case addExtension p $(mkRelFile "x") of
-        Nothing -> True
-        Just _ ->
-          case parseRelFile p of
-            Nothing -> False
-            _ -> True
 
 forAllFiles :: Testable a => String -> (forall b. Path b File -> a) -> Spec
 forAllFiles n func = do
@@ -208,7 +211,7 @@ forAllPaths n func = do
 parserSpec :: (Show p, Validity p) => (FilePath -> Maybe p) -> Spec
 parserSpec parser =
   it "Produces valid paths when it succeeds" $
-  forAllShrink genFilePath shrinkUnchecked $ \path ->
+  forAllShrink genFilePath shrinkValid $ \path ->
     case parser path of
       Nothing -> pure ()
       Just p ->

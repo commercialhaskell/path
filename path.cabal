@@ -81,7 +81,7 @@ test-suite validity-test
                    , base       >= 4.12 && < 5
                    , bytestring
                    , filepath   < 1.2.0.1  || >= 1.3
-                   , genvalidity >= 0.8
+                   , genvalidity >= 1.0
                    , genvalidity-property >= 0.4
                    , genvalidity-hspec >= 0.7
                    , hspec      >= 2.0     && < 3
