@@ -120,17 +120,17 @@ import qualified System.FilePath.PLATFORM_NAME as FilePath
 -- Types
 
 -- | An absolute path.
-data Abs deriving (Typeable)
+data Abs deriving (Typeable, Data)
 
 -- | A relative path; one without a root. Note that a @..@ path component to
 -- represent the parent directory is not allowed by this library.
-data Rel deriving (Typeable)
+data Rel deriving (Typeable, Data)
 
 -- | A file path.
-data File deriving (Typeable)
+data File deriving (Typeable, Data)
 
 -- | A directory path.
-data Dir deriving (Typeable)
+data Dir deriving (Typeable, Data)
 
 instance FromJSON (Path Abs File) where
   parseJSON = parseJSONWith parseAbsFile
