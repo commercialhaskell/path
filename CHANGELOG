@@ -1,3 +1,7 @@
+0.9.2
+  * Data instances for Rel, Abs, File, and Dir.
+  * Bump hashable upper bound to <1.5.
+
 0.9.1
   * Support for genvalidity >=1.0.0.0
   * `mapSomeBase` and `prjSomeBase` for modifying or projecting SomeBase.
