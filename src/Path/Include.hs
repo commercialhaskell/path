@@ -63,6 +63,10 @@ module Path.PLATFORM_NAME
   ,splitExtension
   ,fileExtension
   ,replaceExtension
+  ,splitDrive
+  ,takeDrive
+  ,dropDrive
+  ,isDrive
   ,mapSomeBase
   ,prjSomeBase
    -- * Parsing
@@ -376,6 +380,31 @@ parent (Path fp) =
     $ normalizeDir
     $ FilePath.takeDirectory
     $ FilePath.dropTrailingPathSeparator fp
+
+-- | Split an absolute path into a drive and, perhaps, a path. On POSIX, @/@ is
+-- a drive.
+splitDrive :: Path Abs t -> (Path Abs Dir, Maybe (Path Rel t))
+splitDrive (Path fp) =
+    let (d, rest) = FilePath.splitDrive fp
+        mRest = if null rest then Nothing else Just (Path rest)
+    in  (Path d, mRest)
+
+-- | Get the drive from an absolute path. On POSIX, @/@ is a drive.
+--
+-- > takeDrive x = fst (splitDrive x)
+takeDrive :: Path Abs t -> Path Abs Dir
+takeDrive = fst . splitDrive
+
+-- | Drop the drive from an absolute path. May result in 'Nothing' if the path
+-- is just a drive.
+--
+-- > dropDrive x = snd (splitDrive x)
+dropDrive :: Path Abs t -> Maybe (Path Rel t)
+dropDrive = snd . splitDrive
+
+-- | Is an absolute directory path a drive?
+isDrive :: Path Abs Dir -> Bool
+isDrive = isNothing . dropDrive
 
 -- | Extract the file part of a path.
 --

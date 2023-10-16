@@ -50,6 +50,8 @@ spec =
       describe "stripProperPrefix" operationStripDir
       describe "isProperPrefixOf" operationIsParentOf
       describe "parent" operationParent
+      describe "splitDrive" operationSplitDrive
+      describe "takeDrive" operationTakeDrive
       describe "filename" operationFilename
       describe "dirname" operationDirname
     describe "Extensions" extensionsSpec
@@ -100,6 +102,22 @@ operationParent = do
     producesValid (parent :: Path Abs Dir -> Path Abs Dir)
   it "produces a valid path on when passed a valid rel directory path" $ do
     producesValid (parent :: Path Rel Dir -> Path Rel Dir)
+
+-- | The 'splitDrive' operation.
+operationSplitDrive :: Spec
+operationSplitDrive = do
+  it "produces valid paths on when passed a valid directory path" $ do
+    producesValid (splitDrive :: Path Abs Dir -> (Path Abs Dir, Maybe (Path Rel Dir)))
+  it "produces valid paths on when passed a valid file path" $ do
+    producesValid (splitDrive :: Path Abs File -> (Path Abs Dir, Maybe (Path Rel File)))
+
+-- | The 'takeDrive' operation.
+operationTakeDrive :: Spec
+operationTakeDrive = do
+  it "produces a valid path on when passed a valid directory path" $ do
+    producesValid (takeDrive :: Path Abs Dir -> Path Abs Dir)
+  it "produces a valid path on when passed a valid file path" $ do
+    producesValid (takeDrive :: Path Abs File -> Path Abs Dir)
 
 -- | The 'isProperPrefixOf' operation.
 operationIsParentOf :: Spec

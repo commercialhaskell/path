@@ -30,6 +30,8 @@ spec =
      describe "Operations: stripProperPrefix" operationStripProperPrefix
      describe "Operations: isProperPrefixOf" operationIsProperPrefixOf
      describe "Operations: parent" operationParent
+     describe "Operations: splitDrive" operationSplitDrive
+     describe "Operations: isDrive" operationIsDrive
      describe "Operations: filename" operationFilename
      describe "Operations: dirname" operationDirname
      describe "Operations: extensions" (extensionOperations "C:\\")
@@ -117,6 +119,34 @@ operationParent =
         (parent $(mkRelDir "x") == $(mkRelDir "."))
      it "parent \".\" == \".\""
         (parent $(mkRelDir ".") == $(mkRelDir "."))
+
+-- | The 'splitDrive' operation.
+operationSplitDrive :: Spec
+operationSplitDrive =
+  do it "splitDrive \"C:/dir\" == (\"C:/\", Just \"dir\")"
+        (splitDrive $(mkAbsDir "C:/dir") == ($(mkAbsDir "C:/"), Just $(mkRelDir "dir")))
+     it "splitDrive \"C:\\dir\" == (\"C:\\\", Just \"dir\")"
+        (splitDrive $(mkAbsDir "C:\\dir") == ($(mkAbsDir "C:\\"), Just $(mkRelDir "dir")))
+     it "splitDrive \"C:/file\" == (\"C:/\", Just \"file\")"
+        (splitDrive $(mkAbsFile "C:/file") == ($(mkAbsDir "C:/"), Just $(mkRelFile "file")))
+     it "splitDrive \"C:\\file\" == (\"C:\\\", Just \"file\")"
+        (splitDrive $(mkAbsFile "C:\\file") == ($(mkAbsDir "C:\\"), Just $(mkRelFile "file")))
+     it "splitDrive \"C:/\" == (\"C:/\", Nothing)"
+        (splitDrive $(mkAbsDir "C:/") == ($(mkAbsDir "C:/"), Nothing))
+     it "splitDrive \"C:\\\" == (\"C:\\\", Nothing)"
+        (splitDrive $(mkAbsDir "C:\\") == ($(mkAbsDir "C:\\"), Nothing))
+
+-- | The 'isDrive' operation.
+operationIsDrive :: Spec
+operationIsDrive =
+  do it "isDrive \"C:/\" == True"
+        (isDrive $(mkAbsDir "C:/") == True)
+     it "isDrive \"C:\\\" == True"
+        (isDrive $(mkAbsDir "C:\\") == True)
+     it "isDrive \"C:/dir\" == False"
+        (isDrive $(mkAbsDir "C:/dir") == False)
+     it "isDrive \"C:\\dir\" == False"
+        (isDrive $(mkAbsDir "C:\\dir") == False)
 
 -- | The 'isProperPrefixOf' operation.
 operationIsProperPrefixOf :: Spec

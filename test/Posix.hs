@@ -30,6 +30,8 @@ spec =
      describe "Operations: stripProperPrefix" operationStripProperPrefix
      describe "Operations: isProperPrefixOf" operationIsProperPrefixOf
      describe "Operations: parent" operationParent
+     describe "Operations: splitDrive" operationSplitDrive
+     describe "Operations: isDrive" operationIsDrive
      describe "Operations: filename" operationFilename
      describe "Operations: dirname" operationDirname
      describe "Operations: extensions" (extensionOperations "/")
@@ -106,6 +108,24 @@ operationParent =
         (parent $(mkRelDir "x") == $(mkRelDir "."))
      it "parent \".\" == \".\""
         (parent $(mkRelDir ".") == $(mkRelDir "."))
+
+-- | The 'splitDrive' operation.
+operationSplitDrive :: Spec
+operationSplitDrive =
+  do it "splitDrive \"/dir\" == (\"/\", Just \"dir\")"
+        (splitDrive $(mkAbsDir "/dir") == ($(mkAbsDir "/"), Just $(mkRelDir "dir")))
+     it "splitDrive \"/file\" == (\"/\", Just \"file\")"
+        (splitDrive $(mkAbsFile "/file") == ($(mkAbsDir "/"), Just $(mkRelFile "file")))
+     it "splitDrive \"/\" == (\"/\", Nothing)"
+        (splitDrive $(mkAbsDir "/") == ($(mkAbsDir "/"), Nothing))
+
+-- | The 'isDrive' operation.
+operationIsDrive :: Spec
+operationIsDrive =
+  do it "isDrive \"/\" == True"
+        (isDrive $(mkAbsDir "/") == True)
+     it "isDrive \"/dir\" == False"
+        (isDrive $(mkAbsDir "/dir") == False)
 
 -- | The 'isProperPrefixOf' operation.
 operationIsProperPrefixOf :: Spec
