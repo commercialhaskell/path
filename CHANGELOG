@@ -1,5 +1,7 @@
-0.9.3
+0.9.5
   * Add `splitDrive`, `takeDrive`, `dropDrive` and `isDrive`.
+
+  0.9.4 was an accidental release of the unreleased 0.9.3 without the appropriate changelog.
 
 0.9.2
   * Data instances for Rel, Abs, File, and Dir.
