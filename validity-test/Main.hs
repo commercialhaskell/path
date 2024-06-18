@@ -5,7 +5,7 @@
 {-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 
 -- | Test suite.
-module Main where
+module Main (main) where
 
 import Data.Maybe
 import Path
