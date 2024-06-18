@@ -73,9 +73,9 @@ test-suite test
 
 test-suite validity-test
   type:              exitcode-stdio-1.0
-  main-is:           ValidityTest.hs
+  main-is:           Main.hs
   other-modules:     Path.Gen
-  hs-source-dirs:    test
+  hs-source-dirs:    validity-test
   build-depends:     QuickCheck
                    , aeson
                    , base       >= 4.12 && < 5
