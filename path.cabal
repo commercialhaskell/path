@@ -15,6 +15,8 @@ extra-source-files:  README.md
                    , CHANGELOG
                    , src/Path/Include.hs
                    , src/Path/Internal/Include.hs
+                   , src/OsPath/Include.hs
+                   , src/OsPath/Internal/Include.hs
                    , test/Common/Include.hs
 
 flag dev
@@ -30,6 +32,12 @@ library
                    , Path.Internal
                    , Path.Internal.Posix
                    , Path.Internal.Windows
+                   , OsPath
+                   , OsPath.Posix
+                   , OsPath.Windows
+                   , OsPath.Internal
+                   , OsPath.Internal.Posix
+                   , OsPath.Internal.Windows
   build-depends:     aeson
                    , base       >= 4.12     && < 5
                    , deepseq
