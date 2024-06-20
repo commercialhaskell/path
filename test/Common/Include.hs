@@ -6,6 +6,7 @@
 -- | Test functions that are common to Posix and Windows
 module Common.PLATFORM_NAME
   (operationDirname
+  ,operationFilename
   ,extensionOperations
   ) where
 
@@ -28,6 +29,9 @@ drives = (fromJust . traverse parseAbsDir) drives_
 relDir :: Path Rel Dir
 relDir = (fromJust . parseRelDir) "directory"
 
+relFile :: Path Rel File
+relFile = (fromJust . parseRelFile) "file"
+
 -- | The 'dirname' operation.
 operationDirname :: Spec
 operationDirname = do
@@ -37,14 +41,28 @@ operationDirname = do
   it
     "dirname \".\" == dirname \".\""
     (dirname currentDir == currentDir)
+
   forDrives $ \drive -> do
     let absDir = drive </> relDir
     it
       "dirname (absDir </> relDir) == dirname relDir"
       (dirname (absDir </> relDir) == dirname relDir)
     it
-      "dirname drive must be a Rel path"
+      "dirname of a drive must be a Rel path"
       (isNothing (parseAbsDir . toFilePath . dirname $ drive))
+
+-- | The 'filename' operation.
+operationFilename :: Spec
+operationFilename = do
+  it
+    "filename (relDir </> relFile) == filename relFile"
+    (filename (relDir </> relFile) == filename relFile)
+
+  forDrives $ \drive -> do
+    let absDir = drive </> relDir
+    it
+      "filename (absDir </> relFile) == filename relFile"
+      (filename (absDir </> relFile) == filename relFile)
 
 extensionOperations :: Spec
 extensionOperations = do
