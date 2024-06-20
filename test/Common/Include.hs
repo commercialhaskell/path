@@ -9,6 +9,8 @@ module Common.PLATFORM_NAME
   ,operationFilename
   ,operationParent
   ,operationSplitDrive
+  ,operationIsDrive
+  ,operationIsProperPrefixOf
   ,extensionOperations
   ) where
 
@@ -102,6 +104,38 @@ operationSplitDrive = forDrives $ \drive -> do
   it
     "splitDrive drive == (drive, Nothing)"
     (splitDrive drive == (drive, Nothing))
+
+-- | The 'isDrive' operation.
+operationIsDrive :: Spec
+operationIsDrive = forDrives $ \drive -> do
+  let absDir = drive </> relDir
+  it
+    "isDrive drive"
+    (isDrive drive)
+  it
+    "not (isDrive absDir)"
+    (not (isDrive absDir))
+
+-- | The 'isProperPrefixOf' operation.
+operationIsProperPrefixOf :: Spec
+operationIsProperPrefixOf = do
+  it
+    "isProperPrefixOf relDir (relDir </> relDir)"
+    (isProperPrefixOf relDir (relDir </> relDir))
+
+  it
+    "not (relDir `isProperPrefixOf` relDir)"
+    (not (isProperPrefixOf relDir relDir))
+
+  forDrives $ \drive -> do
+    let absDir = drive </> relDir
+    it
+      "isProperPrefixOf absDir (absDir </> relDir)"
+      (isProperPrefixOf absDir (absDir </> relDir))
+
+    it
+      "not (drive `isProperPrefixOf` drive)"
+      (not (isProperPrefixOf drive drive))
 
 extensionOperations :: Spec
 extensionOperations = do

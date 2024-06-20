@@ -65,35 +65,6 @@ restrictions =
         parseSucceeds x with =
           parserTest parseRelDir x (Just with)
 
--- | The 'isDrive' operation.
-operationIsDrive :: Spec
-operationIsDrive =
-  do it "isDrive \"/\" == True"
-        (isDrive $(mkAbsDir "/") == True)
-     it "isDrive \"/dir\" == False"
-        (isDrive $(mkAbsDir "/dir") == False)
-
--- | The 'isProperPrefixOf' operation.
-operationIsProperPrefixOf :: Spec
-operationIsProperPrefixOf =
-  do it "isProperPrefixOf parent (parent </> child) (absolute)"
-        (isProperPrefixOf
-           $(mkAbsDir "///bar/")
-           ($(mkAbsDir "///bar/") </>
-            $(mkRelFile "bar/foo.txt")))
-
-     it "isProperPrefixOf parent (parent </> child) (relative)"
-        (isProperPrefixOf
-           $(mkRelDir "bar/")
-           ($(mkRelDir "bar/") </>
-            $(mkRelFile "bob/foo.txt")))
-
-     it "not (x `isProperPrefixOf` x)"
-        (not (isProperPrefixOf $(mkRelDir "x") $(mkRelDir "x")))
-
-     it "not (/ `isProperPrefixOf` /)"
-        (not (isProperPrefixOf $(mkAbsDir "/") $(mkAbsDir "/")))
-
 -- | The 'stripProperPrefix' operation.
 operationStripProperPrefix :: Spec
 operationStripProperPrefix =
