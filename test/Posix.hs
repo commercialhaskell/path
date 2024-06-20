@@ -17,6 +17,7 @@ import Path.Internal.Posix
 import Test.Hspec
 
 import Common.Posix (extensionOperations)
+import TH.Posix ()
 
 -- | Test suite (Posix version).
 spec :: Spec
