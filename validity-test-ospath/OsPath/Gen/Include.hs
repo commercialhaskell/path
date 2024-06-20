@@ -10,12 +10,14 @@ import Prelude
 import Path
 import Path.Internal
 
-import qualified System.FilePath as FilePath
-
+import Data.Char (chr, ord)
 import Data.GenValidity
 import Data.List (isSuffixOf, isInfixOf)
 import Data.Maybe (isJust, mapMaybe)
-
+import qualified System.FilePath as FilePath
+import System.OsPath.PLATFORM_NAME (PLATFORM_PATH)
+import qualified System.OsPath.PLATFORM_NAME as OsPath
+import qualified System.OsString.PLATFORM_NAME as OsString
 import Test.QuickCheck
 
 instance Validity (Path Abs File) where
@@ -125,3 +127,22 @@ genPathyChar = frequency [(2, choose (minBound, maxBound)), (1, elements "./\\")
 
 shrinkValidWith :: (FilePath -> Maybe (Path a b)) -> Path a b -> [Path a b]
 shrinkValidWith fun (Path f) = filter (/= (Path f)) . mapMaybe fun $ shrinkValid f
+
+--------------------------------------------------------------------------------
+-- Orphan instances
+
+-- | Generates 'PLATFORM_PATH with a high occurence of @'.'@, @'\/'@ and
+-- @'\\'@ characters. The resulting 'FilePath's are not guaranteed to
+-- be valid.
+instance GenValid PLATFORM_PATH where
+    -- We also need to exclude UTF-16 surrogates.
+    genValid = mconcat <$> listOf (OsString.unsafeEncodeUtf . (:[]) . chr <$> frequency
+        [ (2, choose (0x0, 0xD800 - 1))
+        , (2, choose (0xDFFF + 1, 0x10FFFF))
+        , (1, elements (map ord "./\\"))
+        ]
+        )
+    shrinkValid _ = [] -- TODO: Not yet implemented
+
+instance Validity PLATFORM_PATH where
+    validate = trivialValidation -- TODO: Not yet implemented

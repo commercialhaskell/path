@@ -149,6 +149,7 @@ test-suite validity-test-ospath
                    , genvalidity-hspec >= 0.7
                    , hspec      >= 2.0     && < 3
                    , mtl        >= 2.0     && < 3
+                   , os-string
                    , path
                    , validity   >= 0.8.0.0
   default-language:  Haskell2010
