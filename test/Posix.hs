@@ -35,7 +35,7 @@ spec =
      describe "Operations: isDrive" operationIsDrive
      describe "Operations: filename" operationFilename
      describe "Operations: dirname" operationDirname
-     describe "Operations: extensions" (extensionOperations "/")
+     describe "Operations: extensions" extensionOperations
      describe "Restrictions" restrictions
      describe "Aeson Instances" aesonInstances
      describe "QuasiQuotes" quasiquotes
