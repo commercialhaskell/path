@@ -22,4 +22,5 @@ spec =
   modifyMaxShrinks (const 100) $
   parallel $ do
     Posix.spec
-    Windows.spec
+    -- See https://github.com/commercialhaskell/path/issues/74
+    -- Windows.spec
