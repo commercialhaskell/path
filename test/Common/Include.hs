@@ -5,18 +5,14 @@
 
 -- | Test functions that are common to Posix and Windows
 module Common.PLATFORM_NAME
-  (operationDirname
-  ,operationFilename
-  ,operationParent
-  ,operationSplitDrive
-  ,operationIsDrive
-  ,operationIsProperPrefixOf
-  ,operationStripProperPrefix
-  ,operationAppend
-  ,extensionOperations
+  (spec
+  ,parseFails
+  ,parseSucceeds
+  ,parserTest
   ) where
 
-import Control.Monad (forM_)
+import Control.Applicative ((<|>))
+import Control.Monad (forM_, void)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as NonEmpty
 import Data.Maybe (fromJust, isNothing)
@@ -37,6 +33,19 @@ relDir = (fromJust . parseRelDir) "directory"
 
 relFile :: Path Rel File
 relFile = (fromJust . parseRelFile) "file"
+
+spec :: Spec
+spec = do
+  describe "Operations: (</>)" operationAppend
+  describe "Operations: dirname" operationDirname
+  describe "Operations: filename" operationFilename
+  describe "Operations: parent" operationParent
+  describe "Operations: toFilePath" operationToFilePath
+  describe "Operations: isProperPrefixOf" operationIsProperPrefixOf
+  describe "Operations: stripProperPrefix" operationStripProperPrefix
+  describe "Operations: isDrive" operationIsDrive
+  describe "Operations: splitDrive" operationSplitDrive
+  describe "Operations: extensions" extensionOperations
 
 -- | The 'dirname' operation.
 operationDirname :: Spec
@@ -185,6 +194,16 @@ operationAppend = do
       "AbsDir + RelFile == AbsFile"
       (absDir </> relFile == Path (absDir' FilePath.</> relFile'))
 
+operationToFilePath :: Spec
+operationToFilePath = do
+  let expected = "." ++ [FilePath.pathSeparator]
+  it
+    ("toFilePath \".\" == " ++ show expected)
+    (toFilePath currentDir == expected)
+  it
+    ("show \".\" == " ++ (show . show) expected)
+    (show currentDir == show expected)
+
 extensionOperations :: Spec
 extensionOperations = do
     let extension = ".foo"
@@ -272,3 +291,27 @@ forDrives f = case drives of
   (drive :| []) -> f drive
   _ -> forM_ drives $ \drive ->
     describe ("Drive " ++ show drive) (f drive)
+
+parseFails :: FilePath -> Spec
+parseFails x = it (show x ++ " should be rejected")
+  (isNothing (void (parseAbsDir x) <|>
+              void (parseRelDir x) <|>
+              void (parseAbsFile x) <|>
+              void (parseRelFile x)))
+
+parseSucceeds :: FilePath -> Path Rel Dir -> Spec
+parseSucceeds x with = parserTest parseRelDir x (Just with)
+
+-- | Parser test.
+parserTest :: (Show a, Show b, Eq b)
+           => (a -> Maybe b) -> a -> Maybe b -> Spec
+parserTest parser input expected =
+  it (message1 ++ "Parsing " ++ show input ++ " " ++ message2)
+     (parser input `shouldBe` expected)
+  where message1
+          | isNothing expected =  "Failing: "
+          | otherwise = "Succeeding: "
+
+        message2 = case expected of
+          Nothing -> "should fail."
+          Just x -> "should succeed with: " ++ show x
