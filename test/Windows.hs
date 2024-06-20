@@ -59,20 +59,6 @@ restrictions =
         parseSucceeds x with =
           parserTest parseRelDir x (Just with)
 
--- | The 'parent' operation.
-operationParent :: Spec
-operationParent =
-  do it "parent (parent </> child) == parent"
-        (parent ($(mkAbsDir "C:\\foo") </> $(mkRelDir "bar")) == $(mkAbsDir "C:\\foo"))
-     it "parent \"C:\\\" == \"C:\\\""
-        (parent $(mkAbsDir "C:\\") == $(mkAbsDir "C:\\"))
-     it "parent \"C:\\x\" == \"C:\\\""
-        (parent $(mkAbsDir "C:\\x") == $(mkAbsDir "C:\\"))
-     it "parent \"x\" == \".\""
-        (parent $(mkRelDir "x") == $(mkRelDir "."))
-     it "parent \".\" == \".\""
-        (parent $(mkRelDir ".") == $(mkRelDir "."))
-
 -- | The 'splitDrive' operation.
 operationSplitDrive :: Spec
 operationSplitDrive =

@@ -7,6 +7,7 @@
 module Common.PLATFORM_NAME
   (operationDirname
   ,operationFilename
+  ,operationParent
   ,extensionOperations
   ) where
 
@@ -63,6 +64,28 @@ operationFilename = do
     it
       "filename (absDir </> relFile) == filename relFile"
       (filename (absDir </> relFile) == filename relFile)
+
+-- | The 'parent' operation.
+operationParent :: Spec
+operationParent = do
+  it
+    "parent \"name\" == \".\""
+    (parent relDir == currentDir)
+  it
+    "parent \".\" == \".\""
+    (parent currentDir == currentDir)
+
+  forDrives $ \drive -> do
+    let absDir = drive </> relDir
+    it
+      "parent (absDir </> \"name\") == absDir"
+      (parent (absDir </> relDir) == absDir)
+    it
+      "parent \"/name\" == drive"
+      (parent absDir == drive)
+    it
+      "parent drive == drive"
+      (parent drive == drive)
 
 extensionOperations :: Spec
 extensionOperations = do
