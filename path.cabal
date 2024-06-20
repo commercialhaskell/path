@@ -95,9 +95,11 @@ test-suite test-ospath
   build-depends:     aeson
                    , base
                    , bytestring
+                   , exceptions
                    , filepath
                    , hspec      >= 2.0     && < 3
                    , mtl        >= 2.0     && < 3
+                   , os-string
                    , path
                    , template-haskell
   if flag(dev)

@@ -10,13 +10,13 @@ qqAbsFile :: FilePath
 qqAbsFile = checkInstantiated [absdir|/name|]
 
 thAbsDir :: FilePath
-thAbsDir = checkInstantiated $(mkAbsDir "/name/")
+thAbsDir = checkInstantiated $(mkAbsDir [OsString.pstr|/name/|])
 
 thAbsFile :: FilePath
-thAbsFile = checkInstantiated $(mkAbsFile "/name")
+thAbsFile = checkInstantiated $(mkAbsFile [OsString.pstr|/name|])
 
 liftAbsDir :: FilePath
-liftAbsDir = checkInstantiated $(TH.lift (Path "/name/" :: Path Abs Dir))
+liftAbsDir = checkInstantiated $(TH.lift (Path [OsString.pstr|/name/|] :: Path Abs Dir))
 
 liftAbsFile :: FilePath
-liftAbsFile = checkInstantiated $(TH.lift (Path "/name" :: Path Abs File))
+liftAbsFile = checkInstantiated $(TH.lift (Path [OsString.pstr|/name|] :: Path Abs File))
