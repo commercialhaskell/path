@@ -4,8 +4,8 @@
 #include "Include.hs"
 
 -- See https://learn.microsoft.com/en-us/dotnet/standard/io/file-path-formats
-drives :: NonEmpty FilePath
-drives = NonEmpty.fromList
+drives_ :: NonEmpty FilePath
+drives_ = NonEmpty.fromList
   [ "C:\\" -- Common
   , "C:/" -- Common
   , "\\\\host" -- UNC

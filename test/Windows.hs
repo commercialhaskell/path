@@ -16,7 +16,7 @@ import Path.Windows
 import Path.Internal.Windows
 import Test.Hspec
 
-import Common.Windows (extensionOperations)
+import Common.Windows
 import TH.Windows ()
 
 -- | Test suite (Windows version).
@@ -58,33 +58,6 @@ restrictions =
                          void (parseRelFile x)))
         parseSucceeds x with =
           parserTest parseRelDir x (Just with)
-
--- | The 'dirname' operation.
-operationDirname :: Spec
-operationDirname =
-  do it "dirname ($(mkAbsDir parent) </> $(mkRelFile dirname)) == dirname $(mkRelFile dirname) (absolute)"
-        (dirnamesShouldBeEqual
-          ($(mkAbsDir "C:\\chris\\") </> $(mkRelDir "bar"))
-          $(mkRelDir "bar"))
-     it "dirname ($(mkRelDir parent) </> $(mkRelFile dirname)) == dirname $(mkRelFile dirname) (relative)"
-        (dirnamesShouldBeEqual
-          ($(mkRelDir "home\\chris\\") </> $(mkRelDir "bar"))
-          $(mkRelDir "bar"))
-     it "dirname ($(mkAbsDir parent) </> $(mkRelFile dirname)) == dirname $(mkRelFile dirname) (UNC)"
-        (dirnamesShouldBeEqual
-          ($(mkAbsDir "\\\\home\\chris\\") </> $(mkRelDir "bar"))
-          $(mkRelDir "bar"))
-     it "dirname ($(mkAbsDir parent) </> $(mkRelFile dirname)) == dirname $(mkRelFile dirname) (Unicode)"
-        (dirnamesShouldBeEqual
-          ($(mkAbsDir "\\\\?\\C:\\home\\chris\\") </> $(mkRelDir "bar"))
-          $(mkRelDir "bar"))
-     it "dirname $(mkRelDir .) == $(mkRelDir .)"
-        (dirnamesShouldBeEqual
-          $(mkRelDir ".")
-          $(mkRelDir "."))
-     it "dirname C:\\ must be a Rel path"
-        ((parseAbsDir $ show $ dirname (fromJust (parseAbsDir "C:\\")) :: Maybe (Path Abs Dir)) == Nothing)
-  where dirnamesShouldBeEqual x y = dirname x == dirname y
 
 -- | The 'filename' operation.
 operationFilename :: Spec
