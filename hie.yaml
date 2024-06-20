@@ -6,5 +6,8 @@ cradle:
     - path: "test"
       component: "path:test:test"
 
+    - path: "test-ospath"
+      component: "path:test:test-ospath"
+
     - path: "validity-test"
       component: "path:test:validity-test"
