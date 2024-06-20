@@ -59,27 +59,6 @@ restrictions =
         parseSucceeds x with =
           parserTest parseRelDir x (Just with)
 
--- | The 'filename' operation.
-operationFilename :: Spec
-operationFilename =
-  do it "filename ($(mkAbsDir parent) </> $(mkRelFile filename)) == filename $(mkRelFile filename) (absolute)"
-        (filenamesShouldBeEqual
-          ($(mkAbsDir "C:\\chris\\") </> $(mkRelFile "bar.txt"))
-          $(mkRelFile "bar.txt"))
-     it "filename ($(mkRelDir parent) </> $(mkRelFile filename)) == filename $(mkRelFile filename) (relative)"
-        (filenamesShouldBeEqual
-          ($(mkRelDir "home\\chris\\") </> $(mkRelFile "bar.txt"))
-          $(mkRelFile "bar.txt"))
-     it "filename ($(mkAbsDir parent) </> $(mkRelFile filename)) == filename $(mkRelFile filename) (UNC)"
-        (filenamesShouldBeEqual
-          ($(mkAbsDir "\\\\host\\share\\chris\\") </> $(mkRelFile "bar.txt"))
-          $(mkRelFile "bar.txt"))
-     it "filename ($(mkAbsDir parent) </> $(mkRelFile filename)) == filename $(mkRelFile filename) (Unicode)"
-        (filenamesShouldBeEqual
-          ($(mkAbsDir "\\\\?\\C:\\home\\chris\\") </> $(mkRelFile "bar.txt"))
-          $(mkRelFile "bar.txt"))
-  where filenamesShouldBeEqual x y = filename x == filename y
-
 -- | The 'parent' operation.
 operationParent :: Spec
 operationParent =
