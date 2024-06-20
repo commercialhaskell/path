@@ -7,16 +7,14 @@
 
 module Posix (spec) where
 
-import Control.Applicative
-import Control.Monad
 import Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as LBS
-import Data.Maybe
-import Path.Posix
-import Path.Internal.Posix
 import Test.Hspec
 
-import Common.Posix
+import Common.Posix (parseFails, parseSucceeds, parserTest)
+import qualified Common.Posix
+import Path.Posix
+import Path.Internal.Posix
 import TH.Posix ()
 
 -- | Test suite (Posix version).
@@ -26,16 +24,7 @@ spec =
      describe "Parsing: Path Rel Dir" parseRelDirSpec
      describe "Parsing: Path Abs File" parseAbsFileSpec
      describe "Parsing: Path Rel File" parseRelFileSpec
-     describe "Operations: (</>)" operationAppend
-     describe "Operations: toFilePath" operationToFilePath
-     describe "Operations: stripProperPrefix" operationStripProperPrefix
-     describe "Operations: isProperPrefixOf" operationIsProperPrefixOf
-     describe "Operations: parent" operationParent
-     describe "Operations: splitDrive" operationSplitDrive
-     describe "Operations: isDrive" operationIsDrive
-     describe "Operations: filename" operationFilename
-     describe "Operations: dirname" operationDirname
-     describe "Operations: extensions" extensionOperations
+     Common.Posix.spec
      describe "Restrictions" restrictions
      describe "Aeson Instances" aesonInstances
      describe "QuasiQuotes" quasiquotes
@@ -56,21 +45,6 @@ restrictions =
      parseFails "/.."
      parseFails "/foo/../bar/"
      parseFails "/foo/bar/.."
-  where parseFails x =
-          it (show x ++ " should be rejected")
-             (isNothing (void (parseAbsDir x) <|>
-                         void (parseRelDir x) <|>
-                         void (parseAbsFile x) <|>
-                         void (parseRelFile x)))
-        parseSucceeds x with =
-          parserTest parseRelDir x (Just with)
-
-operationToFilePath :: Spec
-operationToFilePath =
-  do it "toFilePath $(mkRelDir \".\") == \"./\""
-        (toFilePath $(mkRelDir ".") == "./")
-     it "show $(mkRelDir \".\") == \"\\\"./\\\"\""
-        (show $(mkRelDir ".") == "\"./\"")
 
 -- | Tests for the tokenizer.
 parseAbsDirSpec :: Spec
@@ -162,22 +136,6 @@ parseRelFileSpec =
 
   where failing x = parserTest parseRelFile x Nothing
         succeeding x with = parserTest parseRelFile x (Just with)
-
--- | Parser test.
-parserTest :: (Show a1,Show a,Eq a1)
-           => (a -> Maybe a1) -> a -> Maybe a1 -> SpecWith ()
-parserTest parser input expected =
-  it ((case expected of
-         Nothing -> "Failing: "
-         Just{} -> "Succeeding: ") ++
-      "Parsing " ++
-      show input ++
-      " " ++
-      case expected of
-        Nothing -> "should fail."
-        Just x -> "should succeed with: " ++ show x)
-     (actual `shouldBe` expected)
-  where actual = parser input
 
 -- | Tests for the 'ToJSON' and 'FromJSON' instances
 --
