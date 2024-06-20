@@ -1,10 +1,10 @@
 -- This template expects CPP definitions for:
 --     PLATFORM_NAME = Posix | Windows
---     IS_WINDOWS    = False | True
 
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# OPTIONS_GHC -Wno-unused-top-binds #-}
 
 -- | Test functions that are common to Posix and Windows
 
@@ -17,32 +17,36 @@ import Path.PLATFORM_NAME
 import System.FilePath.PLATFORM_NAME (pathSeparator)
 import Test.Hspec
 
-class Foo a b where
-    foo :: Path a b -> FilePath
-    foo = toFilePath
+-- | This is a helper type class that checks that splices produce a 'Path' with
+--   all type variables instantiated to a type.
+--   This ensures that bugs like https://github.com/commercialhaskell/path/issues/159
+--   cannot happen.
+class CheckInstantiated a b where
+    checkInstantiated :: Path a b -> FilePath
+    checkInstantiated = toFilePath
 
-instance Foo Abs Dir
-instance Foo Abs File
-instance Foo Rel Dir
-instance Foo Rel File
+instance CheckInstantiated Abs Dir
+instance CheckInstantiated Abs File
+instance CheckInstantiated Rel Dir
+instance CheckInstantiated Rel File
 
 qqRelDir :: FilePath
-qqRelDir = foo [reldir|foo/|]
+qqRelDir = checkInstantiated [reldir|foo/|]
 
 qqRelFile :: FilePath
-qqRelFile = foo [relfile|foo|]
+qqRelFile = checkInstantiated [relfile|foo|]
 
 thRelDir :: FilePath
-thRelDir = foo $(mkRelDir "foo/")
+thRelDir = checkInstantiated $(mkRelDir "foo/")
 
 thRelFile :: FilePath
-thRelFile = foo $(mkRelFile "foo")
+thRelFile = checkInstantiated $(mkRelFile "foo")
 
 liftRelDir :: FilePath
-liftRelDir = foo $(TH.lift (Path "foo/" :: Path Rel Dir))
+liftRelDir = checkInstantiated $(TH.lift (Path "foo/" :: Path Rel Dir))
 
 liftRelFile :: FilePath
-liftRelFile = foo $(TH.lift (Path "foo" :: Path Rel File))
+liftRelFile = checkInstantiated $(TH.lift (Path "foo" :: Path Rel File))
 
 validExtensionsSpec :: String -> Path b File -> Path b File -> Spec
 validExtensionsSpec ext file fext = do

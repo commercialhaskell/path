@@ -6,19 +6,19 @@
 #include "Include.hs"
 
 qqAbsDir :: FilePath
-qqAbsDir = foo [absdir|/foo/|]
+qqAbsDir = checkInstantiated [absdir|/foo/|]
 
 qqAbsFile :: FilePath
-qqAbsFile = foo [absdir|/foo|]
+qqAbsFile = checkInstantiated [absdir|/foo|]
 
 thAbsDir :: FilePath
-thAbsDir = foo $(mkAbsDir "/foo/")
+thAbsDir = checkInstantiated $(mkAbsDir "/foo/")
 
 thAbsFile :: FilePath
-thAbsFile = foo $(mkAbsFile "/foo")
+thAbsFile = checkInstantiated $(mkAbsFile "/foo")
 
 liftAbsDir :: FilePath
-liftAbsDir = foo $(TH.lift (Path "/foo/" :: Path Abs Dir))
+liftAbsDir = checkInstantiated $(TH.lift (Path "/foo/" :: Path Abs Dir))
 
 liftAbsFile :: FilePath
-liftAbsFile = foo $(TH.lift (Path "/foo" :: Path Abs File))
+liftAbsFile = checkInstantiated $(TH.lift (Path "/foo" :: Path Abs File))
