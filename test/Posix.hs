@@ -65,16 +65,6 @@ restrictions =
         parseSucceeds x with =
           parserTest parseRelDir x (Just with)
 
--- | The 'splitDrive' operation.
-operationSplitDrive :: Spec
-operationSplitDrive =
-  do it "splitDrive \"/dir\" == (\"/\", Just \"dir\")"
-        (splitDrive $(mkAbsDir "/dir") == ($(mkAbsDir "/"), Just $(mkRelDir "dir")))
-     it "splitDrive \"/file\" == (\"/\", Just \"file\")"
-        (splitDrive $(mkAbsFile "/file") == ($(mkAbsDir "/"), Just $(mkRelFile "file")))
-     it "splitDrive \"/\" == (\"/\", Nothing)"
-        (splitDrive $(mkAbsDir "/") == ($(mkAbsDir "/"), Nothing))
-
 -- | The 'isDrive' operation.
 operationIsDrive :: Spec
 operationIsDrive =

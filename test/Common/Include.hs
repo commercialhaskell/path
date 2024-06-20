@@ -8,6 +8,7 @@ module Common.PLATFORM_NAME
   (operationDirname
   ,operationFilename
   ,operationParent
+  ,operationSplitDrive
   ,extensionOperations
   ) where
 
@@ -86,6 +87,21 @@ operationParent = do
     it
       "parent drive == drive"
       (parent drive == drive)
+
+-- | The 'splitDrive' operation.
+operationSplitDrive :: Spec
+operationSplitDrive = forDrives $ \drive -> do
+  let absDir = drive </> relDir
+      absFile = drive </> relFile
+  it
+    "splitDrive \"/dir\" == (drive, Just \"dir\")"
+    (splitDrive absDir == (drive, Just relDir))
+  it
+    "splitDrive \"/file\" == (drive, Just \"file\")"
+    (splitDrive absFile == (drive, Just relFile))
+  it
+    "splitDrive drive == (drive, Nothing)"
+    (splitDrive drive == (drive, Nothing))
 
 extensionOperations :: Spec
 extensionOperations = do
