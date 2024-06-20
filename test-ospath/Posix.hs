@@ -9,12 +9,13 @@ module Posix (spec) where
 
 import Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as LBS
+import qualified System.OsString.Posix as OsString
 import Test.Hspec
 
 import Common.Posix (parseFails, parseSucceeds, parserTest)
 import qualified Common.Posix
-import Path.Posix
-import Path.Internal.Posix
+import OsPath.Posix
+import OsPath.Internal.Posix
 import TH.Posix ()
 
 -- | Test suite (Posix version).
@@ -34,29 +35,29 @@ restrictions :: Spec
 restrictions =
   do -- These ~ related ones below are now lifted:
      -- https://github.com/chrisdone/path/issues/19
-     parseSucceeds "~/" (Path "~/")
-     parseSucceeds "~/foo" (Path "~/foo/")
-     parseSucceeds "~/foo/bar" (Path "~/foo/bar/")
-     parseSucceeds "a.." (Path "a../")
-     parseSucceeds "..a" (Path "..a/")
+     parseSucceeds [OsString.pstr|~/|] (Path [OsString.pstr|~/|])
+     parseSucceeds [OsString.pstr|~/foo|] (Path [OsString.pstr|~/foo/|])
+     parseSucceeds [OsString.pstr|~/foo/bar|] (Path [OsString.pstr|~/foo/bar/|])
+     parseSucceeds [OsString.pstr|a..|] (Path [OsString.pstr|a../|])
+     parseSucceeds [OsString.pstr|..a|] (Path [OsString.pstr|..a/|])
      --
-     parseFails "../"
-     parseFails ".."
-     parseFails "/.."
-     parseFails "/foo/../bar/"
-     parseFails "/foo/bar/.."
+     parseFails [OsString.pstr|../|]
+     parseFails [OsString.pstr|..|]
+     parseFails [OsString.pstr|/..|]
+     parseFails [OsString.pstr|/foo/../bar/|]
+     parseFails [OsString.pstr|/foo/bar/..|]
 
 -- | Tests for the tokenizer.
 parseAbsDirSpec :: Spec
 parseAbsDirSpec =
-  do failing ""
-     failing "./"
-     failing "foo.txt"
-     succeeding "/" (Path "/")
-     succeeding "//" (Path "/")
-     succeeding "///foo//bar//mu/" (Path "/foo/bar/mu/")
-     succeeding "///foo//bar////mu" (Path "/foo/bar/mu/")
-     succeeding "///foo//bar/.//mu" (Path "/foo/bar/mu/")
+  do failing [OsString.pstr||]
+     failing [OsString.pstr|./|]
+     failing [OsString.pstr|foo.txt|]
+     succeeding [OsString.pstr|/|] (Path [OsString.pstr|/|])
+     succeeding [OsString.pstr|//|] (Path [OsString.pstr|/|])
+     succeeding [OsString.pstr|///foo//bar//mu/|] (Path [OsString.pstr|/foo/bar/mu/|])
+     succeeding [OsString.pstr|///foo//bar////mu|] (Path [OsString.pstr|/foo/bar/mu/|])
+     succeeding [OsString.pstr|///foo//bar/.//mu|] (Path [OsString.pstr|/foo/bar/mu/|])
 
   where failing x = parserTest parseAbsDir x Nothing
         succeeding x with = parserTest parseAbsDir x (Just with)
@@ -64,25 +65,25 @@ parseAbsDirSpec =
 -- | Tests for the tokenizer.
 parseRelDirSpec :: Spec
 parseRelDirSpec =
-  do failing ""
-     failing "/"
-     failing "//"
-     succeeding "~/" (Path "~/") -- https://github.com/chrisdone/path/issues/19
-     failing "/"
-     succeeding "./" (Path "")
-     succeeding "././" (Path "")
-     failing "//"
-     failing "///foo//bar//mu/"
-     failing "///foo//bar////mu"
-     failing "///foo//bar/.//mu"
-     succeeding "..." (Path ".../")
-     succeeding "foo.bak" (Path "foo.bak/")
-     succeeding "./foo" (Path "foo/")
-     succeeding "././foo" (Path "foo/")
-     succeeding "./foo/./bar" (Path "foo/bar/")
-     succeeding "foo//bar//mu//" (Path "foo/bar/mu/")
-     succeeding "foo//bar////mu" (Path "foo/bar/mu/")
-     succeeding "foo//bar/.//mu" (Path "foo/bar/mu/")
+  do failing [OsString.pstr||]
+     failing [OsString.pstr|/|]
+     failing [OsString.pstr|//|]
+     succeeding [OsString.pstr|~/|] (Path [OsString.pstr|~/|]) -- https://github.com/chrisdone/path/issues/19
+     failing [OsString.pstr|/|]
+     succeeding [OsString.pstr|./|] (Path [OsString.pstr||])
+     succeeding [OsString.pstr|././|] (Path [OsString.pstr||])
+     failing [OsString.pstr|//|]
+     failing [OsString.pstr|///foo//bar//mu/|]
+     failing [OsString.pstr|///foo//bar////mu|]
+     failing [OsString.pstr|///foo//bar/.//mu|]
+     succeeding [OsString.pstr|...|] (Path [OsString.pstr|.../|])
+     succeeding [OsString.pstr|foo.bak|] (Path [OsString.pstr|foo.bak/|])
+     succeeding [OsString.pstr|./foo|] (Path [OsString.pstr|foo/|])
+     succeeding [OsString.pstr|././foo|] (Path [OsString.pstr|foo/|])
+     succeeding [OsString.pstr|./foo/./bar|] (Path [OsString.pstr|foo/bar/|])
+     succeeding [OsString.pstr|foo//bar//mu//|] (Path [OsString.pstr|foo/bar/mu/|])
+     succeeding [OsString.pstr|foo//bar////mu|] (Path [OsString.pstr|foo/bar/mu/|])
+     succeeding [OsString.pstr|foo//bar/.//mu|] (Path [OsString.pstr|foo/bar/mu/|])
 
   where failing x = parserTest parseRelDir x Nothing
         succeeding x with = parserTest parseRelDir x (Just with)
@@ -90,19 +91,19 @@ parseRelDirSpec =
 -- | Tests for the tokenizer.
 parseAbsFileSpec :: Spec
 parseAbsFileSpec =
-  do failing ""
-     failing "./"
-     failing "/."
-     failing "/foo/bar/."
-     failing "~/"
-     failing "./foo.txt"
-     failing "/"
-     failing "//"
-     failing "///foo//bar//mu/"
-     succeeding "/..." (Path "/...")
-     succeeding "/foo.txt" (Path "/foo.txt")
-     succeeding "///foo//bar////mu.txt" (Path "/foo/bar/mu.txt")
-     succeeding "///foo//bar/.//mu.txt" (Path "/foo/bar/mu.txt")
+  do failing [OsString.pstr||]
+     failing [OsString.pstr|./|]
+     failing [OsString.pstr|/.|]
+     failing [OsString.pstr|/foo/bar/.|]
+     failing [OsString.pstr|~/|]
+     failing [OsString.pstr|./foo.txt|]
+     failing [OsString.pstr|/|]
+     failing [OsString.pstr|//|]
+     failing [OsString.pstr|///foo//bar//mu/|]
+     succeeding [OsString.pstr|/...|] (Path [OsString.pstr|/...|])
+     succeeding [OsString.pstr|/foo.txt|] (Path [OsString.pstr|/foo.txt|])
+     succeeding [OsString.pstr|///foo//bar////mu.txt|] (Path [OsString.pstr|/foo/bar/mu.txt|])
+     succeeding [OsString.pstr|///foo//bar/.//mu.txt|] (Path [OsString.pstr|/foo/bar/mu.txt|])
 
   where failing x = parserTest parseAbsFile x Nothing
         succeeding x with = parserTest parseAbsFile x (Just with)
@@ -110,29 +111,29 @@ parseAbsFileSpec =
 -- | Tests for the tokenizer.
 parseRelFileSpec :: Spec
 parseRelFileSpec =
-  do failing ""
-     failing "/"
-     failing "//"
-     failing "~/"
-     failing "/"
-     failing "./"
-     failing "a/."
-     failing "a/../b"
-     failing "a/.."
-     failing "../foo.txt"
-     failing "//"
-     failing "///foo//bar//mu/"
-     failing "///foo//bar////mu"
-     failing "///foo//bar/.//mu"
-     succeeding "a.." (Path "a..")
-     succeeding "..." (Path "...")
-     succeeding "foo.txt" (Path "foo.txt")
-     succeeding "./foo.txt" (Path "foo.txt")
-     succeeding "././foo.txt" (Path "foo.txt")
-     succeeding "./foo/./bar.txt" (Path "foo/bar.txt")
-     succeeding "foo//bar//mu.txt" (Path "foo/bar/mu.txt")
-     succeeding "foo//bar////mu.txt" (Path "foo/bar/mu.txt")
-     succeeding "foo//bar/.//mu.txt" (Path "foo/bar/mu.txt")
+  do failing [OsString.pstr||]
+     failing [OsString.pstr|/|]
+     failing [OsString.pstr|//|]
+     failing [OsString.pstr|~/|]
+     failing [OsString.pstr|/|]
+     failing [OsString.pstr|./|]
+     failing [OsString.pstr|a/.|]
+     failing [OsString.pstr|a/../b|]
+     failing [OsString.pstr|a/..|]
+     failing [OsString.pstr|../foo.txt|]
+     failing [OsString.pstr|//|]
+     failing [OsString.pstr|///foo//bar//mu/|]
+     failing [OsString.pstr|///foo//bar////mu|]
+     failing [OsString.pstr|///foo//bar/.//mu|]
+     succeeding [OsString.pstr|a..|] (Path [OsString.pstr|a..|])
+     succeeding [OsString.pstr|...|] (Path [OsString.pstr|...|])
+     succeeding [OsString.pstr|foo.txt|] (Path [OsString.pstr|foo.txt|])
+     succeeding [OsString.pstr|./foo.txt|] (Path [OsString.pstr|foo.txt|])
+     succeeding [OsString.pstr|././foo.txt|] (Path [OsString.pstr|foo.txt|])
+     succeeding [OsString.pstr|./foo/./bar.txt|] (Path [OsString.pstr|foo/bar.txt|])
+     succeeding [OsString.pstr|foo//bar//mu.txt|] (Path [OsString.pstr|foo/bar/mu.txt|])
+     succeeding [OsString.pstr|foo//bar////mu.txt|] (Path [OsString.pstr|foo/bar/mu.txt|])
+     succeeding [OsString.pstr|foo//bar/.//mu.txt|] (Path [OsString.pstr|foo/bar/mu.txt|])
 
   where failing x = parserTest parseRelFile x Nothing
         succeeding x with = parserTest parseRelFile x (Just with)
@@ -144,26 +145,26 @@ parseRelFileSpec =
 aesonInstances :: Spec
 aesonInstances =
   do it "Decoding \"[\"/foo/bar\"]\" as a [Path Abs Dir] should succeed." $
-       eitherDecode (LBS.pack "[\"/foo/bar\"]") `shouldBe` Right [Path "/foo/bar/" :: Path Abs Dir]
+       eitherDecode (LBS.pack "[\"/foo/bar\"]") `shouldBe` Right [Path [OsString.pstr|/foo/bar/|] :: Path Abs Dir]
      it "Decoding \"[\"/foo/bar\"]\" as a [Path Rel Dir] should fail." $
        decode (LBS.pack "[\"/foo/bar\"]") `shouldBe` (Nothing :: Maybe [Path Rel Dir])
      it "Encoding \"[\"/foo/bar/mu.txt\"]\" should succeed." $
-       encode [Path "/foo/bar/mu.txt" :: Path Abs File] `shouldBe` (LBS.pack "[\"/foo/bar/mu.txt\"]")
+       encode [Path [OsString.pstr|/foo/bar/mu.txt|] :: Path Abs File] `shouldBe` LBS.pack "[\"/foo/bar/mu.txt\"]"
 
 -- | Test QuasiQuoters. Make sure they work the same as the $(mk*) constructors.
 quasiquotes :: Spec
 quasiquotes =
   do it "[absdir|/|] == $(mkAbsDir \"/\")"
-       ([absdir|/|] `shouldBe` $(mkAbsDir "/"))
+       ([absdir|/|] `shouldBe` $(mkAbsDir [OsString.pstr|/|]))
      it "[absdir|/home|] == $(mkAbsDir \"/home\")"
-       ([absdir|/home|] `shouldBe` $(mkAbsDir "/home"))
+       ([absdir|/home|] `shouldBe` $(mkAbsDir [OsString.pstr|/home|]))
      it "[reldir|foo|] == $(mkRelDir \"foo\")"
-       ([reldir|foo|] `shouldBe` $(mkRelDir "foo"))
+       ([reldir|foo|] `shouldBe` $(mkRelDir [OsString.pstr|foo|]))
      it "[reldir|foo/bar|] == $(mkRelDir \"foo/bar\")"
-       ([reldir|foo/bar|] `shouldBe` $(mkRelDir "foo/bar"))
+       ([reldir|foo/bar|] `shouldBe` $(mkRelDir [OsString.pstr|foo/bar|]))
      it "[absfile|/home/chris/foo.txt|] == $(mkAbsFile \"/home/chris/foo.txt\")"
-       ([absfile|/home/chris/foo.txt|] `shouldBe` $(mkAbsFile "/home/chris/foo.txt"))
+       ([absfile|/home/chris/foo.txt|] `shouldBe` $(mkAbsFile [OsString.pstr|/home/chris/foo.txt|]))
      it "[relfile|foo|] == $(mkRelFile \"foo\")"
-       ([relfile|foo|] `shouldBe` $(mkRelFile "foo"))
+       ([relfile|foo|] `shouldBe` $(mkRelFile [OsString.pstr|foo|]))
      it "[relfile|chris/foo.txt|] == $(mkRelFile \"chris/foo.txt\")"
-       ([relfile|chris/foo.txt|] `shouldBe` $(mkRelFile "chris/foo.txt"))
+       ([relfile|chris/foo.txt|] `shouldBe` $(mkRelFile [OsString.pstr|chris/foo.txt|]))

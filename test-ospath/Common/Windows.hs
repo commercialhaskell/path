@@ -1,16 +1,18 @@
 {-# LANGUAGE CPP #-}
 
 #define PLATFORM_NAME Windows
+#define PLATFORM_PATH WindowsPath
+#define PLATFORM_STRING WindowsString
 #include "Include.hs"
 
 -- See https://learn.microsoft.com/en-us/dotnet/standard/io/file-path-formats
-drives_ :: NonEmpty FilePath
+drives_ :: NonEmpty PLATFORM_STRING
 drives_ = NonEmpty.fromList
-  [ "C:\\" -- Common
-  , "C:/" -- Common
-  , "\\\\host" -- UNC
-  --, "\\\\.\\C:\\" -- DOS Device Path
-  , "\\\\?\\C:\\" -- DOS Device Path
-  --, "\\\\?\\UNC\\" -- DOS Device Path
-  --, "\\\\.\\UNC\\" -- DOS Device Path
+  [ [OsString.pstr|C:\|] -- Common
+  , [OsString.pstr|C:/|] -- Common
+  , [OsString.pstr|\\host|] -- UNC
+  --, [OsString.pstr|\\.\C:\|] -- DOS Device Path
+  , [OsString.pstr|\\?\C:\|] -- DOS Device Path
+  --, [OsString.pstr|\\?\UNC\|] -- DOS Device Path
+  --, [OsString.pstr|\\.\UNC\|] -- DOS Device Path
   ]

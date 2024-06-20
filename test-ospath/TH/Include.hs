@@ -10,9 +10,10 @@
 module TH.PLATFORM_NAME where
 
 import qualified Language.Haskell.TH.Syntax as TH
+import qualified System.OsString.PLATFORM_NAME as OsString
 
-import Path.Internal.PLATFORM_NAME
-import Path.PLATFORM_NAME
+import OsPath.Internal.PLATFORM_NAME
+import OsPath.PLATFORM_NAME
 
 -- | This is a helper type class that checks that splices produce a 'Path' with
 --   all type variables instantiated to a type.
@@ -34,13 +35,13 @@ qqRelFile :: FilePath
 qqRelFile = checkInstantiated [relfile|name|]
 
 thRelDir :: FilePath
-thRelDir = checkInstantiated $(mkRelDir "name/")
+thRelDir = checkInstantiated $(mkRelDir [OsString.pstr|name/|])
 
 thRelFile :: FilePath
-thRelFile = checkInstantiated $(mkRelFile "name")
+thRelFile = checkInstantiated $(mkRelFile [OsString.pstr|name|])
 
 liftRelDir :: FilePath
-liftRelDir = checkInstantiated $(TH.lift (Path "name/" :: Path Rel Dir))
+liftRelDir = checkInstantiated $(TH.lift (Path [OsString.pstr|name/|] :: Path Rel Dir))
 
 liftRelFile :: FilePath
-liftRelFile = checkInstantiated $(TH.lift (Path "name" :: Path Rel File))
+liftRelFile = checkInstantiated $(TH.lift (Path [OsString.pstr|name|] :: Path Rel File))
