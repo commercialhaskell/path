@@ -11,3 +11,6 @@ cradle:
 
     - path: "validity-test"
       component: "path:test:validity-test"
+
+    - path: "validity-test-ospath"
+      component: "path:test:validity-test-ospath"
