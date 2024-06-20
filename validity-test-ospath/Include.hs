@@ -1,3 +1,4 @@
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -8,8 +9,10 @@
 module PLATFORM_NAME where
 
 import Data.Maybe
-import Path
-import Path.Internal
+import OsPath.PLATFORM_NAME
+import OsPath.Internal.PLATFORM_NAME
+import System.OsPath.PLATFORM_NAME (PLATFORM_PATH)
+import qualified System.OsString.PLATFORM_NAME as OsString
 import Test.Hspec
 import Test.Hspec.QuickCheck
 import Test.QuickCheck
@@ -74,9 +77,9 @@ operationFilename = do
 operationDirname :: Spec
 operationDirname = do
   forAllDirs "dirname parent </> $(mkRelDir dirname)) == dirname $(mkRelDir dirname)" $ \parent ->
-    forAllValid $ \dir -> if dir == Path [] then pure () else dirname (parent </> dir) `shouldBe` dirname dir
+    forAllValid $ \dir -> if dir == Path OsString.empty then pure () else dirname (parent </> dir) `shouldBe` dirname dir
   forSomeDirs "dirname (some:parent </> $(mkRelDir dirname)) == dirname $(mkRelDir dirname)" $ \someParent ->
-    forAllValid $ \dir -> if dir == Path []
+    forAllValid $ \dir -> if dir == Path OsString.empty
                           then pure ()
                           else prjSomeBase dirname (mapSomeBase (</> dir) someParent) `shouldBe` dirname dir
   it "produces a valid path on when passed a valid absolute path" $ do
@@ -122,7 +125,7 @@ operationTakeDrive = do
 operationIsParentOf :: Spec
 operationIsParentOf = do
   forAllParentsAndChildren "isProperPrefixOf parent (parent </> child)" $ \parent child ->
-    if child == Path []
+    if child == Path OsString.empty
       then True -- TODO do we always need this condition?
       else isProperPrefixOf parent (parent </> child)
 
@@ -130,7 +133,7 @@ operationIsParentOf = do
 operationStripDir :: Spec
 operationStripDir = do
   forAllParentsAndChildren "stripProperPrefix parent (parent </> child) = child" $ \parent child ->
-    if child == Path []
+    if child == Path OsString.empty
       then pure () -- TODO do we always need this condition?
       else stripProperPrefix parent (parent </> child) `shouldBe` Just child
   it "produces a valid path on when passed a valid absolute file paths" $ do
@@ -161,26 +164,26 @@ operationAppend = do
 extensionsSpec :: Spec
 extensionsSpec = do
   let addExtGensValidFile p =
-        case addExtension p $(mkRelFile "x") of
+        case addExtension p $(mkRelFile [OsString.pstr|x|]) of
           Nothing -> True
           Just _ ->
             case parseRelFile p of
               Nothing -> False
               _ -> True
   it "if addExtension a b succeeds then parseRelFile b succeeds - 1" $
-    forAll genFilePath addExtGensValidFile
+    forAll genValid addExtGensValidFile
   -- skew the generated path towards a valid extension by prefixing a "."
   it "if addExtension a b succeeds then parseRelFile b succeeds - 2" $
-    forAll genFilePath $ addExtGensValidFile . ("." ++)
+    forAll genValid $ addExtGensValidFile . ([OsString.pstr|.|] <>)
   forAllFiles "Adding an extension is like adding the extension to the end if it succeeds" $ \file ->
     forAllValid $ \ext ->
       case addExtension ext file of
         Nothing -> pure () -- Fine
-        Just p -> toFilePath p `shouldBe` toFilePath file ++ ext
+        Just p -> toOsPath p `shouldBe` toOsPath file <> ext
   forAllFiles "splitExtension output joins to result in the original file" $ \file ->
     case splitExtension file of
       Nothing -> pure ()
-      Just (f, ext) -> toFilePath f ++ ext `shouldBe` toFilePath file
+      Just (f, ext) -> toOsPath f <> ext `shouldBe` toOsPath file
   forAllFiles "splitExtension generates a valid filename and valid extension" $ \file ->
     case splitExtension file of
       Nothing -> True
@@ -188,9 +191,9 @@ extensionsSpec = do
         case parseRelFile ext of
           Nothing -> False
           Just _ ->
-            case parseRelFile (toFilePath f) of
+            case parseRelFile (toOsPath f) of
               Nothing ->
-                case parseAbsFile (toFilePath f) of
+                case parseAbsFile (toOsPath f) of
                   Nothing -> False
                   Just _ -> True
               Just _ -> True
@@ -254,10 +257,10 @@ forAllPaths n func = do
   it (unwords [n, "Path Abs File"]) $ forAllValid $ \(path :: Path Abs File) -> func path
   it (unwords [n, "Path Rel File"]) $ forAllValid $ \(path :: Path Rel File) -> func path
 
-parserSpec :: (Show p, Validity p) => (FilePath -> Maybe p) -> Spec
+parserSpec :: (Show p, Validity p) => (PLATFORM_PATH -> Maybe p) -> Spec
 parserSpec parser =
   it "Produces valid paths when it succeeds" $
-  forAllShrink genFilePath shrinkValid $ \path ->
+  forAllShrink genValid shrinkValid $ \path ->
     case parser path of
       Nothing -> pure ()
       Just p ->
