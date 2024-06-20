@@ -11,6 +11,7 @@ module Common.PLATFORM_NAME
   ,operationSplitDrive
   ,operationIsDrive
   ,operationIsProperPrefixOf
+  ,operationStripProperPrefix
   ,extensionOperations
   ) where
 
@@ -136,6 +137,22 @@ operationIsProperPrefixOf = do
     it
       "not (drive `isProperPrefixOf` drive)"
       (not (isProperPrefixOf drive drive))
+
+-- | The 'stripProperPrefix' operation.
+operationStripProperPrefix :: Spec
+operationStripProperPrefix = do
+  it
+    "stripProperPrefix relDir (relDir </> relDir) == relDir"
+    (stripProperPrefix relDir (relDir </> relDir) == Just relDir)
+
+  forDrives $ \drive -> do
+    let absDir = drive </> relDir
+    it
+      "stripProperPrefix absDir (absDir </> relDir) == relDir"
+      (stripProperPrefix absDir (absDir </> relDir) == Just relDir)
+    it
+      "stripProperPrefix absDir absDir == _|_"
+      (isNothing (stripProperPrefix absDir absDir))
 
 extensionOperations :: Spec
 extensionOperations = do

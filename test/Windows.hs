@@ -59,37 +59,6 @@ restrictions =
         parseSucceeds x with =
           parserTest parseRelDir x (Just with)
 
--- | The 'stripProperPrefix' operation.
-operationStripProperPrefix :: Spec
-operationStripProperPrefix =
-  do it "stripProperPrefix parent (parent </> child) = child (absolute)"
-        (remainingPathShouldBe
-          $(mkAbsDir "C:\\\\\\bar\\")
-          ($(mkAbsDir "C:\\\\\\bar\\") </> $(mkRelFile "bar\\foo.txt"))
-          (Just $(mkRelFile "bar\\foo.txt")))
-     it "stripProperPrefix parent (parent </> child) = child (relative)"
-        (remainingPathShouldBe
-          $(mkRelDir "bar\\")
-          ($(mkRelDir "bar\\") </> $(mkRelFile "bob\\foo.txt"))
-          (Just $(mkRelFile "bob\\foo.txt")))
-     it "stripProperPrefix parent (parent </> child) = child (UNC)"
-        (remainingPathShouldBe
-          $(mkAbsDir "\\\\host\\share\\")
-          ($(mkAbsDir "\\\\host\\share\\") </> $(mkRelFile "bob\\foo.txt"))
-          (Just $(mkRelFile "bob\\foo.txt")))
-     it "stripProperPrefix parent (parent </> child) = child (Unicode)"
-        (remainingPathShouldBe
-          $(mkAbsDir "\\\\?\\C:\\folder\\")
-          ($(mkAbsDir "\\\\?\\C:\\folder\\") </> $(mkRelFile "bob\\foo.txt"))
-          (Just $(mkRelFile "bob\\foo.txt")))
-     it "stripProperPrefix parent parent = _|_"
-        (remainingPathShouldBe
-          $(mkAbsDir "C:\\home\\chris\\foo")
-          $(mkAbsDir "C:\\home\\chris\\foo")
-          Nothing)
-  where remainingPathShouldBe prefix path suffix =
-          stripProperPrefix prefix path == suffix
-
 -- | The '</>' operation.
 operationAppend :: Spec
 operationAppend =
