@@ -4,31 +4,19 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 -- | Test functions that are common to Posix and Windows
-
 module Common.PLATFORM_NAME (extensionOperations) where
 
-import Control.Monad
-import Path.Internal.PLATFORM_NAME
-import Path.PLATFORM_NAME
+import Control.Monad (forM_)
+import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as NonEmpty
 import System.FilePath.PLATFORM_NAME (pathSeparator)
 import Test.Hspec
 
-validExtensionsSpec :: String -> Path b File -> Path b File -> Spec
-validExtensionsSpec ext file fext = do
-    let f = show $ toFilePath file
-    let fx = show $ toFilePath fext
+import Path.Internal.PLATFORM_NAME
+import Path.PLATFORM_NAME
 
-    it ("addExtension " ++ show ext ++ " " ++ f ++ " == " ++ fx) $
-        addExtension ext file `shouldReturn` fext
-
-    it ("fileExtension " ++ fx ++ " == " ++ ext) $
-        fileExtension fext `shouldReturn` ext
-
-    it ("replaceExtension " ++ show ext ++ " " ++ fx ++ " == " ++ fx) $
-        replaceExtension ext fext `shouldReturn` fext
-
-extensionOperations :: String -> Spec
-extensionOperations rootDrive = do
+extensionOperations :: Spec
+extensionOperations = do
     let extension = ".foo"
     let extensions = extension : [".foo.", ".foo.."]
 
@@ -44,10 +32,11 @@ extensionOperations rootDrive = do
               runTests parseRelFile f1 extension
 
     describe "Absolute dir paths" $
-      forM_ dirnames $ \d -> do
-          forM_ filenames $ \f -> do
-              let f1 = rootDrive ++ d ++ [pathSeparator] ++ f
-              runTests parseAbsFile f1 extension
+      forM_ drives $ \drive -> do
+        forM_ dirnames $ \dir -> do
+          forM_ filenames $ \file -> do
+            let filepath = drive ++ dir ++ [pathSeparator] ++ file
+            runTests parseAbsFile filepath extension
 
     -- Invalid extensions
     forM_ invalidExtensions $ \ext -> do
@@ -93,3 +82,17 @@ extensionOperations rootDrive = do
         , ".foo.bar"
         , ".foo" ++ [pathSeparator] ++ "bar"
         ]
+
+validExtensionsSpec :: String -> Path b File -> Path b File -> Spec
+validExtensionsSpec ext file fext = do
+    let f = show $ toFilePath file
+    let fx = show $ toFilePath fext
+
+    it ("addExtension " ++ show ext ++ " " ++ f ++ " == " ++ fx) $
+        addExtension ext file `shouldReturn` fext
+
+    it ("fileExtension " ++ fx ++ " == " ++ ext) $
+        fileExtension fext `shouldReturn` ext
+
+    it ("replaceExtension " ++ show ext ++ " " ++ fx ++ " == " ++ fx) $
+        replaceExtension ext fext `shouldReturn` fext
