@@ -3,5 +3,5 @@
 #define PLATFORM_NAME Posix
 #include "Include.hs"
 
-drives :: NonEmpty FilePath
-drives = NonEmpty.singleton "/"
+drives_ :: NonEmpty FilePath
+drives_ = NonEmpty.singleton "/"

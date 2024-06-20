@@ -16,7 +16,7 @@ import Path.Posix
 import Path.Internal.Posix
 import Test.Hspec
 
-import Common.Posix (extensionOperations)
+import Common.Posix
 import TH.Posix ()
 
 -- | Test suite (Posix version).
@@ -64,22 +64,6 @@ restrictions =
                          void (parseRelFile x)))
         parseSucceeds x with =
           parserTest parseRelDir x (Just with)
-
--- | The 'dirname' operation.
-operationDirname :: Spec
-operationDirname = do
-  it
-    "dirname ($(mkAbsDir parent) </> $(mkRelFile dirname)) == dirname $(mkRelFile dirname) (unit test)"
-    (dirname ($(mkAbsDir "/home/chris/") </> $(mkRelDir "bar")) ==
-     dirname $(mkRelDir "bar"))
-  it
-    "dirname ($(mkRelDir parent) </> $(mkRelFile dirname)) == dirname $(mkRelFile dirname) (unit test)"
-    (dirname ($(mkRelDir "home/chris/") </> $(mkRelDir "bar")) ==
-     dirname $(mkRelDir "bar"))
-  it
-    "dirname / must be a Rel path"
-    ((parseAbsDir $ show $ dirname (fromJust (parseAbsDir "/"))
-     :: Maybe (Path Abs Dir)) == Nothing)
 
 -- | The 'filename' operation.
 operationFilename :: Spec
