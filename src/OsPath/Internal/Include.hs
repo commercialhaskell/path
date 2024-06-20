@@ -1,6 +1,7 @@
 -- This template expects CPP definitions for:
 --     PLATFORM_NAME = Posix | Windows
 --     PLATFORM_PATH = PosixPath | WindowsPath
+--     PLATFORM_PATH_SINGLE = 'PosixPath' | 'WindowsPath'
 --     IS_WINDOWS = 0 | 1
 
 {-# LANGUAGE DeriveGeneric       #-}
@@ -35,9 +36,7 @@ import qualified Data.Text as Text (pack)
 import GHC.Generics (Generic)
 import Data.Data
 import Data.Hashable
-import qualified Data.List as L
 import qualified Language.Haskell.TH.Syntax as TH
-import qualified System.FilePath.PLATFORM_NAME as FilePath
 import System.IO.Unsafe (unsafeDupablePerformIO)
 import System.OsPath.PLATFORM_NAME (PLATFORM_PATH)
 import qualified System.OsPath.PLATFORM_NAME as OsPath
@@ -51,7 +50,7 @@ import qualified System.OsString.PLATFORM_NAME as OsString
 --   * @b@ — base, the base location of the path; absolute or relative.
 --   * @t@ — type, whether file or directory.
 --
--- Internally it is a byte string. The byte string can be of two formats only:
+-- Internally it is a PLATFORM_PATH_SINGLE, which can be of two formats only:
 --
 -- 1. File format: @file.txt@, @foo\/bar.txt@, @\/foo\/bar.txt@
 -- 2. Directory format: @foo\/@, @\/foo\/bar\/@
@@ -97,17 +96,25 @@ toOsPath (Path ospath)
 
 -- | Helper function: check if the filepath has any parent directories in it.
 -- This handles the logic of checking for different path separators on Windows.
-hasParentDir :: FilePath -> Bool
-hasParentDir filepath' =
-     (filepath' == "..") ||
-     ("/.." `L.isSuffixOf` filepath) ||
-     ("/../" `L.isInfixOf` filepath) ||
-     ("../" `L.isPrefixOf` filepath)
+hasParentDir :: PLATFORM_PATH -> Bool
+hasParentDir ospath =
+     (ospath' == [OsString.pstr|..|]) ||
+     (prefix' `OsString.isPrefixOf` ospath') ||
+     (infix' `OsString.isInfixOf` ospath') ||
+     (suffix' `OsString.isSuffixOf` ospath')
   where
-    filepath =
-        case FilePath.pathSeparator of
-            '/' -> filepath'
-            x   -> map (\y -> if x == y then '/' else y) filepath'
+    prefix' = [OsString.pstr|..|] <> pathSep
+    infix' = pathSep <> [OsString.pstr|..|] <> pathSep
+    suffix' = pathSep <> [OsString.pstr|..|]
+
+#if IS_WINDOWS
+    ospath' = OsString.map normSep ospath
+    normSep c
+      | OsPath.isPathSeparator c = OsPath.pathSeparator
+      | otherwise = c
+#else
+    ospath' = ospath
+#endif
 
 -- | Same as 'show . Path.toFilePath'.
 --

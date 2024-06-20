@@ -18,12 +18,14 @@
 -- we represent the notion of a relative root by "@.@". The relative root denotes
 -- the directory which contains the first component of a relative path.
 
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE EmptyDataDecls #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PatternGuards #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
 
@@ -104,21 +106,25 @@ module OsPath.PLATFORM_NAME
 import           Control.Applicative (Alternative(..))
 import           Control.DeepSeq (NFData (..))
 import           Control.Exception (Exception(..))
-import           Control.Monad (liftM, when)
+import           Control.Monad (liftM, when, (<=<))
 import           Control.Monad.Catch (MonadThrow(..))
 import           Data.Aeson (FromJSON (..), FromJSONKey(..), ToJSON(..))
 import qualified Data.Aeson.Types as Aeson
-import           Data.Data
-import qualified Data.Text as T
-import           Data.Hashable
-import qualified Data.List as L
-import           Data.Maybe
+import           Data.Data (Data, Typeable)
+import qualified Data.Text as Text
+import           Data.Hashable (Hashable (..))
+import           Data.Maybe (isJust, isNothing)
 import           GHC.Generics (Generic)
-import           Language.Haskell.TH
+import           Language.Haskell.TH (Exp, Q)
 import           Language.Haskell.TH.Syntax (lift)
 import           Language.Haskell.TH.Quote (QuasiQuoter(..))
-import           Path.Internal.PLATFORM_NAME
-import qualified System.FilePath.PLATFORM_NAME as FilePath
+import           System.IO.Unsafe (unsafeDupablePerformIO)
+import           System.OsPath.PLATFORM_NAME (PLATFORM_PATH)
+import qualified System.OsPath.PLATFORM_NAME as OsPath
+import           System.OsString.PLATFORM_NAME (PLATFORM_STRING)
+import qualified System.OsString.PLATFORM_NAME as OsString
+
+import           OsPath.Internal.PLATFORM_NAME
 
 --------------------------------------------------------------------------------
 -- Types
@@ -152,11 +158,13 @@ instance FromJSON (Path Rel Dir) where
   parseJSON = parseJSONWith parseRelDir
   {-# INLINE parseJSON #-}
 
-parseJSONWith :: (Show e, FromJSON a)
-              => (a -> Either e b) -> Aeson.Value -> Aeson.Parser b
+parseJSONWith :: (forall m . MonadThrow m => PLATFORM_PATH -> m a)
+              -> Aeson.Value
+              -> Aeson.Parser a
 parseJSONWith f x =
   do fp <- parseJSON x
-     case f fp of
+     let ospath = unsafeDupablePerformIO (OsString.encodeFS fp)
+     case f ospath of
        Right p -> return p
        Left e -> fail (show e)
 {-# INLINE parseJSONWith #-}
@@ -177,36 +185,35 @@ instance FromJSONKey (Path Rel Dir) where
   fromJSONKey = fromJSONKeyWith parseRelDir
   {-# INLINE fromJSONKey #-}
 
-fromJSONKeyWith :: (Show e)
-                => (String -> Either e b) -> Aeson.FromJSONKeyFunction b
+fromJSONKeyWith :: (forall m . MonadThrow m => PLATFORM_PATH -> m b)
+                -> Aeson.FromJSONKeyFunction b
 fromJSONKeyWith f =
-  Aeson.FromJSONKeyTextParser $ \t ->
-    case f (T.unpack t) of
-      Left e -> fail (show e)
-      Right rf -> pure rf
-
+  Aeson.FromJSONKeyTextParser $ \text ->
+    either (fail . displayException) return $ do
+      ospath <- (OsPath.encodeUtf . Text.unpack) text
+      f ospath
 {-# INLINE fromJSONKeyWith #-}
 
 -- | Exceptions that can occur during path operations.
 --
 -- @since 0.6.0
 data PathException
-  = InvalidAbsDir FilePath
-  | InvalidRelDir FilePath
-  | InvalidAbsFile FilePath
-  | InvalidRelFile FilePath
-  | InvalidFile FilePath
-  | InvalidDir FilePath
-  | NotAProperPrefix FilePath FilePath
-  | HasNoExtension FilePath
-  | InvalidExtension String
+  = InvalidAbsDir PLATFORM_PATH
+  | InvalidRelDir PLATFORM_PATH
+  | InvalidAbsFile PLATFORM_PATH
+  | InvalidRelFile PLATFORM_PATH
+  | InvalidFile PLATFORM_PATH
+  | InvalidDir PLATFORM_PATH
+  | NotAProperPrefix PLATFORM_PATH PLATFORM_PATH
+  | HasNoExtension PLATFORM_PATH
+  | InvalidExtension PLATFORM_STRING
   deriving (Show,Eq,Typeable)
 
 instance Exception PathException where
   displayException (InvalidExtension ext) = concat
-    [ "Invalid extension ["
-    , ext
-    , "]. A valid extension starts with a '.' followed by one or more "
+    [ "Invalid extension "
+    , show ext
+    , ". A valid extension starts with a '.' followed by one or more "
     , "characters other than '.', and it must be a valid filename, "
     , "notably it cannot include a path separator."
     ]
@@ -215,10 +222,10 @@ instance Exception PathException where
 --------------------------------------------------------------------------------
 -- QuasiQuoters
 
-qq :: (String -> Q Exp) -> QuasiQuoter
+qq :: (PLATFORM_PATH -> Q Exp) -> QuasiQuoter
 qq quoteExp' =
   QuasiQuoter
-  { quoteExp  = quoteExp'
+  { quoteExp  = quoteExp' <=< OsPath.encodeUtf
   , quotePat  = \_ ->
       fail "illegal QuasiQuote (allowed as expression only, used as a pattern)"
   , quoteType = \_ ->
@@ -284,13 +291,13 @@ relfile = qq mkRelFile
 --
 -- The following cases are valid and the equalities hold:
 --
--- @$(mkAbsDir x) \<\/> $(mkRelDir y) = $(mkAbsDir (x ++ \"/\" ++ y))@
+-- @$(mkAbsDir x) \<\/> $(mkRelDir y) = $(mkAbsDir (x <> [pstr|/|] <> y))@
 --
--- @$(mkAbsDir x) \<\/> $(mkRelFile y) = $(mkAbsFile (x ++ \"/\" ++ y))@
+-- @$(mkAbsDir x) \<\/> $(mkRelFile y) = $(mkAbsFile (x <> [pstr|/|] <> y))@
 --
--- @$(mkRelDir x) \<\/> $(mkRelDir y) = $(mkRelDir (x ++ \"/\" ++ y))@
+-- @$(mkRelDir x) \<\/> $(mkRelDir y) = $(mkRelDir (x <> [pstr|/|] <> y))@
 --
--- @$(mkRelDir x) \<\/> $(mkRelFile y) = $(mkRelFile (x ++ \"/\" ++ y))@
+-- @$(mkRelDir x) \<\/> $(mkRelFile y) = $(mkRelFile (x <> [pstr|/|] <> y))@
 --
 -- The following are proven not possible to express:
 --
@@ -304,7 +311,7 @@ relfile = qq mkRelFile
 --
 infixr 5 </>
 (</>) :: Path b Dir -> Path Rel t -> Path b t
-(</>) (Path a) (Path b) = Path (a ++ b)
+(</>) (Path a) (Path b) = Path (a <> b)
 
 -- | If the directory in the first argument is a proper prefix of the path in
 -- the second argument strip it from the second argument, generating a path
@@ -328,10 +335,11 @@ infixr 5 </>
 stripProperPrefix :: MonadThrow m
          => Path b Dir -> Path b t -> m (Path Rel t)
 stripProperPrefix (Path p) (Path l) =
-  case L.stripPrefix p l of
+  case OsString.stripPrefix p l of
     Nothing -> throwM (NotAProperPrefix p l)
-    Just "" -> throwM (NotAProperPrefix p l)
-    Just ok -> return (Path ok)
+    Just result
+      | OsString.null result -> throwM (NotAProperPrefix p l)
+      | otherwise -> return (Path result)
 
 -- | Determines if the path in the first parameter is a proper prefix of the
 -- path in the second parameter.
@@ -361,32 +369,33 @@ replaceProperPrefix src dst fp = (dst </>) <$> stripProperPrefix src fp
 --
 -- @
 -- parent (x \<\/> y) == x
--- parent \"\/x\" == \"\/\"
--- parent \"x\" == \".\"
+-- parent [pstr|\/x|] == [pstr|\/|]
+-- parent [pstr|x|] == [pstr|.|]
 -- @
 --
 -- On the root (absolute or relative), getting the parent is idempotent:
 --
 -- @
--- parent \"\/\" = \"\/\"
--- parent \"\.\" = \"\.\"
+-- parent [pstr|\/|] = [pstr|\/|]
+-- parent [pstr|\.|] = [pstr|\.|]
 -- @
 --
 parent :: Path b t -> Path b Dir
-parent (Path "") = Path ""
-parent (Path fp) | FilePath.isDrive fp = Path fp
-parent (Path fp) =
-    Path
-    $ normalizeDir
-    $ FilePath.takeDirectory
-    $ FilePath.dropTrailingPathSeparator fp
+parent (Path fp)
+  | OsString.null fp = Path OsString.empty
+  | OsPath.isDrive fp = Path fp
+  | otherwise =
+      Path
+      $ normalizeDir
+      $ OsPath.takeDirectory
+      $ OsPath.dropTrailingPathSeparator fp
 
 -- | Split an absolute path into a drive and, perhaps, a path. On POSIX, @/@ is
 -- a drive.
 splitDrive :: Path Abs t -> (Path Abs Dir, Maybe (Path Rel t))
 splitDrive (Path fp) =
-    let (d, rest) = FilePath.splitDrive fp
-        mRest = if null rest then Nothing else Just (Path rest)
+    let (d, rest) = OsPath.splitDrive fp
+        mRest = if OsString.null rest then Nothing else Just (Path rest)
     in  (Path d, mRest)
 
 -- | Get the drive from an absolute path. On POSIX, @/@ is a drive.
@@ -414,7 +423,7 @@ isDrive = isNothing . dropDrive
 --
 filename :: Path b File -> Path Rel File
 filename (Path l) =
-  Path (FilePath.takeFileName l)
+  Path (OsPath.takeFileName l)
 
 -- | Extract the last directory name of a path.
 --
@@ -425,20 +434,21 @@ filename (Path l) =
 -- @dirname (p \<\/> a) == dirname a@
 --
 dirname :: Path b Dir -> Path Rel Dir
-dirname (Path "") = Path ""
-dirname (Path l) | FilePath.isDrive l = Path ""
-dirname (Path l) = Path (last (FilePath.splitPath l))
+dirname (Path l)
+  | OsString.null l = Path OsString.empty
+  | OsPath.isDrive l = Path OsString.empty
+  | otherwise = Path (last (OsPath.splitPath l))
 
 -- | 'splitExtension' is the inverse of 'addExtension'. It splits the given
 -- file path into a valid filename and a valid extension.
 --
--- >>> splitExtension $(mkRelFile "name.foo"     ) == Just ($(mkRelFile "name"    ), ".foo"  )
--- >>> splitExtension $(mkRelFile "name.foo."    ) == Just ($(mkRelFile "name"    ), ".foo." )
--- >>> splitExtension $(mkRelFile "name.foo.."   ) == Just ($(mkRelFile "name"    ), ".foo..")
--- >>> splitExtension $(mkRelFile "name.bar.foo" ) == Just ($(mkRelFile "name.bar"), ".foo"  )
--- >>> splitExtension $(mkRelFile ".name.foo"    ) == Just ($(mkRelFile ".name"   ), ".foo"  )
--- >>> splitExtension $(mkRelFile "name..foo"    ) == Just ($(mkRelFile "name."   ), ".foo"  )
--- >>> splitExtension $(mkRelFile "....foo"      ) == Just ($(mkRelFile "..."     ), ".foo"  )
+-- >>> splitExtension $(mkRelFile "name.foo"     ) == Just ($(mkRelFile "name"    ), [pstr|.foo|]  )
+-- >>> splitExtension $(mkRelFile "name.foo."    ) == Just ($(mkRelFile "name"    ), [pstr|.foo.|] )
+-- >>> splitExtension $(mkRelFile "name.foo.."   ) == Just ($(mkRelFile "name"    ), [pstr|.foo..|])
+-- >>> splitExtension $(mkRelFile "name.bar.foo" ) == Just ($(mkRelFile "name.bar"), [pstr|.foo|]  )
+-- >>> splitExtension $(mkRelFile ".name.foo"    ) == Just ($(mkRelFile ".name"   ), [pstr|.foo|]  )
+-- >>> splitExtension $(mkRelFile "name..foo"    ) == Just ($(mkRelFile "name."   ), [pstr|.foo|]  )
+-- >>> splitExtension $(mkRelFile "....foo"      ) == Just ($(mkRelFile "..."     ), [pstr|.foo|]  )
 --
 -- Throws 'HasNoExtension' exception if the filename does not have an extension
 -- or in other words it cannot be split into a valid filename and a valid
@@ -461,36 +471,30 @@ dirname (Path l) = Path (last (FilePath.splitPath l))
 -- @
 --
 -- @since 0.7.0
-splitExtension :: MonadThrow m => Path b File -> m (Path b File, String)
-splitExtension (Path fpath) =
-    if nameDot == [] || ext == []
-    then throwM $ HasNoExtension fpath
-    else let fname = init nameDot
-         in if fname == [] || fname == "." || fname == ".."
-            then throwM $ HasNoExtension fpath
-            else return ( Path (normalizeDrive drv ++ dir ++ fname)
-                        , FilePath.extSeparator : ext
-                        )
+splitExtension :: MonadThrow m => Path b File -> m (Path b File, PLATFORM_STRING)
+splitExtension (Path ospath) =
+    if OsString.null nameDot
+       || OsString.null name
+       || OsString.null ext
+       || name == [OsString.pstr|.|]
+       || name == [OsString.pstr|..|]
+       then throwM $ HasNoExtension ospath
+       else return ( Path (normalizeDrive drv <> dir <> name)
+                   , OsString.singleton OsPath.extSeparator <> ext
+                   )
     where
 
     -- trailing separators are ignored for the split and considered part of the
     -- second component in the split.
     splitLast isSep str =
-        let rstr = reverse str
-            notSep = not . isSep
-            name = (dropWhile notSep . dropWhile isSep) rstr
-            trailingSeps = takeWhile isSep rstr
-            xtn  = (takeWhile notSep . dropWhile isSep) rstr
-        in (reverse name, reverse xtn ++ trailingSeps)
-#if IS_WINDOWS
-    normalizeDrive = normalizeTrailingSeps
-#else
-    normalizeDrive = id
-#endif
+        let (withoutTrailingSeps, trailingSeps) = OsString.spanEnd isSep str
+            (oneSep, rest) = OsString.breakEnd isSep withoutTrailingSeps
+        in (oneSep, rest <> trailingSeps)
 
-    (drv, pth)     = FilePath.splitDrive fpath
-    (dir, file)    = splitLast FilePath.isPathSeparator pth
-    (nameDot, ext) = splitLast FilePath.isExtSeparator file
+    (drv, ospathRel) = OsPath.splitDrive ospath
+    (dir, file)      = splitLast OsPath.isPathSeparator ospathRel
+    (nameDot, ext)   = splitLast OsPath.isExtSeparator file
+    name             = OsString.init nameDot
 
 -- | Get extension from given file path. Throws 'HasNoExtension' exception if
 -- the file does not have an extension.  The following laws hold:
@@ -501,18 +505,18 @@ splitExtension (Path fpath) =
 -- @
 --
 -- @since 0.5.11
-fileExtension :: MonadThrow m => Path b File -> m String
+fileExtension :: MonadThrow m => Path b File -> m PLATFORM_STRING
 fileExtension = (liftM snd) . splitExtension
 
 -- | Add extension to given file path.
 --
--- >>> addExtension ".foo"   $(mkRelFile "name"     ) == Just $(mkRelFile "name.foo"    )
--- >>> addExtension ".foo."  $(mkRelFile "name"     ) == Just $(mkRelFile "name.foo."   )
--- >>> addExtension ".foo.." $(mkRelFile "name"     ) == Just $(mkRelFile "name.foo.."  )
--- >>> addExtension ".foo"   $(mkRelFile "name.bar" ) == Just $(mkRelFile "name.bar.foo")
--- >>> addExtension ".foo"   $(mkRelFile ".name"    ) == Just $(mkRelFile ".name.foo"   )
--- >>> addExtension ".foo"   $(mkRelFile "name."    ) == Just $(mkRelFile "name..foo"   )
--- >>> addExtension ".foo"   $(mkRelFile "..."      ) == Just $(mkRelFile "....foo"     )
+-- >>> addExtension [pstr|.foo|]   $(mkRelFile "name"     ) == Just $(mkRelFile "name.foo"    )
+-- >>> addExtension [pstr|.foo.|]  $(mkRelFile "name"     ) == Just $(mkRelFile "name.foo."   )
+-- >>> addExtension [pstr|.foo..|] $(mkRelFile "name"     ) == Just $(mkRelFile "name.foo.."  )
+-- >>> addExtension [pstr|.foo|]   $(mkRelFile "name.bar" ) == Just $(mkRelFile "name.bar.foo")
+-- >>> addExtension [pstr|.foo|]   $(mkRelFile ".name"    ) == Just $(mkRelFile ".name.foo"   )
+-- >>> addExtension [pstr|.foo|]   $(mkRelFile "name."    ) == Just $(mkRelFile "name..foo"   )
+-- >>> addExtension [pstr|.foo|]   $(mkRelFile "..."      ) == Just $(mkRelFile "....foo"     )
 --
 -- Throws an 'InvalidExtension' exception if the extension is not valid. A
 -- valid extension starts with a @.@ followed by one or more characters not
@@ -522,94 +526,43 @@ fileExtension = (liftM snd) . splitExtension
 -- have to first set @.foo@ and then @.bar@ individually. Some examples of
 -- invalid extensions are:
 --
--- >>> addExtension "foo"      $(mkRelFile "name")
--- >>> addExtension "..foo"    $(mkRelFile "name")
--- >>> addExtension ".foo.bar" $(mkRelFile "name")
--- >>> addExtension ".foo/bar" $(mkRelFile "name")
+-- >>> addExtension [pstr|foo|]      $(mkRelFile "name")
+-- >>> addExtension [pstr|..foo|]    $(mkRelFile "name")
+-- >>> addExtension [pstr|.foo.bar|] $(mkRelFile "name")
+-- >>> addExtension [pstr|.foo/bar|] $(mkRelFile "name")
 --
 -- @since 0.7.0
 addExtension :: MonadThrow m
-  => String            -- ^ Extension to add
+  => PLATFORM_STRING   -- ^ Extension to add
   -> Path b File       -- ^ Old file name
   -> m (Path b File)   -- ^ New file name with the desired extension added at the end
 addExtension ext (Path path) = do
-    validateExtension ext
-    return $ Path (path ++ ext)
+    (sep, xtn) <- case OsString.uncons ext of
+        Nothing -> throwM $ InvalidExtension ext
+        Just result -> pure result
 
-    where
+    let withoutTrailingSeps = OsString.dropWhileEnd OsPath.isExtSeparator xtn
 
-    validateExtension ex@(sep:xs) = do
-        -- has to start with a "."
-        when (not $ FilePath.isExtSeparator sep) $
-            throwM $ InvalidExtension ex
+    -- Has to start with a "."
+    when (not $ OsPath.isExtSeparator sep) $
+        throwM $ InvalidExtension ext
 
-        -- just a "." is not a valid extension
-        when (xs == []) $
-            throwM $ InvalidExtension ex
+    -- Cannot have path separators
+    when (OsString.any OsPath.isPathSeparator xtn) $
+        throwM $ InvalidExtension ext
 
-        -- cannot have path separators
-        when (any FilePath.isPathSeparator xs) $
-            throwM $ InvalidExtension ex
+    -- All "."s is not a valid extension
+    when (OsString.null withoutTrailingSeps) $
+        throwM $ InvalidExtension ext
 
-        -- All "."s is not a valid extension
-        let ys = dropWhile FilePath.isExtSeparator (reverse xs)
-        when (ys == []) $
-            throwM $ InvalidExtension ex
+    -- Cannot have "."s except in trailing position
+    when (OsString.any OsPath.isExtSeparator withoutTrailingSeps) $
+        throwM $ InvalidExtension ext
 
-        -- Cannot have "."s except in trailing position
-        when (any FilePath.isExtSeparator ys) $
-            throwM $ InvalidExtension ex
+    -- Must be valid as a filename
+    _ <- parseRelFile ext
 
-        -- must be valid as a filename
-        _ <- parseRelFile ex
-        return ()
-    validateExtension ex = throwM $ InvalidExtension ex
-
--- | Add extension to given file path. Throws if the
--- resulting filename does not parse.
---
--- >>> addFileExtension "txt $(mkRelFile "foo")
--- "foo.txt"
--- >>> addFileExtension "symbols" $(mkRelFile "Data.List")
--- "Data.List.symbols"
--- >>> addFileExtension ".symbols" $(mkRelFile "Data.List")
--- "Data.List.symbols"
--- >>> addFileExtension "symbols" $(mkRelFile "Data.List.")
--- "Data.List..symbols"
--- >>> addFileExtension ".symbols" $(mkRelFile "Data.List.")
--- "Data.List..symbols"
--- >>> addFileExtension "evil/" $(mkRelFile "Data.List")
--- *** Exception: InvalidRelFile "Data.List.evil/"
---
--- @since 0.6.1
-{-# DEPRECATED addFileExtension "Please use addExtension instead." #-}
-addFileExtension :: MonadThrow m
-  => String            -- ^ Extension to add
-  -> Path b File       -- ^ Old file name
-  -> m (Path b File)   -- ^ New file name with the desired extension added at the end
-addFileExtension ext (Path path) =
-  if FilePath.isAbsolute path
-    then liftM coercePath (parseAbsFile (FilePath.addExtension path ext))
-    else liftM coercePath (parseRelFile (FilePath.addExtension path ext))
-  where coercePath :: Path a b -> Path a' b'
-        coercePath (Path a) = Path a
-
--- | A synonym for 'addFileExtension' in the form of an infix operator.
--- See more examples there.
---
--- >>> $(mkRelFile "Data.List") <.> "symbols"
--- "Data.List.symbols"
--- >>> $(mkRelFile "Data.List") <.> "evil/"
--- *** Exception: InvalidRelFile "Data.List.evil/"
---
--- @since 0.6.1
-infixr 7 <.>
-{-# DEPRECATED (<.>) "Please use addExtension instead." #-}
-(<.>) :: MonadThrow m
-  => Path b File       -- ^ Old file name
-  -> String            -- ^ Extension to add
-  -> m (Path b File)   -- ^ New file name with the desired extension added at the end
-(<.>) = flip addFileExtension
+    return $ Path (path <> ext)
 
 -- | If the file has an extension replace it with the given extension otherwise
 -- add the new extension to it. Throws an 'InvalidExtension' exception if the
@@ -622,81 +575,65 @@ infixr 7 <.>
 --
 -- @since 0.7.0
 replaceExtension :: MonadThrow m
-  => String            -- ^ Extension to set
+  => PLATFORM_STRING   -- ^ Extension to set
   -> Path b File       -- ^ Old file name
   -> m (Path b File)   -- ^ New file name with the desired extension
 replaceExtension ext path =
     addExtension ext (maybe path fst $ splitExtension path)
 
--- | Replace\/add extension to given file path. Throws if the
--- resulting filename does not parse.
---
--- @since 0.5.11
-{-# DEPRECATED setFileExtension "Please use replaceExtension instead." #-}
-setFileExtension :: MonadThrow m
-  => String            -- ^ Extension to set
-  -> Path b File       -- ^ Old file name
-  -> m (Path b File)   -- ^ New file name with the desired extension
-setFileExtension ext (Path path) =
-  if FilePath.isAbsolute path
-    then liftM coercePath (parseAbsFile (FilePath.replaceExtension path ext))
-    else liftM coercePath (parseRelFile (FilePath.replaceExtension path ext))
-  where coercePath :: Path a b -> Path a' b'
-        coercePath (Path a) = Path a
-
--- | A synonym for 'setFileExtension' in the form of an operator.
---
--- @since 0.6.0
-infixr 7 -<.>
-{-# DEPRECATED (-<.>) "Please use replaceExtension instead." #-}
-(-<.>) :: MonadThrow m
-  => Path b File       -- ^ Old file name
-  -> String            -- ^ Extension to set
-  -> m (Path b File)   -- ^ New file name with the desired extension
-(-<.>) = flip setFileExtension
-
 --------------------------------------------------------------------------------
 -- Parsers
 
--- | Convert an absolute 'FilePath' to a normalized absolute dir 'Path'.
+-- | Convert an absolute PLATFORM_PATH_SINGLE to a normalized absolute dir
+--   'Path'.
 --
 -- Throws: 'InvalidAbsDir' when the supplied path:
 --
 -- * is not an absolute path
 -- * contains a @..@ path component representing the parent directory
--- * is not a valid path (See 'FilePath.isValid')
+-- * is not a valid path (See 'OsPath.isValid')
 --
 parseAbsDir :: MonadThrow m
-            => FilePath -> m (Path Abs Dir)
-parseAbsDir filepath =
-  if FilePath.isAbsolute filepath &&
-     not (hasParentDir filepath) &&
-     FilePath.isValid filepath
-     then return (Path (normalizeDir filepath))
-     else throwM (InvalidAbsDir filepath)
+            => PLATFORM_PATH -> m (Path Abs Dir)
+parseAbsDir ospath
+  | validAbsDir ospath = return (Path (normalizeDir ospath))
+  | otherwise = throwM (InvalidAbsDir ospath)
 
--- | Convert a relative 'FilePath' to a normalized relative dir 'Path'.
+-- | Is the string a valid absolute dir?
+validAbsDir :: PLATFORM_PATH -> Bool
+validAbsDir ospath =
+  OsPath.isAbsolute ospath &&
+  not (hasParentDir ospath) &&
+  OsPath.isValid ospath
+
+-- | Convert a relative PLATFORM_PATH_SINGLE to a normalized relative dir
+--   'Path'.
 --
 -- Throws: 'InvalidRelDir' when the supplied path:
 --
 -- * is not a relative path
 -- * is @""@
 -- * contains a @..@ path component representing the parent directory
--- * is not a valid path (See 'FilePath.isValid')
+-- * is not a valid path (See 'OsPath.isValid')
 -- * is all path separators
 --
 parseRelDir :: MonadThrow m
-            => FilePath -> m (Path Rel Dir)
-parseRelDir filepath =
-  if not (FilePath.isAbsolute filepath) &&
-     not (hasParentDir filepath) &&
-     not (null filepath) &&
-     not (all FilePath.isPathSeparator filepath) &&
-     FilePath.isValid filepath
-     then return (Path (normalizeDir filepath))
-     else throwM (InvalidRelDir filepath)
+            => PLATFORM_PATH -> m (Path Rel Dir)
+parseRelDir ospath
+  | validRelDir ospath = return (Path (normalizeDir ospath))
+  | otherwise = throwM (InvalidRelDir ospath)
 
--- | Convert an absolute 'FilePath' to a normalized absolute file 'Path'.
+-- | Is the string a valid relative dir?
+validRelDir :: PLATFORM_PATH -> Bool
+validRelDir ospath =
+  not (OsPath.isAbsolute ospath) &&
+  not (OsString.null ospath) &&
+  not (hasParentDir ospath) &&
+  not (OsString.all OsPath.isPathSeparator ospath) &&
+  OsPath.isValid ospath
+
+-- | Convert an absolute PLATFORM_PATH_SINGLE to a normalized absolute file
+--   'Path'.
 --
 -- Throws: 'InvalidAbsFile' when the supplied path:
 --
@@ -707,27 +644,26 @@ parseRelDir filepath =
 --     * is @.@ or ends in @/.@
 --
 -- * contains a @..@ path component representing the parent directory
--- * is not a valid path (See 'FilePath.isValid')
+-- * is not a valid path (See 'OsPath.isValid')
 --
 parseAbsFile :: MonadThrow m
-             => FilePath -> m (Path Abs File)
-parseAbsFile filepath =
-  case validAbsFile filepath of
-    True
-      | normalized <- normalizeFilePath filepath
-      , validAbsFile normalized ->
-        return (Path normalized)
-    _ -> throwM (InvalidAbsFile filepath)
+             => PLATFORM_PATH -> m (Path Abs File)
+parseAbsFile ospath
+  | validAbsFile ospath
+  , let normalized = normalizeFilePath ospath
+  , validAbsFile normalized = return (Path normalized)
+  | otherwise = throwM (InvalidAbsFile ospath)
 
 -- | Is the string a valid absolute file?
-validAbsFile :: FilePath -> Bool
-validAbsFile filepath =
-  FilePath.isAbsolute filepath &&
-  not (FilePath.hasTrailingPathSeparator filepath) &&
-  not (hasParentDir filepath) &&
-  FilePath.isValid filepath
+validAbsFile :: PLATFORM_PATH -> Bool
+validAbsFile ospath =
+  OsPath.isAbsolute ospath &&
+  not (OsPath.hasTrailingPathSeparator ospath) &&
+  not (hasParentDir ospath) &&
+  OsPath.isValid ospath
 
--- | Convert a relative 'FilePath' to a normalized relative file 'Path'.
+-- | Convert a relative PLATFORM_PATH_SINGLE to a normalized relative file
+--   'Path'.
 --
 -- Throws: 'InvalidRelFile' when the supplied path:
 --
@@ -739,44 +675,44 @@ validAbsFile filepath =
 --     * is @.@ or ends in @/.@
 --
 -- * contains a @..@ path component representing the parent directory
--- * is not a valid path (See 'FilePath.isValid')
+-- * is not a valid path (See 'OsPath.isValid')
 --
 parseRelFile :: MonadThrow m
-             => FilePath -> m (Path Rel File)
-parseRelFile filepath =
-  case validRelFile filepath of
-    True
-      | normalized <- normalizeFilePath filepath
-      , validRelFile normalized -> return (Path normalized)
-    _ -> throwM (InvalidRelFile filepath)
+             => PLATFORM_PATH -> m (Path Rel File)
+parseRelFile ospath
+  | validRelFile ospath
+  , let normalized = normalizeFilePath ospath
+  , validRelFile normalized = return (Path normalized)
+  | otherwise = throwM (InvalidRelFile ospath)
 
 -- | Is the string a valid relative file?
-validRelFile :: FilePath -> Bool
-validRelFile filepath =
-  not
-    (FilePath.isAbsolute filepath || FilePath.hasTrailingPathSeparator filepath) &&
-  not (null filepath) &&
-  not (hasParentDir filepath) &&
-  filepath /= "." && FilePath.isValid filepath
+validRelFile :: PLATFORM_PATH -> Bool
+validRelFile ospath =
+  not (OsPath.isAbsolute ospath) &&
+  not (OsString.null ospath) &&
+  not (hasParentDir ospath) &&
+  not (OsPath.hasTrailingPathSeparator ospath) &&
+  ospath /= [OsPath.pstr|.|] &&
+  OsPath.isValid ospath
 
 --------------------------------------------------------------------------------
 -- Conversion
 
--- | Convert absolute path to directory to 'FilePath' type.
-fromAbsDir :: Path Abs Dir -> FilePath
-fromAbsDir = toFilePath
+-- | Convert absolute path to directory to PLATFORM_PATH_SINGLE type.
+fromAbsDir :: Path Abs Dir -> PLATFORM_PATH
+fromAbsDir = toOsPath
 
--- | Convert relative path to directory to 'FilePath' type.
-fromRelDir :: Path Rel Dir -> FilePath
-fromRelDir = toFilePath
+-- | Convert relative path to directory to PLATFORM_PATH_SINGLE type.
+fromRelDir :: Path Rel Dir -> PLATFORM_PATH
+fromRelDir = toOsPath
 
--- | Convert absolute path to file to 'FilePath' type.
-fromAbsFile :: Path Abs File -> FilePath
-fromAbsFile = toFilePath
+-- | Convert absolute path to file to PLATFORM_PATH_SINGLE type.
+fromAbsFile :: Path Abs File -> PLATFORM_PATH
+fromAbsFile = toOsPath
 
--- | Convert relative path to file to 'FilePath' type.
-fromRelFile :: Path Rel File -> FilePath
-fromRelFile = toFilePath
+-- | Convert relative path to file to PLATFORM_PATH_SINGLE type.
+fromRelFile :: Path Rel File -> PLATFORM_PATH
+fromRelFile = toOsPath
 
 --------------------------------------------------------------------------------
 -- Constructors
@@ -786,79 +722,30 @@ fromRelFile = toFilePath
 -- Remember: due to the nature of absolute paths this (e.g. @\/home\/foo@)
 -- may compile on your platform, but it may not compile on another
 -- platform (Windows).
-mkAbsDir :: FilePath -> Q Exp
-mkAbsDir = either (error . show) lift . parseAbsDir
+mkAbsDir :: PLATFORM_PATH -> Q Exp
+mkAbsDir = either (fail . displayException) lift . parseAbsDir
 
 -- | Make a 'Path' 'Rel' 'Dir'.
-mkRelDir :: FilePath -> Q Exp
-mkRelDir = either (error . show) lift . parseRelDir
+mkRelDir :: PLATFORM_PATH -> Q Exp
+mkRelDir = either (fail . displayException) lift . parseRelDir
 
 -- | Make a 'Path' 'Abs' 'File'.
 --
 -- Remember: due to the nature of absolute paths this (e.g. @\/home\/foo@)
 -- may compile on your platform, but it may not compile on another
 -- platform (Windows).
-mkAbsFile :: FilePath -> Q Exp
-mkAbsFile = either (error . show) lift . parseAbsFile
+mkAbsFile :: PLATFORM_PATH -> Q Exp
+mkAbsFile = either (fail . displayException) lift . parseAbsFile
 
 -- | Make a 'Path' 'Rel' 'File'.
-mkRelFile :: FilePath -> Q Exp
-mkRelFile = either (error . show) lift . parseRelFile
+mkRelFile :: PLATFORM_PATH -> Q Exp
+mkRelFile = either (fail . displayException) lift . parseRelFile
 
 --------------------------------------------------------------------------------
--- Internal functions
-
--- | Normalizes directory path with platform-specific rules.
-normalizeDir :: FilePath -> FilePath
-normalizeDir =
-      normalizeRelDir
-    . FilePath.addTrailingPathSeparator
-    . normalizeFilePath
-  where -- Represent a "." in relative dir path as "" internally so that it
-        -- composes without having to renormalize the path.
-        normalizeRelDir p
-          | p == relRootFP = ""
-          | otherwise = p
-
--- | Normalizes seps only at the beginning of a path.
-normalizeLeadingSeps :: FilePath -> FilePath
-normalizeLeadingSeps path = normLeadingSep ++ rest
-  where (leadingSeps, rest) = span FilePath.isPathSeparator path
-        normLeadingSep = replicate (min 1 (length leadingSeps)) FilePath.pathSeparator
-
-#if IS_WINDOWS
--- | Normalizes seps only at the end of a path.
-normalizeTrailingSeps :: FilePath -> FilePath
-normalizeTrailingSeps = reverse . normalizeLeadingSeps . reverse
-
--- | Replaces consecutive path seps with single sep and replaces alt sep with standard sep.
-normalizeAllSeps :: FilePath -> FilePath
-normalizeAllSeps = foldr normSeps []
-  where normSeps ch [] = [ch]
-        normSeps ch path@(p0:_)
-          | FilePath.isPathSeparator ch && FilePath.isPathSeparator p0 = path
-          | FilePath.isPathSeparator ch = FilePath.pathSeparator:path
-          | otherwise = ch:path
-
--- | Normalizes seps in whole path, but if there are 2+ seps at the beginning,
---   they are normalized to exactly 2 to preserve UNC and Unicode prefixed paths.
-normalizeWindowsSeps :: FilePath -> FilePath
-normalizeWindowsSeps path = normLeadingSeps ++ normalizeAllSeps rest
-  where (leadingSeps, rest) = span FilePath.isPathSeparator path
-        normLeadingSeps = replicate (min 2 (length leadingSeps)) FilePath.pathSeparator
-#endif
-
--- | Applies platform-specific sep normalization following @FilePath.normalise@.
-normalizeFilePath :: FilePath -> FilePath
-#if IS_WINDOWS
-normalizeFilePath = normalizeWindowsSeps . FilePath.normalise
-#else
-normalizeFilePath = normalizeLeadingSeps . FilePath.normalise
-#endif
+-- Path of some type.
 
 -- | Path of some type.  @t@ represents the type, whether file or
--- directory.  Pattern match to find whether the path is absolute or
--- relative.
+-- directory. Pattern match to find whether the path is absolute or relative.
 data SomeBase t = Abs (Path Abs t)
                 | Rel (Path Rel t)
   deriving (Typeable, Generic, Eq, Ord)
@@ -871,10 +758,10 @@ instance Show (SomeBase t) where
   show = show . fromSomeBase
 
 instance ToJSON (SomeBase t) where
-  toJSON = toJSON . fromSomeBase
+  toJSON = prjSomeBase toJSON
   {-# INLINE toJSON #-}
 #if MIN_VERSION_aeson(0,10,0)
-  toEncoding = toEncoding . fromSomeBase
+  toEncoding = prjSomeBase toEncoding
   {-# INLINE toEncoding #-}
 #endif
 
@@ -892,7 +779,7 @@ instance FromJSON (SomeBase File) where
 
 -- | Helper to project the contents out of a SomeBase object.
 --
--- >>> prjSomeBase toFilePath (Abs [absfile|/foo/bar/cow.moo|]) == "/foo/bar/cow.moo"
+-- >>> prjSomeBase toOsPath (Abs [absfile|/foo/bar/cow.moo|]) == [pstr|/foo/bar/cow.moo|]
 --
 prjSomeBase :: (forall b . Path b t -> a) -> SomeBase t -> a
 prjSomeBase f = \case
@@ -901,38 +788,38 @@ prjSomeBase f = \case
 
 -- | Helper to apply a function to the SomeBase object
 --
--- >>> mapSomeBase parent (Abs [absfile|/foo/bar/cow.moo|]) == Abs [absdir|"/foo/bar"|]
+-- >>> mapSomeBase parent (Abs [absfile|/foo/bar/cow.moo|]) == Abs [absdir|/foo/bar|]
 --
 mapSomeBase :: (forall b . Path b t -> Path b t') -> SomeBase t -> SomeBase t'
 mapSomeBase f = \case
   Abs a -> Abs $ f a
   Rel r -> Rel $ f r
 
--- | Convert a valid path to a 'FilePath'.
-fromSomeBase :: SomeBase t -> FilePath
-fromSomeBase = prjSomeBase toFilePath
+-- | Convert a valid path to a PLATFORM_PATH_SINGLE.
+fromSomeBase :: SomeBase t -> PLATFORM_PATH
+fromSomeBase = prjSomeBase toOsPath
 
--- | Convert a valid directory to a 'FilePath'.
-fromSomeDir :: SomeBase Dir -> FilePath
+-- | Convert a valid directory to a PLATFORM_PATH_SINGLE.
+fromSomeDir :: SomeBase Dir -> PLATFORM_PATH
 fromSomeDir = fromSomeBase
 
--- | Convert a valid file to a 'FilePath'.
-fromSomeFile :: SomeBase File -> FilePath
+-- | Convert a valid file to a PLATFORM_PATH_SINGLE.
+fromSomeFile :: SomeBase File -> PLATFORM_PATH
 fromSomeFile = fromSomeBase
 
--- | Convert an absolute or relative 'FilePath' to a normalized 'SomeBase'
+-- | Convert an absolute or relative PLATFORM_PATH_SINGLE to a normalized 'SomeBase'
 -- representing a directory.
 --
 -- Throws: 'InvalidDir' when the supplied path:
 --
 -- * contains a @..@ path component representing the parent directory
--- * is not a valid path (See 'FilePath.isValid')
-parseSomeDir :: MonadThrow m => FilePath -> m (SomeBase Dir)
+-- * is not a valid path (See 'OsPath.isValid')
+parseSomeDir :: MonadThrow m => PLATFORM_PATH -> m (SomeBase Dir)
 parseSomeDir fp = maybe (throwM (InvalidDir fp)) pure
                 $ (Abs <$> parseAbsDir fp)
               <|> (Rel <$> parseRelDir fp)
 
--- | Convert an absolute or relative 'FilePath' to a normalized 'SomeBase'
+-- | Convert an absolute or relative PLATFORM_PATH_SINGLE to a normalized 'SomeBase'
 -- representing a file.
 --
 -- Throws: 'InvalidFile' when the supplied path:
@@ -943,14 +830,163 @@ parseSomeDir fp = maybe (throwM (InvalidDir fp)) pure
 --     * is @.@ or ends in @/.@
 --
 -- * contains a @..@ path component representing the parent directory
--- * is not a valid path (See 'FilePath.isValid')
-parseSomeFile :: MonadThrow m => FilePath -> m (SomeBase File)
+-- * is not a valid path (See 'OsPath.isValid')
+parseSomeFile :: MonadThrow m => PLATFORM_PATH -> m (SomeBase File)
 parseSomeFile fp = maybe (throwM (InvalidFile fp)) pure
                  $ (Abs <$> parseAbsFile fp)
                <|> (Rel <$> parseRelFile fp)
 
 --------------------------------------------------------------------------------
+-- Internal functions
+
+-- | Normalizes directory path with platform-specific rules.
+normalizeDir :: PLATFORM_PATH -> PLATFORM_PATH
+normalizeDir =
+      normalizeRelDir
+    . OsPath.addTrailingPathSeparator
+    . normalizeFilePath
+  where -- Represent a "." in relative dir path as "" internally so that it
+        -- composes without having to renormalize the path.
+        normalizeRelDir p
+          | p == relRoot = OsString.empty
+          | otherwise = p
+
+#if !IS_WINDOWS
+-- | Normalizes seps only at the beginning of a path.
+normalizeLeadingSeps :: PLATFORM_PATH -> PLATFORM_PATH
+normalizeLeadingSeps path = normLeadingSep <> rest
+  where (leadingSeps, rest) = OsString.span OsPath.isPathSeparator path
+        normLeadingSep
+          | OsString.null leadingSeps = OsString.empty
+          | otherwise = OsString.singleton OsPath.pathSeparator
+#else
+-- | Normalizes seps only at the end of a path.
+normalizeTrailingSeps :: PLATFORM_PATH -> PLATFORM_PATH
+normalizeTrailingSeps path = rest <> normTrailingSep
+  where (rest, trailingSeps) = OsString.spanEnd OsPath.isPathSeparator path
+        normTrailingSep
+          | OsString.null trailingSeps = OsString.empty
+          | otherwise = OsString.singleton OsPath.pathSeparator
+
+-- | Replaces consecutive path seps with single sep and replaces alt sep with
+--   standard sep.
+normalizeAllSeps :: PLATFORM_PATH -> PLATFORM_PATH
+normalizeAllSeps = go OsString.empty
+  where go !acc ospath
+          | OsString.null ospath = acc
+          | otherwise =
+            let (leadingSeps, withoutLeadingSeps) =
+                  OsString.span OsPath.isPathSeparator ospath
+                (name, rest) =
+                  OsString.break OsPath.isPathSeparator withoutLeadingSeps
+                sep = if OsString.null leadingSeps
+                      then OsString.empty
+                      else OsString.singleton OsPath.pathSeparator
+            in go (acc <> sep <> name) rest
+
+-- | Normalizes seps in whole path, but if there are 2+ seps at the beginning,
+--   they are normalized to exactly 2 to preserve UNC and Unicode prefixed
+--   paths.
+normalizeWindowsSeps :: PLATFORM_PATH -> PLATFORM_PATH
+normalizeWindowsSeps path = normLeadingSeps <> normalizeAllSeps rest
+  where (leadingSeps, rest) = OsString.span OsPath.isPathSeparator path
+        normLeadingSeps = OsString.replicate
+          (min 2 (OsString.length leadingSeps))
+          OsPath.pathSeparator
+#endif
+
+-- | Normalizes the drive of a PLATFORM_PATH_SINGLE.
+normalizeDrive :: PLATFORM_PATH -> PLATFORM_PATH
+#if IS_WINDOWS
+normalizeDrive = normalizeTrailingSeps
+#else
+normalizeDrive = id
+#endif
+
+-- | Applies platform-specific sep normalization following @OsPath.normalise@.
+normalizeFilePath :: PLATFORM_PATH -> PLATFORM_PATH
+#if IS_WINDOWS
+normalizeFilePath = normalizeWindowsSeps . OsPath.normalise
+#else
+normalizeFilePath = normalizeLeadingSeps . OsPath.normalise
+#endif
+
+--------------------------------------------------------------------------------
 -- Deprecated
+
+-- | Add extension to given file path. Throws if the
+-- resulting filename does not parse.
+--
+-- >>> addFileExtension [pstr|txt|] $(mkRelFile "foo")
+-- "foo.txt"
+-- >>> addFileExtension [pstr|symbols|] $(mkRelFile "Data.List")
+-- "Data.List.symbols"
+-- >>> addFileExtension [pstr|.symbols|] $(mkRelFile "Data.List")
+-- "Data.List.symbols"
+-- >>> addFileExtension [pstr|symbols|] $(mkRelFile "Data.List.")
+-- "Data.List..symbols"
+-- >>> addFileExtension [pstr|.symbols|] $(mkRelFile "Data.List.")
+-- "Data.List..symbols"
+-- >>> addFileExtension [pstr|evil/|] $(mkRelFile "Data.List")
+-- *** Exception: InvalidRelFile "Data.List.evil/"
+--
+-- @since 0.6.1
+{-# DEPRECATED addFileExtension "Please use addExtension instead." #-}
+addFileExtension :: MonadThrow m
+  => PLATFORM_STRING   -- ^ Extension to add
+  -> Path b File       -- ^ Old file name
+  -> m (Path b File)   -- ^ New file name with the desired extension added at the end
+addFileExtension ext (Path path) =
+  if OsPath.isAbsolute path
+    then liftM coercePath (parseAbsFile (OsPath.addExtension path ext))
+    else liftM coercePath (parseRelFile (OsPath.addExtension path ext))
+  where coercePath :: Path a b -> Path a' b'
+        coercePath (Path a) = Path a
+
+-- | A synonym for 'addFileExtension' in the form of an infix operator.
+-- See more examples there.
+--
+-- >>> $(mkRelFile "Data.List") <.> [pstr|symbols|]
+-- "Data.List.symbols"
+-- >>> $(mkRelFile "Data.List") <.> [pstr|evil/|]
+-- *** Exception: InvalidRelFile "Data.List.evil/"
+--
+-- @since 0.6.1
+infixr 7 <.>
+{-# DEPRECATED (<.>) "Please use addExtension instead." #-}
+(<.>) :: MonadThrow m
+  => Path b File       -- ^ Old file name
+  -> PLATFORM_STRING   -- ^ Extension to add
+  -> m (Path b File)   -- ^ New file name with the desired extension added at the end
+(<.>) = flip addFileExtension
+
+-- | Replace\/add extension to given file path. Throws if the
+-- resulting filename does not parse.
+--
+-- @since 0.5.11
+{-# DEPRECATED setFileExtension "Please use replaceExtension instead." #-}
+setFileExtension :: MonadThrow m
+  => PLATFORM_STRING   -- ^ Extension to set
+  -> Path b File       -- ^ Old file name
+  -> m (Path b File)   -- ^ New file name with the desired extension
+setFileExtension ext (Path path) =
+  if OsPath.isAbsolute path
+    then liftM coercePath (parseAbsFile (OsPath.replaceExtension path ext))
+    else liftM coercePath (parseRelFile (OsPath.replaceExtension path ext))
+  where coercePath :: Path a b -> Path a' b'
+        coercePath (Path a) = Path a
+
+-- | A synonym for 'setFileExtension' in the form of an operator.
+--
+-- @since 0.6.0
+infixr 7 -<.>
+{-# DEPRECATED (-<.>) "Please use replaceExtension instead." #-}
+(-<.>) :: MonadThrow m
+  => Path b File       -- ^ Old file name
+  -> PLATFORM_STRING   -- ^ Extension to set
+  -> m (Path b File)   -- ^ New file name with the desired extension
+(-<.>) = flip setFileExtension
+
 
 {-# DEPRECATED PathParseException "Please use PathException instead." #-}
 -- | Same as 'PathException'.
