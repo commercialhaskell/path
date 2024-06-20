@@ -1,0 +1,10 @@
+cradle:
+  cabal:
+    - path: "src"
+      component: "lib:path"
+
+    - path: "test"
+      component: "path:test:test"
+
+    - path: "test"
+      component: "path:test:validity-test"
