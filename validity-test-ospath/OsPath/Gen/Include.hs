@@ -2,7 +2,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module OsPath.Gen where
+module OsPath.Gen.PLATFORM_NAME where
 
 import Data.Functor
 import Prelude

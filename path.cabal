@@ -19,6 +19,8 @@ extra-source-files:  README.md
                    , src/OsPath/Internal/Include.hs
                    , test/Common/Include.hs
                    , test-ospath/Common/Include.hs
+                   , validity-test-ospath/Include.hs
+                   , validity-test-ospath/OsPath/Gen/Include.hs
 
 flag dev
   description:        Turn on development settings.
@@ -132,7 +134,10 @@ test-suite validity-test
 test-suite validity-test-ospath
   type:              exitcode-stdio-1.0
   main-is:           Main.hs
-  other-modules:     OsPath.Gen
+  other-modules:     OsPath.Gen.Posix
+                   , OsPath.Gen.Windows
+                   , Posix
+                   , Windows
   hs-source-dirs:    validity-test-ospath
   build-depends:     QuickCheck
                    , aeson
