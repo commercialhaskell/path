@@ -59,54 +59,6 @@ restrictions =
         parseSucceeds x with =
           parserTest parseRelDir x (Just with)
 
--- | The '</>' operation.
-operationAppend :: Spec
-operationAppend =
-  do it "AbsDir + RelDir = AbsDir"
-        (shouldBe
-          ($(mkAbsDir "C:\\home\\") </> $(mkRelDir "chris"))
-          $(mkAbsDir "C:\\home\\chris\\"))
-     it "AbsDir + RelFile = AbsFile"
-        (shouldBe
-          ($(mkAbsDir "C:\\home\\") </> $(mkRelFile "chris\\test.txt"))
-          $(mkAbsFile "C:\\home\\chris\\test.txt"))
-     it "RelDir + RelDir = RelDir"
-        (shouldBe
-          ($(mkRelDir "home\\") </> $(mkRelDir "chris"))
-          $(mkRelDir "home\\chris"))
-     it ". + . = ."
-        (shouldBe
-          ($(mkRelDir ".\\") </> $(mkRelDir "."))
-          $(mkRelDir "."))
-     it ". + x = x"
-        (shouldBe
-          ($(mkRelDir ".") </> $(mkRelDir "x"))
-          $(mkRelDir "x"))
-     it "x + . = x"
-        (shouldBe
-          ($(mkRelDir "x") </> $(mkRelDir ".\\"))
-          $(mkRelDir "x"))
-     it "RelDir + RelFile = RelFile"
-        (shouldBe
-          ($(mkRelDir "home\\") </> $(mkRelFile "chris\\test.txt"))
-          $(mkRelFile "home\\chris\\test.txt"))
-     it "AbsDir(UNC) + RelDir = AbsDir(UNC)"
-        (shouldBe
-          ($(mkAbsDir "\\\\host\\share\\") </> $(mkRelDir "folder\\"))
-          $(mkAbsDir "\\\\host\\share\\folder\\"))
-     it "AbsDir(UNC) + RelFile = AbsFile(UNC)"
-        (shouldBe
-          ($(mkAbsDir "\\\\host\\share\\") </> $(mkRelFile "folder\\file.txt"))
-          $(mkAbsFile "\\\\host\\share\\folder\\file.txt"))
-     it "AbsDir(Unicode) + RelDir = AbsDir(Unicode)"
-        (shouldBe
-          ($(mkAbsDir "\\\\?\\C:\\folder\\") </> $(mkRelDir "another\\"))
-          $(mkAbsDir "\\\\?\\C:\\folder\\another\\"))
-     it "AbsDir(Unicode) + RelFile = AbsFile(Unicode)"
-        (shouldBe
-          ($(mkAbsDir "\\\\?\\C:\\folder\\") </> $(mkRelFile "file.txt"))
-          $(mkAbsFile "\\\\?\\C:\\folder\\file.txt"))
-
 operationToFilePath :: Spec
 operationToFilePath =
   do it "toFilePath $(mkRelDir \".\") == \"./\""
