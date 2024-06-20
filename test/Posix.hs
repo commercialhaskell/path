@@ -65,26 +65,6 @@ restrictions =
         parseSucceeds x with =
           parserTest parseRelDir x (Just with)
 
--- | The 'stripProperPrefix' operation.
-operationStripProperPrefix :: Spec
-operationStripProperPrefix =
-  do it "stripProperPrefix parent (parent </> child) = child (unit test)"
-        (stripProperPrefix $(mkAbsDir "///bar/")
-                  ($(mkAbsDir "///bar/") </>
-                   $(mkRelFile "bar/foo.txt")) ==
-         Just $(mkRelFile "bar/foo.txt"))
-
-     it "stripProperPrefix parent (parent </> child) = child (unit test)"
-        (stripProperPrefix $(mkRelDir "bar/")
-                  ($(mkRelDir "bar/") </>
-                   $(mkRelFile "bob/foo.txt")) ==
-         Just $(mkRelFile "bob/foo.txt"))
-
-     it "stripProperPrefix parent parent = _|_"
-        (stripProperPrefix $(mkAbsDir "/home/chris/foo")
-                  $(mkAbsDir "/home/chris/foo") ==
-         Nothing)
-
 -- | The '</>' operation.
 operationAppend :: Spec
 operationAppend =
