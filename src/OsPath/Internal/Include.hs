@@ -22,6 +22,13 @@ module OsPath.Internal.PLATFORM_NAME
   , toFilePath
   , toOsPath
 
+    -- * Validation functions
+  , isValidAbsDir
+  , isValidAbsFile
+  , isValidRelDir
+  , isValidRelFile
+  , hasParentDir
+
     -- * Normalizing functions
   , normalizeLeadingSeps
   , normalizeTrailingSeps
@@ -36,7 +43,6 @@ module OsPath.Internal.PLATFORM_NAME
     -- * Other helper functions
   , extSep
   , pathSep
-  , hasParentDir
   , relRoot
   , isWindows
   )
@@ -156,6 +162,65 @@ toOsPath (Path ospath)
     | otherwise = ospath
 
 --------------------------------------------------------------------------------
+-- Validation functions
+
+-- | Is the PLATFORM_PATH_SINGLE a valid absolute dir?
+isValidAbsDir :: PLATFORM_PATH -> Bool
+isValidAbsDir ospath =
+  OsPath.isAbsolute ospath &&
+  not (hasParentDir ospath) &&
+  OsPath.isValid ospath
+
+-- | Is the PLATFORM_PATH_SINGLE a valid absolute file?
+isValidAbsFile :: PLATFORM_PATH -> Bool
+isValidAbsFile ospath =
+  OsPath.isAbsolute ospath &&
+  not (OsPath.hasTrailingPathSeparator ospath) &&
+  not (hasParentDir ospath) &&
+  OsPath.isValid ospath
+
+-- | Is the PLATFORM_PATH_SINGLE a valid relative dir?
+isValidRelDir :: PLATFORM_PATH -> Bool
+isValidRelDir ospath =
+  not (OsPath.isAbsolute ospath) &&
+  not (OsString.null ospath) &&
+  not (hasParentDir ospath) &&
+  not (OsString.all OsPath.isPathSeparator ospath) &&
+  OsPath.isValid ospath
+
+-- | Is the PLATFORM_PATH_SINGLE a valid relative file?
+isValidRelFile :: PLATFORM_PATH -> Bool
+isValidRelFile ospath =
+  not (OsPath.isAbsolute ospath) &&
+  not (OsString.null ospath) &&
+  not (hasParentDir ospath) &&
+  not (OsPath.hasTrailingPathSeparator ospath) &&
+  ospath /= [OsPath.pstr|.|] &&
+  OsPath.isValid ospath
+
+-- | Helper function: check if the filepath has any parent directories in it.
+-- This handles the logic of checking for different path separators on Windows.
+hasParentDir :: PLATFORM_PATH -> Bool
+hasParentDir ospath =
+     (ospath' == [OsString.pstr|..|]) ||
+     (prefix' `OsString.isPrefixOf` ospath') ||
+     (infix' `OsString.isInfixOf` ospath') ||
+     (suffix' `OsString.isSuffixOf` ospath')
+  where
+    prefix' = [OsString.pstr|..|] <> pathSep
+    infix' = pathSep <> [OsString.pstr|..|] <> pathSep
+    suffix' = pathSep <> [OsString.pstr|..|]
+
+#if IS_WINDOWS
+    ospath' = OsString.map normSep ospath
+    normSep c
+      | OsPath.isPathSeparator c = OsPath.pathSeparator
+      | otherwise = c
+#else
+    ospath' = ospath
+#endif
+
+--------------------------------------------------------------------------------
 -- Normalizing functions
 
 -- | Normalizes seps only at the beginning of a path.
@@ -238,28 +303,6 @@ extSep = $(TH.lift (OsString.singleton OsPath.extSeparator))
 
 pathSep :: PLATFORM_STRING
 pathSep = $(TH.lift (OsString.singleton OsPath.pathSeparator))
-
--- | Helper function: check if the filepath has any parent directories in it.
--- This handles the logic of checking for different path separators on Windows.
-hasParentDir :: PLATFORM_PATH -> Bool
-hasParentDir ospath =
-     (ospath' == [OsString.pstr|..|]) ||
-     (prefix' `OsString.isPrefixOf` ospath') ||
-     (infix' `OsString.isInfixOf` ospath') ||
-     (suffix' `OsString.isSuffixOf` ospath')
-  where
-    prefix' = [OsString.pstr|..|] <> pathSep
-    infix' = pathSep <> [OsString.pstr|..|] <> pathSep
-    suffix' = pathSep <> [OsString.pstr|..|]
-
-#if IS_WINDOWS
-    ospath' = OsString.map normSep ospath
-    normSep c
-      | OsPath.isPathSeparator c = OsPath.pathSeparator
-      | otherwise = c
-#else
-    ospath' = ospath
-#endif
 
 -- | Normalized file path representation for the relative path root
 relRoot :: PLATFORM_PATH

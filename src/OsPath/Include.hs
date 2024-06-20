@@ -596,15 +596,8 @@ replaceExtension ext path =
 parseAbsDir :: MonadThrow m
             => PLATFORM_PATH -> m (Path Abs Dir)
 parseAbsDir ospath
-  | validAbsDir ospath = return (Path (normalizeDir ospath))
+  | isValidAbsDir ospath = return (Path (normalizeDir ospath))
   | otherwise = throwM (InvalidAbsDir ospath)
-
--- | Is the string a valid absolute dir?
-validAbsDir :: PLATFORM_PATH -> Bool
-validAbsDir ospath =
-  OsPath.isAbsolute ospath &&
-  not (hasParentDir ospath) &&
-  OsPath.isValid ospath
 
 -- | Convert a relative PLATFORM_PATH_SINGLE to a normalized relative dir
 --   'Path'.
@@ -620,17 +613,8 @@ validAbsDir ospath =
 parseRelDir :: MonadThrow m
             => PLATFORM_PATH -> m (Path Rel Dir)
 parseRelDir ospath
-  | validRelDir ospath = return (Path (normalizeDir ospath))
+  | isValidRelDir ospath = return (Path (normalizeDir ospath))
   | otherwise = throwM (InvalidRelDir ospath)
-
--- | Is the string a valid relative dir?
-validRelDir :: PLATFORM_PATH -> Bool
-validRelDir ospath =
-  not (OsPath.isAbsolute ospath) &&
-  not (OsString.null ospath) &&
-  not (hasParentDir ospath) &&
-  not (OsString.all OsPath.isPathSeparator ospath) &&
-  OsPath.isValid ospath
 
 -- | Convert an absolute PLATFORM_PATH_SINGLE to a normalized absolute file
 --   'Path'.
@@ -649,18 +633,10 @@ validRelDir ospath =
 parseAbsFile :: MonadThrow m
              => PLATFORM_PATH -> m (Path Abs File)
 parseAbsFile ospath
-  | validAbsFile ospath
+  | isValidAbsFile ospath
   , let normalized = normalizeFile ospath
-  , validAbsFile normalized = return (Path normalized)
+  , isValidAbsFile normalized = return (Path normalized)
   | otherwise = throwM (InvalidAbsFile ospath)
-
--- | Is the string a valid absolute file?
-validAbsFile :: PLATFORM_PATH -> Bool
-validAbsFile ospath =
-  OsPath.isAbsolute ospath &&
-  not (OsPath.hasTrailingPathSeparator ospath) &&
-  not (hasParentDir ospath) &&
-  OsPath.isValid ospath
 
 -- | Convert a relative PLATFORM_PATH_SINGLE to a normalized relative file
 --   'Path'.
@@ -680,20 +656,10 @@ validAbsFile ospath =
 parseRelFile :: MonadThrow m
              => PLATFORM_PATH -> m (Path Rel File)
 parseRelFile ospath
-  | validRelFile ospath
+  | isValidRelFile ospath
   , let normalized = normalizeFile ospath
-  , validRelFile normalized = return (Path normalized)
+  , isValidRelFile normalized = return (Path normalized)
   | otherwise = throwM (InvalidRelFile ospath)
-
--- | Is the string a valid relative file?
-validRelFile :: PLATFORM_PATH -> Bool
-validRelFile ospath =
-  not (OsPath.isAbsolute ospath) &&
-  not (OsString.null ospath) &&
-  not (hasParentDir ospath) &&
-  not (OsPath.hasTrailingPathSeparator ospath) &&
-  ospath /= [OsPath.pstr|.|] &&
-  OsPath.isValid ospath
 
 --------------------------------------------------------------------------------
 -- Conversion
