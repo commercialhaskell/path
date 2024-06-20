@@ -650,7 +650,7 @@ parseAbsFile :: MonadThrow m
              => PLATFORM_PATH -> m (Path Abs File)
 parseAbsFile ospath
   | validAbsFile ospath
-  , let normalized = normalizeFilePath ospath
+  , let normalized = normalizeFile ospath
   , validAbsFile normalized = return (Path normalized)
   | otherwise = throwM (InvalidAbsFile ospath)
 
@@ -681,7 +681,7 @@ parseRelFile :: MonadThrow m
              => PLATFORM_PATH -> m (Path Rel File)
 parseRelFile ospath
   | validRelFile ospath
-  , let normalized = normalizeFilePath ospath
+  , let normalized = normalizeFile ospath
   , validRelFile normalized = return (Path normalized)
   | otherwise = throwM (InvalidRelFile ospath)
 
@@ -835,81 +835,6 @@ parseSomeFile :: MonadThrow m => PLATFORM_PATH -> m (SomeBase File)
 parseSomeFile fp = maybe (throwM (InvalidFile fp)) pure
                  $ (Abs <$> parseAbsFile fp)
                <|> (Rel <$> parseRelFile fp)
-
---------------------------------------------------------------------------------
--- Internal functions
-
--- | Normalizes directory path with platform-specific rules.
-normalizeDir :: PLATFORM_PATH -> PLATFORM_PATH
-normalizeDir =
-      normalizeRelDir
-    . OsPath.addTrailingPathSeparator
-    . normalizeFilePath
-  where -- Represent a "." in relative dir path as "" internally so that it
-        -- composes without having to renormalize the path.
-        normalizeRelDir p
-          | p == relRoot = OsString.empty
-          | otherwise = p
-
-#if !IS_WINDOWS
--- | Normalizes seps only at the beginning of a path.
-normalizeLeadingSeps :: PLATFORM_PATH -> PLATFORM_PATH
-normalizeLeadingSeps path = normLeadingSep <> rest
-  where (leadingSeps, rest) = OsString.span OsPath.isPathSeparator path
-        normLeadingSep
-          | OsString.null leadingSeps = OsString.empty
-          | otherwise = OsString.singleton OsPath.pathSeparator
-#else
--- | Normalizes seps only at the end of a path.
-normalizeTrailingSeps :: PLATFORM_PATH -> PLATFORM_PATH
-normalizeTrailingSeps path = rest <> normTrailingSep
-  where (rest, trailingSeps) = OsString.spanEnd OsPath.isPathSeparator path
-        normTrailingSep
-          | OsString.null trailingSeps = OsString.empty
-          | otherwise = OsString.singleton OsPath.pathSeparator
-
--- | Replaces consecutive path seps with single sep and replaces alt sep with
---   standard sep.
-normalizeAllSeps :: PLATFORM_PATH -> PLATFORM_PATH
-normalizeAllSeps = go OsString.empty
-  where go !acc ospath
-          | OsString.null ospath = acc
-          | otherwise =
-            let (leadingSeps, withoutLeadingSeps) =
-                  OsString.span OsPath.isPathSeparator ospath
-                (name, rest) =
-                  OsString.break OsPath.isPathSeparator withoutLeadingSeps
-                sep = if OsString.null leadingSeps
-                      then OsString.empty
-                      else OsString.singleton OsPath.pathSeparator
-            in go (acc <> sep <> name) rest
-
--- | Normalizes seps in whole path, but if there are 2+ seps at the beginning,
---   they are normalized to exactly 2 to preserve UNC and Unicode prefixed
---   paths.
-normalizeWindowsSeps :: PLATFORM_PATH -> PLATFORM_PATH
-normalizeWindowsSeps path = normLeadingSeps <> normalizeAllSeps rest
-  where (leadingSeps, rest) = OsString.span OsPath.isPathSeparator path
-        normLeadingSeps = OsString.replicate
-          (min 2 (OsString.length leadingSeps))
-          OsPath.pathSeparator
-#endif
-
--- | Normalizes the drive of a PLATFORM_PATH_SINGLE.
-normalizeDrive :: PLATFORM_PATH -> PLATFORM_PATH
-#if IS_WINDOWS
-normalizeDrive = normalizeTrailingSeps
-#else
-normalizeDrive = id
-#endif
-
--- | Applies platform-specific sep normalization following @OsPath.normalise@.
-normalizeFilePath :: PLATFORM_PATH -> PLATFORM_PATH
-#if IS_WINDOWS
-normalizeFilePath = normalizeWindowsSeps . OsPath.normalise
-#else
-normalizeFilePath = normalizeLeadingSeps . OsPath.normalise
-#endif
 
 --------------------------------------------------------------------------------
 -- Deprecated

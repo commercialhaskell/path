@@ -4,6 +4,7 @@
 --     PLATFORM_PATH_SINGLE = 'PosixPath' | 'WindowsPath'
 --     IS_WINDOWS = 0 | 1
 
+{-# LANGUAGE BangPatterns        #-}
 {-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE DeriveDataTypeable  #-}
 {-# LANGUAGE QuasiQuotes         #-}
@@ -16,9 +17,21 @@
 -- | Internal types and functions.
 
 module OsPath.Internal.PLATFORM_NAME
-  ( Path(..)
+  ( -- * The Path type
+    Path(..)
   , toFilePath
   , toOsPath
+
+    -- * Normalizing functions
+  , normalizeLeadingSeps
+  , normalizeTrailingSeps
+  , normalizeAllSeps
+#if IS_WINDOWS
+  , normalizeWindowsSeps
+#endif
+  , normalizeDrive
+  , normalizeDir
+  , normalizeFile
 
     -- * Other helper functions
   , extSep
@@ -76,46 +89,6 @@ instance Eq (Path b t) where
 instance Ord (Path b t) where
   compare (Path x) (Path y) = compare x y
 
--- | Convert to a 'FilePath' type.
---
--- All directories have a trailing slash, so if you want no trailing
--- slash, you can use 'System.FilePath.dropTrailingPathSeparator' from
--- the filepath package.
-toFilePath :: Path b t -> FilePath
-toFilePath = unsafeDupablePerformIO . OsPath.decodeFS . toOsPath
-
--- | Convert to a PLATFORM_PATH type.
---
--- All directories have a trailing slash, so if you want no trailing
--- slash, you can use 'OsPath.dropTrailingPathSeparator' from
--- the filepath package.
-toOsPath :: Path b t -> PLATFORM_PATH
-toOsPath (Path ospath)
-    | OsString.null ospath = relRoot
-    | otherwise = ospath
-
--- | Helper function: check if the filepath has any parent directories in it.
--- This handles the logic of checking for different path separators on Windows.
-hasParentDir :: PLATFORM_PATH -> Bool
-hasParentDir ospath =
-     (ospath' == [OsString.pstr|..|]) ||
-     (prefix' `OsString.isPrefixOf` ospath') ||
-     (infix' `OsString.isInfixOf` ospath') ||
-     (suffix' `OsString.isSuffixOf` ospath')
-  where
-    prefix' = [OsString.pstr|..|] <> pathSep
-    infix' = pathSep <> [OsString.pstr|..|] <> pathSep
-    suffix' = pathSep <> [OsString.pstr|..|]
-
-#if IS_WINDOWS
-    ospath' = OsString.map normSep ospath
-    normSep c
-      | OsPath.isPathSeparator c = OsPath.pathSeparator
-      | otherwise = c
-#else
-    ospath' = ospath
-#endif
-
 -- | Same as 'show . Path.toFilePath'.
 --
 -- The following property holds:
@@ -164,6 +137,99 @@ instance forall b t. (Typeable b, Typeable t) => TH.Lift (Path b t) where
   liftTyped = TH.unsafeTExpCoerce . TH.lift
 #endif
 
+-- | Convert to a 'FilePath' type.
+--
+-- All directories have a trailing slash, so if you want no trailing
+-- slash, you can use 'System.FilePath.dropTrailingPathSeparator' from
+-- the filepath package.
+toFilePath :: Path b t -> FilePath
+toFilePath = unsafeDupablePerformIO . OsPath.decodeFS . toOsPath
+
+-- | Convert to a PLATFORM_PATH type.
+--
+-- All directories have a trailing slash, so if you want no trailing
+-- slash, you can use 'OsPath.dropTrailingPathSeparator' from
+-- the filepath package.
+toOsPath :: Path b t -> PLATFORM_PATH
+toOsPath (Path ospath)
+    | OsString.null ospath = relRoot
+    | otherwise = ospath
+
+--------------------------------------------------------------------------------
+-- Normalizing functions
+
+-- | Normalizes seps only at the beginning of a path.
+normalizeLeadingSeps :: PLATFORM_PATH -> PLATFORM_PATH
+normalizeLeadingSeps path = normLeadingSep <> rest
+  where (leadingSeps, rest) = OsString.span OsPath.isPathSeparator path
+        normLeadingSep
+          | OsString.null leadingSeps = OsString.empty
+          | otherwise = OsString.singleton OsPath.pathSeparator
+
+-- | Normalizes seps only at the end of a path.
+normalizeTrailingSeps :: PLATFORM_PATH -> PLATFORM_PATH
+normalizeTrailingSeps path = rest <> normTrailingSep
+  where (rest, trailingSeps) = OsString.spanEnd OsPath.isPathSeparator path
+        normTrailingSep
+          | OsString.null trailingSeps = OsString.empty
+          | otherwise = OsString.singleton OsPath.pathSeparator
+
+-- | Replaces consecutive path seps with single sep and replaces alt sep with
+--   standard sep.
+normalizeAllSeps :: PLATFORM_PATH -> PLATFORM_PATH
+normalizeAllSeps = go OsString.empty
+  where go !acc ospath
+          | OsString.null ospath = acc
+          | otherwise =
+            let (leadingSeps, withoutLeadingSeps) =
+                  OsString.span OsPath.isPathSeparator ospath
+                (name, rest) =
+                  OsString.break OsPath.isPathSeparator withoutLeadingSeps
+                sep = if OsString.null leadingSeps
+                      then OsString.empty
+                      else OsString.singleton OsPath.pathSeparator
+            in go (acc <> sep <> name) rest
+
+#if IS_WINDOWS
+-- | Normalizes seps in whole path, but if there are 2+ seps at the beginning,
+--   they are normalized to exactly 2 to preserve UNC and Unicode prefixed
+--   paths.
+normalizeWindowsSeps :: PLATFORM_PATH -> PLATFORM_PATH
+normalizeWindowsSeps path = normLeadingSeps <> normalizeAllSeps rest
+  where (leadingSeps, rest) = OsString.span OsPath.isPathSeparator path
+        normLeadingSeps = OsString.replicate
+          (min 2 (OsString.length leadingSeps))
+          OsPath.pathSeparator
+#endif
+
+-- | Normalizes the drive of a PLATFORM_PATH_SINGLE.
+normalizeDrive :: PLATFORM_PATH -> PLATFORM_PATH
+#if IS_WINDOWS
+normalizeDrive = normalizeTrailingSeps
+#else
+normalizeDrive = id
+#endif
+
+-- | Normalizes directory path with platform-specific rules.
+normalizeDir :: PLATFORM_PATH -> PLATFORM_PATH
+normalizeDir =
+      normalizeRelDir
+    . OsPath.addTrailingPathSeparator
+    . normalizeFile
+  where -- Represent a "." in relative dir path as "" internally so that it
+        -- composes without having to renormalize the path.
+        normalizeRelDir p
+          | p == relRoot = OsString.empty
+          | otherwise = p
+
+-- | Applies platform-specific sep normalization following @OsPath.normalise@.
+normalizeFile :: PLATFORM_PATH -> PLATFORM_PATH
+#if IS_WINDOWS
+normalizeFile = normalizeWindowsSeps . OsPath.normalise
+#else
+normalizeFile = normalizeLeadingSeps . OsPath.normalise
+#endif
+
 --------------------------------------------------------------------------------
 -- Other helper functions
 
@@ -172,6 +238,28 @@ extSep = $(TH.lift (OsString.singleton OsPath.extSeparator))
 
 pathSep :: PLATFORM_STRING
 pathSep = $(TH.lift (OsString.singleton OsPath.pathSeparator))
+
+-- | Helper function: check if the filepath has any parent directories in it.
+-- This handles the logic of checking for different path separators on Windows.
+hasParentDir :: PLATFORM_PATH -> Bool
+hasParentDir ospath =
+     (ospath' == [OsString.pstr|..|]) ||
+     (prefix' `OsString.isPrefixOf` ospath') ||
+     (infix' `OsString.isInfixOf` ospath') ||
+     (suffix' `OsString.isSuffixOf` ospath')
+  where
+    prefix' = [OsString.pstr|..|] <> pathSep
+    infix' = pathSep <> [OsString.pstr|..|] <> pathSep
+    suffix' = pathSep <> [OsString.pstr|..|]
+
+#if IS_WINDOWS
+    ospath' = OsString.map normSep ospath
+    normSep c
+      | OsPath.isPathSeparator c = OsPath.pathSeparator
+      | otherwise = c
+#else
+    ospath' = ospath
+#endif
 
 -- | Normalized file path representation for the relative path root
 relRoot :: PLATFORM_PATH
