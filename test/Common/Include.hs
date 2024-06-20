@@ -12,6 +12,7 @@ module Common.PLATFORM_NAME
   ,operationIsDrive
   ,operationIsProperPrefixOf
   ,operationStripProperPrefix
+  ,operationAppend
   ,extensionOperations
   ) where
 
@@ -153,6 +154,36 @@ operationStripProperPrefix = do
     it
       "stripProperPrefix absDir absDir == _|_"
       (isNothing (stripProperPrefix absDir absDir))
+
+-- | The '</>' operation.
+operationAppend :: Spec
+operationAppend = do
+  let Path relDir' = relDir
+      Path relFile' = relFile
+  it
+    "RelDir + RelDir == RelDir"
+     (relDir </> relDir == Path (relDir' FilePath.</> relDir'))
+  it
+    "\".\" + \".\" == \".\""
+    (currentDir </> currentDir == currentDir)
+  it
+    "\".\" + relDir == relDir"
+     (currentDir </> relDir == relDir)
+  it
+    "relDir + \".\" == x"
+    (relDir </> currentDir == relDir)
+  it
+    "RelDir + RelFile == RelFile"
+    (relDir </> relFile == Path (relDir' FilePath.</> relFile'))
+
+  forDrives $ \drive -> do
+    let absDir@(Path absDir') = drive </> relDir
+    it
+      "AbsDir + RelDir == AbsDir"
+      (absDir </> relDir == Path (absDir' FilePath.</> relDir'))
+    it
+      "AbsDir + RelFile == AbsFile"
+      (absDir </> relFile == Path (absDir' FilePath.</> relFile'))
 
 extensionOperations :: Spec
 extensionOperations = do

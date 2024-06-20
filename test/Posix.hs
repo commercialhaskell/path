@@ -65,32 +65,6 @@ restrictions =
         parseSucceeds x with =
           parserTest parseRelDir x (Just with)
 
--- | The '</>' operation.
-operationAppend :: Spec
-operationAppend =
-  do it "AbsDir + RelDir = AbsDir"
-        ($(mkAbsDir "/home/") </>
-         $(mkRelDir "chris") ==
-         $(mkAbsDir "/home/chris/"))
-     it "AbsDir + RelFile = AbsFile"
-        ($(mkAbsDir "/home/") </>
-         $(mkRelFile "chris/test.txt") ==
-         $(mkAbsFile "/home/chris/test.txt"))
-     it "RelDir + RelDir = RelDir"
-        ($(mkRelDir "home/") </>
-         $(mkRelDir "chris") ==
-         $(mkRelDir "home/chris"))
-     it ". + . = ."
-        ($(mkRelDir "./") </> $(mkRelDir ".") == $(mkRelDir "."))
-     it ". + x = x"
-        ($(mkRelDir ".") </> $(mkRelDir "x") == $(mkRelDir "x"))
-     it "x + . = x"
-        ($(mkRelDir "x") </> $(mkRelDir "./") == $(mkRelDir "x"))
-     it "RelDir + RelFile = RelFile"
-        ($(mkRelDir "home/") </>
-         $(mkRelFile "chris/test.txt") ==
-         $(mkRelFile "home/chris/test.txt"))
-
 operationToFilePath :: Spec
 operationToFilePath =
   do it "toFilePath $(mkRelDir \".\") == \"./\""
