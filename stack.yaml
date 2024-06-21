@@ -1,7 +1,13 @@
 resolver: lts-22.26 # GHC 9.6.5
 
 extra-deps:
-  - directory-1.3.7.1
+  - directory-1.3.8.5@sha256:fbeec9ec346e5272167f63dcb86af513b457a7b9fc36dc818e4c7b81608d612b,3166
   - filepath-1.5.2.0@sha256:8af7a843cba7eddc8d44ae94002b766ee8c23cbcd3ecdb2cc79ee6e0a694419a,5178
   - process-1.6.20.0@sha256:2a9393de33f18415fb8f4826957a87a94ffe8840ca8472a9b69dca6de45aca03,2790
-  - unix-2.7.3
+  - unix-2.8.5.1@sha256:3f702a252a313a7bcb56e3908a14e7f9f1b40e41b7bdc8ae8a9605a1a8686f06,9808
+
+flags:
+  directory:
+    os-string: true
+  unix:
+    os-string: true
