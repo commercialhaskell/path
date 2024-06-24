@@ -22,7 +22,6 @@ import Control.Monad.Catch (MonadThrow)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as NonEmpty
 import Data.Maybe (fromJust, isNothing)
-import qualified System.FilePath.PLATFORM_NAME as FilePath
 import System.OsPath.PLATFORM_NAME (PLATFORM_PATH)
 import qualified System.OsPath.PLATFORM_NAME as OsPath
 import System.OsString.PLATFORM_NAME (PLATFORM_STRING)
@@ -50,7 +49,7 @@ spec = do
   describe "Operations: dirname" operationDirname
   describe "Operations: filename" operationFilename
   describe "Operations: parent" operationParent
-  describe "Operations: toFilePath" operationToFilePath
+  describe "Operations: toOsPath" operationToOsPath
   describe "Operations: isProperPrefixOf" operationIsProperPrefixOf
   describe "Operations: stripProperPrefix" operationStripProperPrefix
   describe "Operations: isDrive" operationIsDrive
@@ -204,12 +203,12 @@ operationAppend = do
       "AbsDir + RelFile == AbsFile"
       (absDir </> relFile == Path (absDir' OsPath.</> relFile'))
 
-operationToFilePath :: Spec
-operationToFilePath = do
-  let expected = "." ++ [FilePath.pathSeparator]
+operationToOsPath :: Spec
+operationToOsPath = do
+  let expected = relRoot
   it
-    ("toFilePath \".\" == " ++ show expected)
-    (toFilePath currentDir == expected)
+    ("toOsPath \".\" == " ++ show expected)
+    (toOsPath currentDir == expected)
   it
     ("show \".\" == " ++ (show . show) expected)
     (show currentDir == show expected)
@@ -297,8 +296,8 @@ extensionOperations = do
 
 validExtensionsSpec :: PLATFORM_STRING -> Path b File -> Path b File -> Spec
 validExtensionsSpec ext file fext = do
-    let f = show $ toFilePath file
-    let fx = show $ toFilePath fext
+    let f = show $ toOsPath file
+    let fx = show $ toOsPath fext
 
     it ("addExtension " ++ show ext ++ " " ++ f ++ " == " ++ fx) $
         addExtension ext file `shouldReturn` fext

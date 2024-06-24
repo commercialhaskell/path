@@ -7,7 +7,6 @@
 -- | Test suite.
 module Main (main) where
 
-import Data.Maybe
 import Path
 import Path.Internal
 import Test.Hspec
@@ -247,13 +246,6 @@ forAllParentsAndChildren n func = do
   it (unwords [n, "Path Rel Dir", "Path Rel File"]) $
     forAllValid $ \(parent :: Path Rel Dir) ->
       forAllValid $ \(child :: Path Rel File) -> func parent child
-
-forAllPaths :: Testable a => String -> (forall b t. Path b t -> a) -> Spec
-forAllPaths n func = do
-  it (unwords [n, "Path Abs Dir"]) $ forAllValid $ \(path :: Path Abs Dir) -> func path
-  it (unwords [n, "Path Rel Dir"]) $ forAllValid $ \(path :: Path Rel Dir) -> func path
-  it (unwords [n, "Path Abs File"]) $ forAllValid $ \(path :: Path Abs File) -> func path
-  it (unwords [n, "Path Rel File"]) $ forAllValid $ \(path :: Path Rel File) -> func path
 
 parserSpec :: (Show p, Validity p) => (FilePath -> Maybe p) -> Spec
 parserSpec parser =

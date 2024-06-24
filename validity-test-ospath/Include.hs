@@ -8,17 +8,15 @@
 -- | Test suite.
 module PLATFORM_NAME where
 
-import Data.Maybe
 import OsPath.PLATFORM_NAME
 import OsPath.Internal.PLATFORM_NAME
 import System.OsPath.PLATFORM_NAME (PLATFORM_PATH)
 import qualified System.OsString.PLATFORM_NAME as OsString
 import Test.Hspec
-import Test.Hspec.QuickCheck
 import Test.QuickCheck
 import Test.Validity
 
-import OsPath.Gen.PLATFORM_NAME
+import OsPath.Gen.PLATFORM_NAME ()
 
 -- | Test suite entry point, returns exit failure if any test fails.
 main :: IO ()
