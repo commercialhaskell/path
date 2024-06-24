@@ -12,8 +12,7 @@ import OsPath.Internal.PLATFORM_NAME
 
 import Data.Char (chr, ord)
 import Data.GenValidity
-import Data.List (isSuffixOf, isInfixOf)
-import Data.Maybe (isJust, mapMaybe)
+import Data.Maybe (mapMaybe)
 import System.OsPath.PLATFORM_NAME (PLATFORM_PATH)
 import qualified System.OsPath.PLATFORM_NAME as OsPath
 import qualified System.OsString.PLATFORM_NAME as OsString

@@ -79,7 +79,7 @@ module OsPath.PLATFORM_NAME
   ,parseSomeDir
   ,parseSomeFile
   -- * Conversion
-  ,toFilePath
+  ,toOsPath
   ,fromAbsDir
   ,fromRelDir
   ,fromAbsFile
@@ -118,7 +118,6 @@ import           GHC.Generics (Generic)
 import           Language.Haskell.TH (Exp, Q)
 import           Language.Haskell.TH.Syntax (lift)
 import           Language.Haskell.TH.Quote (QuasiQuoter(..))
-import           System.IO.Unsafe (unsafeDupablePerformIO)
 import           System.OsPath.PLATFORM_NAME (PLATFORM_PATH)
 import qualified System.OsPath.PLATFORM_NAME as OsPath
 import           System.OsString.PLATFORM_NAME (PLATFORM_STRING)
@@ -163,10 +162,9 @@ parseJSONWith :: (forall m . MonadThrow m => PLATFORM_PATH -> m a)
               -> Aeson.Parser a
 parseJSONWith f x =
   do fp <- parseJSON x
-     let ospath = unsafeDupablePerformIO (OsString.encodeFS fp)
-     case f ospath of
-       Right p -> return p
-       Left e -> fail (show e)
+     either (fail . displayException) return $ do
+       ospath <- OsString.encodeUtf fp
+       f ospath
 {-# INLINE parseJSONWith #-}
 
 instance FromJSONKey (Path Abs File) where

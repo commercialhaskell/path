@@ -19,7 +19,6 @@
 module OsPath.Internal.PLATFORM_NAME
   ( -- * The Path type
     Path(..)
-  , toFilePath
   , toOsPath
 
     -- * Validation functions
@@ -49,6 +48,7 @@ module OsPath.Internal.PLATFORM_NAME
   where
 
 import Control.DeepSeq (NFData (..))
+import Control.Exception (displayException)
 import Data.Aeson (ToJSON (..), ToJSONKey(..))
 import Data.Aeson.Types (toJSONKeyText)
 import qualified Data.Text as Text (pack)
@@ -56,7 +56,6 @@ import GHC.Generics (Generic)
 import Data.Data
 import Data.Hashable
 import qualified Language.Haskell.TH.Syntax as TH
-import System.IO.Unsafe (unsafeDupablePerformIO)
 import System.OsPath.PLATFORM_NAME (PLATFORM_PATH)
 import qualified System.OsPath.PLATFORM_NAME as OsPath
 import System.OsString.Internal.Types (PLATFORM_STRING(..))
@@ -86,6 +85,7 @@ newtype Path b t = Path PLATFORM_PATH
 -- @show x == show y ≡ x == y@
 instance Eq (Path b t) where
   (==) (Path x) (Path y) = x == y
+  {-# INLINE (==) #-}
 
 -- | String ordering.
 --
@@ -94,35 +94,57 @@ instance Eq (Path b t) where
 -- @show x \`compare\` show y ≡ x \`compare\` y@
 instance Ord (Path b t) where
   compare (Path x) (Path y) = compare x y
+  {-# INLINE compare #-}
 
--- | Same as 'show . Path.toFilePath'.
+-- | Same as 'show . OsPath.toOsPath'.
 --
 -- The following property holds:
 --
 -- @x == y ≡ show x == show y@
 instance Show (Path b t) where
-  show = show . toFilePath
+  show = show . toOsPath
+  {-# INLINE show #-}
 
 instance NFData (Path b t) where
   rnf (Path x) = rnf x
+  {-# INLINE rnf #-}
 
 instance ToJSON (Path b t) where
-  toJSON = toJSON . toFilePath
+  toJSON =
+      either (error . displayException) toJSON
+    . OsPath.decodeUtf
+    . toOsPath
   {-# INLINE toJSON #-}
 #if MIN_VERSION_aeson(0,10,0)
-  toEncoding = toEncoding . toFilePath
+  toEncoding =
+      either (error . displayException) toEncoding
+    . OsPath.decodeUtf
+    . toOsPath
   {-# INLINE toEncoding #-}
 #endif
 
+#if IS_WINDOWS
+-- | This instance assumes that the underlying PLATFORM_PATH_SINGLE is UTF-16LE
+-- encoded. If decoding fails a runtime error will be thrown.
+#else
+-- | This instance assumes that the underlying PLATFORM_PATH_SINGLE is UTF-8
+-- encoded. If decoding fails a runtime error will be thrown.
+#endif
 instance ToJSONKey (Path b t) where
-  toJSONKey = toJSONKeyText (Text.pack . toFilePath)
+  toJSONKey = toJSONKeyText
+    ( either (error . displayException) Text.pack
+    . OsPath.decodeUtf
+    . toOsPath
+    )
+  {-# INLINE toJSONKey #-}
 
 instance Hashable (Path b t) where
   -- A "." is represented as an empty string ("") internally. Hashing ""
   -- results in a hash that is the same as the salt. To produce a more
   -- reasonable hash we use "toFilePath" before hashing so that a "" gets
   -- converted back to a ".".
-  hashWithSalt n path = hashWithSalt n (toFilePath path)
+  hashWithSalt n path = hashWithSalt n (toOsPath path)
+  {-# INLINE hashWithSalt #-}
 
 instance forall b t. (Typeable b, Typeable t) => TH.Lift (Path b t) where
   lift (Path str) = do
@@ -142,14 +164,6 @@ instance forall b t. (Typeable b, Typeable t) => TH.Lift (Path b t) where
 #elif MIN_VERSION_template_haskell(2,16,0)
   liftTyped = TH.unsafeTExpCoerce . TH.lift
 #endif
-
--- | Convert to a 'FilePath' type.
---
--- All directories have a trailing slash, so if you want no trailing
--- slash, you can use 'System.FilePath.dropTrailingPathSeparator' from
--- the filepath package.
-toFilePath :: Path b t -> FilePath
-toFilePath = unsafeDupablePerformIO . OsPath.decodeFS . toOsPath
 
 -- | Convert to a PLATFORM_PATH type.
 --

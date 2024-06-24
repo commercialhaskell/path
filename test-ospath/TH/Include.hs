@@ -1,5 +1,6 @@
 -- This template expects CPP definitions for:
 --     PLATFORM_NAME = Posix | Windows
+--     PLATFORM_PATH = PosixPath | WindowsPath
 
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -10,6 +11,7 @@
 module TH.PLATFORM_NAME where
 
 import qualified Language.Haskell.TH.Syntax as TH
+import System.OsPath.PLATFORM_NAME (PLATFORM_PATH)
 import qualified System.OsString.PLATFORM_NAME as OsString
 
 import OsPath.Internal.PLATFORM_NAME
@@ -20,28 +22,28 @@ import OsPath.PLATFORM_NAME
 --   This ensures that bugs like https://github.com/commercialhaskell/path/issues/159
 --   cannot happen.
 class CheckInstantiated a b where
-    checkInstantiated :: Path a b -> FilePath
-    checkInstantiated = toFilePath
+    checkInstantiated :: Path a b -> PLATFORM_PATH
+    checkInstantiated = toOsPath
 
 instance CheckInstantiated Abs Dir
 instance CheckInstantiated Abs File
 instance CheckInstantiated Rel Dir
 instance CheckInstantiated Rel File
 
-qqRelDir :: FilePath
+qqRelDir :: PLATFORM_PATH
 qqRelDir = checkInstantiated [reldir|name/|]
 
-qqRelFile :: FilePath
+qqRelFile :: PLATFORM_PATH
 qqRelFile = checkInstantiated [relfile|name|]
 
-thRelDir :: FilePath
+thRelDir :: PLATFORM_PATH
 thRelDir = checkInstantiated $(mkRelDir [OsString.pstr|name/|])
 
-thRelFile :: FilePath
+thRelFile :: PLATFORM_PATH
 thRelFile = checkInstantiated $(mkRelFile [OsString.pstr|name|])
 
-liftRelDir :: FilePath
+liftRelDir :: PLATFORM_PATH
 liftRelDir = checkInstantiated $(TH.lift (Path [OsString.pstr|name/|] :: Path Rel Dir))
 
-liftRelFile :: FilePath
+liftRelFile :: PLATFORM_PATH
 liftRelFile = checkInstantiated $(TH.lift (Path [OsString.pstr|name|] :: Path Rel File))
