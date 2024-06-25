@@ -38,6 +38,7 @@ library
                    , Path.Internal.Windows
                    , OsPath
                    , OsPath.Aeson
+                   , OsPath.Aeson.Internal
                    , OsPath.Aeson.Posix
                    , OsPath.Aeson.Windows
                    , OsPath.Posix

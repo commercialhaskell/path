@@ -104,8 +104,9 @@ module OsPath.PLATFORM_NAME
 import           Control.Applicative (Alternative(..))
 import           Control.DeepSeq (NFData (..))
 import           Control.Exception (Exception(..))
-import           Control.Monad (liftM, when, (<=<))
+import           Control.Monad (unless, when, (<=<))
 import           Control.Monad.Catch (MonadThrow(..))
+import           Data.Coerce (coerce)
 import           Data.Data (Data, Typeable)
 import           Data.Hashable (Hashable (..))
 import           Data.Maybe (isJust, isNothing)
@@ -448,7 +449,7 @@ splitExtension (Path ospath) =
 --
 -- @since 0.5.11
 fileExtension :: MonadThrow m => Path b File -> m PLATFORM_STRING
-fileExtension = (liftM snd) . splitExtension
+fileExtension = fmap snd . splitExtension
 
 -- | Add extension to given file path.
 --
@@ -486,7 +487,7 @@ addExtension ext (Path path) = do
     let withoutTrailingSeps = OsString.dropWhileEnd OsPath.isExtSeparator xtn
 
     -- Has to start with a "."
-    when (not $ OsPath.isExtSeparator sep) $
+    unless (OsPath.isExtSeparator sep) $
         throwM $ InvalidExtension ext
 
     -- Cannot have path separators
@@ -755,10 +756,8 @@ addFileExtension :: MonadThrow m
   -> m (Path b File)   -- ^ New file name with the desired extension added at the end
 addFileExtension ext (Path path) =
   if OsPath.isAbsolute path
-    then liftM coercePath (parseAbsFile (OsPath.addExtension path ext))
-    else liftM coercePath (parseRelFile (OsPath.addExtension path ext))
-  where coercePath :: Path a b -> Path a' b'
-        coercePath (Path a) = Path a
+    then coerce <$> parseAbsFile (OsPath.addExtension path ext)
+    else coerce <$> parseRelFile (OsPath.addExtension path ext)
 
 -- | A synonym for 'addFileExtension' in the form of an infix operator.
 -- See more examples there.
@@ -788,10 +787,8 @@ setFileExtension :: MonadThrow m
   -> m (Path b File)   -- ^ New file name with the desired extension
 setFileExtension ext (Path path) =
   if OsPath.isAbsolute path
-    then liftM coercePath (parseAbsFile (OsPath.replaceExtension path ext))
-    else liftM coercePath (parseRelFile (OsPath.replaceExtension path ext))
-  where coercePath :: Path a b -> Path a' b'
-        coercePath (Path a) = Path a
+    then coerce <$> parseAbsFile (OsPath.replaceExtension path ext)
+    else coerce <$> parseRelFile (OsPath.replaceExtension path ext)
 
 -- | A synonym for 'setFileExtension' in the form of an operator.
 --
