@@ -2,6 +2,5 @@
 #define PLATFORM_NAME        Posix
 #define PLATFORM_PATH        PosixPath
 #define PLATFORM_PATH_SINGLE 'PosixPath'
-#define PLATFORM_STRING      PosixString
-#define IS_WINDOWS           0
+#define PLATFORM_UTF_CODEC   UTF8
 #include "Include.hs"
