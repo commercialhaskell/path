@@ -1,5 +1,7 @@
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module OsPath.Gen.PLATFORM_NAME where
@@ -10,11 +12,12 @@ import Prelude
 import OsPath.PLATFORM_NAME
 import OsPath.Internal.PLATFORM_NAME
 
-import Data.Char (chr, ord)
 import Data.GenValidity
 import Data.Maybe (mapMaybe)
+import Data.Word (PLATFORM_WORD)
 import System.OsPath.PLATFORM_NAME (PLATFORM_PATH)
 import qualified System.OsPath.PLATFORM_NAME as OsPath
+import System.OsString.Internal.Types (PLATFORM_CHAR(..))
 import qualified System.OsString.PLATFORM_NAME as OsString
 import Test.QuickCheck
 
@@ -128,18 +131,31 @@ shrinkValidWith fun (Path f) = filter (/= Path f) . mapMaybe fun $ shrinkValid f
 --------------------------------------------------------------------------------
 -- Orphan instances
 
--- | Generates 'PLATFORM_PATH with a high occurence of @'.'@, @'\/'@ and
--- @'\\'@ characters. The resulting 'FilePath's are not guaranteed to
--- be valid.
+deriving via PLATFORM_WORD instance GenValid PLATFORM_CHAR
+deriving via PLATFORM_WORD instance Validity PLATFORM_CHAR
+
+-- | Generates PLATFORM_PATH_SINGLE with a high occurence of
+-- 'OsPath.extSeparator' and 'OsPath.pathSeparators' characters. The resulting
+-- paths are not guaranteed to be valid in the sense of 'OsPath.isValid'.
 instance GenValid PLATFORM_PATH where
-    -- We also need to exclude UTF-16 surrogates.
-    genValid = mconcat <$> listOf (OsString.unsafeEncodeUtf . (:[]) . chr <$> frequency
-        [ (2, choose (0x0, 0xD800 - 1))
-        , (2, choose (0xDFFF + 1, 0x10FFFF))
-        , (1, elements (map ord "./\\"))
+    genValid = OsPath.pack <$> listOf (frequency
+        [ (2, genValid)
+        , (1, elements (OsPath.extSeparator : OsPath.pathSeparators))
         ]
         )
-    shrinkValid _ = [] -- TODO: Not yet implemented
+    shrinkValid ospath =
+      let (drive, relative) = OsPath.splitDrive ospath
+          shrinkedWithoutDrive =
+              map OsPath.pack
+            . shrinkValid
+            . OsPath.unpack
+            $ relative
+          shrinkedWithDrive =
+            if OsString.null drive
+            then []
+            else map (drive <>) shrinkedWithoutDrive
+      in
+      shrinkedWithDrive <> shrinkedWithoutDrive
 
 instance Validity PLATFORM_PATH where
     validate = trivialValidation -- TODO: Not yet implemented
