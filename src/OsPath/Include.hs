@@ -1,7 +1,5 @@
 -- This template expects CPP definitions for:
 --     PLATFORM_NAME = Posix | Windows
---     PLATFORM_UTF_CODEC = UTF8 | UTF16-LE
---     IS_WINDOWS = 0 | 1
 
 -- | This library provides a well-typed representation of paths in a filesystem
 -- directory tree.
@@ -28,7 +26,6 @@
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 module OsPath.PLATFORM_NAME
   (-- * Types
@@ -109,10 +106,7 @@ import           Control.DeepSeq (NFData (..))
 import           Control.Exception (Exception(..))
 import           Control.Monad (liftM, when, (<=<))
 import           Control.Monad.Catch (MonadThrow(..))
-import           Data.Aeson (FromJSON (..), FromJSONKey(..), ToJSON(..))
-import qualified Data.Aeson.Types as Aeson
 import           Data.Data (Data, Typeable)
-import qualified Data.Text as Text
 import           Data.Hashable (Hashable (..))
 import           Data.Maybe (isJust, isNothing)
 import           GHC.Generics (Generic)
@@ -141,73 +135,6 @@ data File deriving (Typeable, Data)
 
 -- | A directory path.
 data Dir deriving (Typeable, Data)
-
--- | This instance assumes that the underlying PLATFORM_PATH_SINGLE is
--- PLATFORM_UTF_CODEC encoded. If decoding fails a runtime error will be thrown.
-instance FromJSON (Path Abs File) where
-  parseJSON = parseJSONWith parseAbsFile
-  {-# INLINE parseJSON #-}
-
--- | This instance assumes that the underlying PLATFORM_PATH_SINGLE is
--- PLATFORM_UTF_CODEC encoded. If decoding fails a runtime error will be thrown.
-instance FromJSON (Path Rel File) where
-  parseJSON = parseJSONWith parseRelFile
-  {-# INLINE parseJSON #-}
-
--- | This instance assumes that the underlying PLATFORM_PATH_SINGLE is
--- PLATFORM_UTF_CODEC encoded. If decoding fails a runtime error will be thrown.
-instance FromJSON (Path Abs Dir) where
-  parseJSON = parseJSONWith parseAbsDir
-  {-# INLINE parseJSON #-}
-
--- | This instance assumes that the underlying PLATFORM_PATH_SINGLE is
--- PLATFORM_UTF_CODEC encoded. If decoding fails a runtime error will be thrown.
-instance FromJSON (Path Rel Dir) where
-  parseJSON = parseJSONWith parseRelDir
-  {-# INLINE parseJSON #-}
-
-parseJSONWith :: (forall m . MonadThrow m => PLATFORM_PATH -> m a)
-              -> Aeson.Value
-              -> Aeson.Parser a
-parseJSONWith f x =
-  do fp <- parseJSON x
-     either (fail . displayException) return $ do
-       ospath <- OsString.encodeUtf fp
-       f ospath
-{-# INLINE parseJSONWith #-}
-
--- | This instance assumes that the underlying PLATFORM_PATH_SINGLE is
--- PLATFORM_UTF_CODEC encoded. If decoding fails a runtime error will be thrown.
-instance FromJSONKey (Path Abs File) where
-  fromJSONKey = fromJSONKeyWith parseAbsFile
-  {-# INLINE fromJSONKey #-}
-
--- | This instance assumes that the underlying PLATFORM_PATH_SINGLE is
--- PLATFORM_UTF_CODEC encoded. If decoding fails a runtime error will be thrown.
-instance FromJSONKey (Path Rel File) where
-  fromJSONKey = fromJSONKeyWith parseRelFile
-  {-# INLINE fromJSONKey #-}
-
--- | This instance assumes that the underlying PLATFORM_PATH_SINGLE is
--- PLATFORM_UTF_CODEC encoded. If decoding fails a runtime error will be thrown.
-instance FromJSONKey (Path Abs Dir) where
-  fromJSONKey = fromJSONKeyWith parseAbsDir
-  {-# INLINE fromJSONKey #-}
-
--- | This instance assumes that the underlying PLATFORM_PATH_SINGLE is
--- PLATFORM_UTF_CODEC encoded. If decoding fails a runtime error will be thrown.
-instance FromJSONKey (Path Rel Dir) where
-  fromJSONKey = fromJSONKeyWith parseRelDir
-  {-# INLINE fromJSONKey #-}
-
-fromJSONKeyWith :: (forall m . MonadThrow m => PLATFORM_PATH -> m b)
-                -> Aeson.FromJSONKeyFunction b
-fromJSONKeyWith f =
-  Aeson.FromJSONKeyTextParser $ \text ->
-    either (fail . displayException) return $ do
-      ospath <- (OsPath.encodeUtf . Text.unpack) text
-      f ospath
-{-# INLINE fromJSONKeyWith #-}
 
 -- | Exceptions that can occur during path operations.
 --
@@ -738,25 +665,9 @@ instance NFData (SomeBase t) where
 instance Show (SomeBase t) where
   show = show . fromSomeBase
 
-instance ToJSON (SomeBase t) where
-  toJSON = prjSomeBase toJSON
-  {-# INLINE toJSON #-}
-#if MIN_VERSION_aeson(0,10,0)
-  toEncoding = prjSomeBase toEncoding
-  {-# INLINE toEncoding #-}
-#endif
-
 instance Hashable (SomeBase t) where
   -- See 'Hashable' 'Path' instance for details.
   hashWithSalt n path = hashWithSalt n (fromSomeBase path)
-
-instance FromJSON (SomeBase Dir) where
-  parseJSON = parseJSONWith parseSomeDir
-  {-# INLINE parseJSON #-}
-
-instance FromJSON (SomeBase File) where
-  parseJSON = parseJSONWith parseSomeFile
-  {-# INLINE parseJSON #-}
 
 -- | Helper to project the contents out of a SomeBase object.
 --

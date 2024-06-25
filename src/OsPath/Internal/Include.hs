@@ -2,7 +2,6 @@
 --     PLATFORM_NAME = Posix | Windows
 --     PLATFORM_PATH = PosixPath | WindowsPath
 --     PLATFORM_PATH_SINGLE = 'PosixPath' | 'WindowsPath'
---     PLATFORM_UTF_CODEC = UTF8 | UTF16-LE
 --     IS_WINDOWS = 0 | 1
 
 {-# LANGUAGE BangPatterns        #-}
@@ -49,10 +48,6 @@ module OsPath.Internal.PLATFORM_NAME
   where
 
 import Control.DeepSeq (NFData (..))
-import Control.Exception (displayException)
-import Data.Aeson (ToJSON (..), ToJSONKey(..))
-import Data.Aeson.Types (toJSONKeyText)
-import qualified Data.Text as Text (pack)
 import GHC.Generics (Generic)
 import Data.Data
 import Data.Hashable
@@ -109,32 +104,6 @@ instance Show (Path b t) where
 instance NFData (Path b t) where
   rnf (Path x) = rnf x
   {-# INLINE rnf #-}
-
--- | This instance assumes that the underlying PLATFORM_PATH_SINGLE is
--- PLATFORM_UTF_CODEC encoded. If encoding fails a runtime error will be thrown.
-instance ToJSON (Path b t) where
-  toJSON =
-      either (error . displayException) toJSON
-    . OsPath.decodeUtf
-    . toOsPath
-  {-# INLINE toJSON #-}
-#if MIN_VERSION_aeson(0,10,0)
-  toEncoding =
-      either (error . displayException) toEncoding
-    . OsPath.decodeUtf
-    . toOsPath
-  {-# INLINE toEncoding #-}
-#endif
-
--- | This instance assumes that the underlying PLATFORM_PATH_SINGLE is
--- PLATFORM_UTF_CODEC encoded. If encoding fails a runtime error will be thrown.
-instance ToJSONKey (Path b t) where
-  toJSONKey = toJSONKeyText
-    ( either (error . displayException) Text.pack
-    . OsPath.decodeUtf
-    . toOsPath
-    )
-  {-# INLINE toJSONKey #-}
 
 instance Hashable (Path b t) where
   -- A "." is represented as an empty string ("") internally. Hashing ""

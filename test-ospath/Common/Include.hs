@@ -29,6 +29,7 @@ import qualified System.OsString.PLATFORM_NAME as OsString
 import Test.Hspec
 
 import OsPath.PLATFORM_NAME
+import OsPath.Aeson.PLATFORM_NAME ()
 import OsPath.Internal.PLATFORM_NAME
 
 currentDir :: Path Rel Dir
