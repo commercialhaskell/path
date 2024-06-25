@@ -1,6 +1,7 @@
 -- This template expects CPP definitions for:
 --     PLATFORM_NAME = Posix | Windows
---     IS_WINDOWS    = 0 | 1
+--     PLATFORM_UTF_CODEC = UTF8 | UTF16-LE
+--     IS_WINDOWS = 0 | 1
 
 -- | This library provides a well-typed representation of paths in a filesystem
 -- directory tree.
@@ -141,18 +142,26 @@ data File deriving (Typeable, Data)
 -- | A directory path.
 data Dir deriving (Typeable, Data)
 
+-- | This instance assumes that the underlying PLATFORM_PATH_SINGLE is
+-- PLATFORM_UTF_CODEC encoded. If decoding fails a runtime error will be thrown.
 instance FromJSON (Path Abs File) where
   parseJSON = parseJSONWith parseAbsFile
   {-# INLINE parseJSON #-}
 
+-- | This instance assumes that the underlying PLATFORM_PATH_SINGLE is
+-- PLATFORM_UTF_CODEC encoded. If decoding fails a runtime error will be thrown.
 instance FromJSON (Path Rel File) where
   parseJSON = parseJSONWith parseRelFile
   {-# INLINE parseJSON #-}
 
+-- | This instance assumes that the underlying PLATFORM_PATH_SINGLE is
+-- PLATFORM_UTF_CODEC encoded. If decoding fails a runtime error will be thrown.
 instance FromJSON (Path Abs Dir) where
   parseJSON = parseJSONWith parseAbsDir
   {-# INLINE parseJSON #-}
 
+-- | This instance assumes that the underlying PLATFORM_PATH_SINGLE is
+-- PLATFORM_UTF_CODEC encoded. If decoding fails a runtime error will be thrown.
 instance FromJSON (Path Rel Dir) where
   parseJSON = parseJSONWith parseRelDir
   {-# INLINE parseJSON #-}
@@ -167,18 +176,26 @@ parseJSONWith f x =
        f ospath
 {-# INLINE parseJSONWith #-}
 
+-- | This instance assumes that the underlying PLATFORM_PATH_SINGLE is
+-- PLATFORM_UTF_CODEC encoded. If decoding fails a runtime error will be thrown.
 instance FromJSONKey (Path Abs File) where
   fromJSONKey = fromJSONKeyWith parseAbsFile
   {-# INLINE fromJSONKey #-}
 
+-- | This instance assumes that the underlying PLATFORM_PATH_SINGLE is
+-- PLATFORM_UTF_CODEC encoded. If decoding fails a runtime error will be thrown.
 instance FromJSONKey (Path Rel File) where
   fromJSONKey = fromJSONKeyWith parseRelFile
   {-# INLINE fromJSONKey #-}
 
+-- | This instance assumes that the underlying PLATFORM_PATH_SINGLE is
+-- PLATFORM_UTF_CODEC encoded. If decoding fails a runtime error will be thrown.
 instance FromJSONKey (Path Abs Dir) where
   fromJSONKey = fromJSONKeyWith parseAbsDir
   {-# INLINE fromJSONKey #-}
 
+-- | This instance assumes that the underlying PLATFORM_PATH_SINGLE is
+-- PLATFORM_UTF_CODEC encoded. If decoding fails a runtime error will be thrown.
 instance FromJSONKey (Path Rel Dir) where
   fromJSONKey = fromJSONKeyWith parseRelDir
   {-# INLINE fromJSONKey #-}
