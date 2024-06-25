@@ -2,6 +2,7 @@
 --     PLATFORM_NAME = Posix | Windows
 --     PLATFORM_PATH = PosixPath | WindowsPath
 --     PLATFORM_PATH_SINGLE = 'PosixPath' | 'WindowsPath'
+--     PLATFORM_UTF_CODEC = UTF8 | UTF16-LE
 --     IS_WINDOWS = 0 | 1
 
 {-# LANGUAGE BangPatterns        #-}
@@ -109,6 +110,8 @@ instance NFData (Path b t) where
   rnf (Path x) = rnf x
   {-# INLINE rnf #-}
 
+-- | This instance assumes that the underlying PLATFORM_PATH_SINGLE is
+-- PLATFORM_UTF_CODEC encoded. If encoding fails a runtime error will be thrown.
 instance ToJSON (Path b t) where
   toJSON =
       either (error . displayException) toJSON
@@ -123,13 +126,8 @@ instance ToJSON (Path b t) where
   {-# INLINE toEncoding #-}
 #endif
 
-#if IS_WINDOWS
--- | This instance assumes that the underlying PLATFORM_PATH_SINGLE is UTF-16LE
--- encoded. If decoding fails a runtime error will be thrown.
-#else
--- | This instance assumes that the underlying PLATFORM_PATH_SINGLE is UTF-8
--- encoded. If decoding fails a runtime error will be thrown.
-#endif
+-- | This instance assumes that the underlying PLATFORM_PATH_SINGLE is
+-- PLATFORM_UTF_CODEC encoded. If encoding fails a runtime error will be thrown.
 instance ToJSONKey (Path b t) where
   toJSONKey = toJSONKeyText
     ( either (error . displayException) Text.pack
