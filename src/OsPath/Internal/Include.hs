@@ -295,6 +295,7 @@ isWindows = True
 #else
 isWindows = False
 #endif
+{-# INLINE isWindows #-}
 
 --------------------------------------------------------------------------------
 -- Orphan instances

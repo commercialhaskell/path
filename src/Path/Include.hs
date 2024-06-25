@@ -1,6 +1,5 @@
 -- This template expects CPP definitions for:
 --     PLATFORM_NAME = Posix | Windows
---     IS_WINDOWS    = 0 | 1
 
 -- | This library provides a well-typed representation of paths in a filesystem
 -- directory tree.
@@ -482,11 +481,9 @@ splitExtension (Path fpath) =
             trailingSeps = takeWhile isSep rstr
             xtn  = (takeWhile notSep . dropWhile isSep) rstr
         in (reverse name, reverse xtn ++ trailingSeps)
-#if IS_WINDOWS
-    normalizeDrive = normalizeTrailingSeps
-#else
-    normalizeDrive = id
-#endif
+    normalizeDrive
+      | isWindows = normalizeTrailingSeps
+      | otherwise = id
 
     (drv, pth)     = FilePath.splitDrive fpath
     (dir, file)    = splitLast FilePath.isPathSeparator pth
@@ -826,7 +823,6 @@ normalizeLeadingSeps path = normLeadingSep ++ rest
   where (leadingSeps, rest) = span FilePath.isPathSeparator path
         normLeadingSep = replicate (min 1 (length leadingSeps)) FilePath.pathSeparator
 
-#if IS_WINDOWS
 -- | Normalizes seps only at the end of a path.
 normalizeTrailingSeps :: FilePath -> FilePath
 normalizeTrailingSeps = reverse . normalizeLeadingSeps . reverse
@@ -846,15 +842,12 @@ normalizeWindowsSeps :: FilePath -> FilePath
 normalizeWindowsSeps path = normLeadingSeps ++ normalizeAllSeps rest
   where (leadingSeps, rest) = span FilePath.isPathSeparator path
         normLeadingSeps = replicate (min 2 (length leadingSeps)) FilePath.pathSeparator
-#endif
 
 -- | Applies platform-specific sep normalization following @FilePath.normalise@.
 normalizeFilePath :: FilePath -> FilePath
-#if IS_WINDOWS
-normalizeFilePath = normalizeWindowsSeps . FilePath.normalise
-#else
-normalizeFilePath = normalizeLeadingSeps . FilePath.normalise
-#endif
+normalizeFilePath
+  | isWindows = normalizeWindowsSeps . FilePath.normalise
+  | otherwise = normalizeLeadingSeps . FilePath.normalise
 
 -- | Path of some type.  @t@ represents the type, whether file or
 -- directory.  Pattern match to find whether the path is absolute or
