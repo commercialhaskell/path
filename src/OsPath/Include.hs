@@ -82,6 +82,7 @@ module OsPath.PLATFORM_NAME
   ,fromRelDir
   ,fromAbsFile
   ,fromRelFile
+  ,fromSomeBase
   ,fromSomeDir
   ,fromSomeFile
   -- * TemplateHaskell constructors

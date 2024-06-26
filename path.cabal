@@ -46,7 +46,7 @@ library
                    , OsPath.Internal
                    , OsPath.Internal.Posix
                    , OsPath.Internal.Windows
-  build-depends:     aeson
+  build-depends:     aeson      >= 1.0.0.0
                    , base       >= 4.12     && < 5
                    , deepseq
                    , exceptions >= 0.4     && < 0.11
