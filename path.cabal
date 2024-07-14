@@ -15,7 +15,6 @@ extra-source-files:  README.md
                    , CHANGELOG
                    , src/Path/Include.hs
                    , src/Path/Internal/Include.hs
-                   , src/OsPath/Aeson/Include.hs
                    , src/OsPath/Include.hs
                    , src/OsPath/Internal/Include.hs
                    , test/Common/Include.hs
@@ -37,10 +36,6 @@ library
                    , Path.Internal.Posix
                    , Path.Internal.Windows
                    , OsPath
-                   , OsPath.Aeson
-                   , OsPath.Aeson.Internal
-                   , OsPath.Aeson.Posix
-                   , OsPath.Aeson.Windows
                    , OsPath.Posix
                    , OsPath.Windows
                    , OsPath.Internal
