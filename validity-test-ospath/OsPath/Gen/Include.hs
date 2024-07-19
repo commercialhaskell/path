@@ -14,6 +14,7 @@ import OsPath.Internal.PLATFORM_NAME
 
 import Data.GenValidity
 import Data.Maybe (mapMaybe)
+import Data.Validity.ByteString ()
 import Data.Word (PLATFORM_WORD)
 import System.OsPath.PLATFORM_NAME (PLATFORM_PATH)
 import qualified System.OsPath.PLATFORM_NAME as OsPath
@@ -157,5 +158,4 @@ instance GenValid PLATFORM_PATH where
       in
       shrinkedWithDrive <> shrinkedWithoutDrive
 
-instance Validity PLATFORM_PATH where
-    validate = trivialValidation -- TODO: Not yet implemented
+instance Validity PLATFORM_PATH
