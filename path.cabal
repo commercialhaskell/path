@@ -74,6 +74,7 @@ test-suite test
   build-depends:     aeson
                    , base
                    , bytestring
+                   , exceptions
                    , filepath
                    , hspec      >= 2.0     && < 3
                    , mtl        >= 2.0     && < 3

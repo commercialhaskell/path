@@ -92,7 +92,7 @@ operationFilename = do
 operationParent :: Spec
 operationParent = do
   it
-    "parent \"name\" == \".\""
+    "parent relDir == \".\""
     (parent relDir == currentDir)
   it
     "parent \".\" == \".\""
@@ -101,7 +101,7 @@ operationParent = do
   forDrives $ \drive -> do
     let absDir = drive </> relDir
     it
-      "parent (absDir </> \"name\") == absDir"
+      "parent (absDir </> relDir) == absDir"
       (parent (absDir </> relDir) == absDir)
     it
       "parent \"/name\" == drive"
@@ -116,10 +116,10 @@ operationSplitDrive = forDrives $ \drive -> do
   let absDir = drive </> relDir
       absFile = drive </> relFile
   it
-    "splitDrive \"/dir\" == (drive, Just \"dir\")"
+    "splitDrive absDir == (drive, Just relDir)"
     (splitDrive absDir == (drive, Just relDir))
   it
-    "splitDrive \"/file\" == (drive, Just \"file\")"
+    "splitDrive absFile == (drive, Just relFile)"
     (splitDrive absFile == (drive, Just relFile))
   it
     "splitDrive drive == (drive, Nothing)"
@@ -161,16 +161,16 @@ operationIsProperPrefixOf = do
 operationStripProperPrefix :: Spec
 operationStripProperPrefix = do
   it
-    "stripProperPrefix relDir (relDir </> relDir) == relDir"
+    "stripProperPrefix relDir (relDir </> relDir) == Just relDir"
     (stripProperPrefix relDir (relDir </> relDir) == Just relDir)
 
   forDrives $ \drive -> do
     let absDir = drive </> relDir
     it
-      "stripProperPrefix absDir (absDir </> relDir) == relDir"
+      "stripProperPrefix absDir (absDir </> relDir) == Just relDir"
       (stripProperPrefix absDir (absDir </> relDir) == Just relDir)
     it
-      "stripProperPrefix absDir absDir == _|_"
+      "stripProperPrefix absDir absDir == Nothing"
       (isNothing (stripProperPrefix absDir absDir))
 
 -- | The '</>' operation.
@@ -203,6 +203,7 @@ operationAppend = do
       "AbsDir + RelFile == AbsFile"
       (absDir </> relFile == Path (absDir' OsPath.</> relFile'))
 
+-- | The 'toOsPath' operation.
 operationToOsPath :: Spec
 operationToOsPath = do
   let expected = relRoot
@@ -213,38 +214,34 @@ operationToOsPath = do
     ("show \".\" == " ++ (show . show) expected)
     (show currentDir == show expected)
 
+-- | Testing operations related to extensions.
 extensionOperations :: Spec
 extensionOperations = do
-    let extension = [OsString.pstr|.foo|]
-    let extensions =
-          [ extension
-          , [OsString.pstr|.foo.|]
-          , [OsString.pstr|.foo..|]
-          ]
-
     describe "Only filenames and extensions" $
-      forM_ extensions $ \ext ->
-          forM_ filenames $ \file -> do
-              runTests parseRelFile file ext
+      forM_ filenames $ \file -> do
+        forM_ validExtensions $ \ext -> do
+          runTests parseRelFile file ext
 
     describe "Relative dir paths" $
       forM_ dirnames $ \dir -> do
-          forM_ filenames $ \file -> do
+        forM_ filenames $ \file -> do
+          forM_ validExtensions $ \ext -> do
               let ospath = dir <> OsString.singleton OsPath.pathSeparator <> file
-              runTests parseRelFile ospath extension
+              runTests parseRelFile ospath ext
 
     describe "Absolute dir paths" $
       forM_ drives_ $ \drive -> do
         forM_ dirnames $ \dir -> do
           forM_ filenames $ \file -> do
-            let ospath = drive <> dir <> pathSep <> file
-            runTests parseAbsFile ospath extension
+            forM_ validExtensions $ \ext -> do
+              let ospath = drive <> dir <> pathSep <> file
+              runTests parseAbsFile ospath ext
 
     -- Invalid extensions
     forM_ invalidExtensions $ \ext -> do
-        it ("throws InvalidExtension when extension is " ++ show ext)  $
-            addExtension ext $(mkRelFile [OsString.pstr|name|])
-            `shouldThrow` (== InvalidExtension ext)
+      it ("throws InvalidExtension when extension is " ++ show ext)  $
+         addExtension ext (Path [OsString.pstr|name|])
+         `shouldThrow` (== InvalidExtension ext)
 
     where
 
@@ -292,6 +289,13 @@ extensionOperations = do
         , [OsString.pstr|...foo|]
         , [OsString.pstr|.foo.bar|]
         , [OsString.pstr|.foo|] <> pathSep <> [OsString.pstr|bar|]
+        ]
+
+    validExtensions :: [PLATFORM_STRING]
+    validExtensions =
+        [ [OsString.pstr|.foo|]
+        , [OsString.pstr|.foo.|]
+        , [OsString.pstr|.foo..|]
         ]
 
 validExtensionsSpec :: PLATFORM_STRING -> Path b File -> Path b File -> Spec
