@@ -52,11 +52,11 @@ module System.OsString.Compat.PLATFORM_NAME
 #endif
   where
 
-import System.OsString.Internal.Types (PLATFORM_STRING(..), PLATFORM_CHAR(..))
 import System.OsString.PLATFORM_NAME as OsString
 
 #if !MIN_VERSION_os_string(2,0,0)
 import Data.Coerce (coerce)
+import System.OsString.Internal.Types (PLATFORM_STRING(..), PLATFORM_CHAR(..))
 
 #if IS_WINDOWS
 import qualified System.OsPath.Data.ByteString.Short.Word16 as BSP

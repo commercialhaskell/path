@@ -3,6 +3,9 @@ cradle:
     - path: "src"
       component: "lib:path"
 
+    - path: "compat"
+      component: "path:lib:compat"
+
     - path: "test"
       component: "path:test:test"
 

@@ -13,11 +13,11 @@ build-type:          Simple
 tested-with:         GHC==9.2.8, GHC==9.4.8, GHC==9.6.6, GHC==9.8.2, GHC==9.10.1
 extra-source-files:  README.md
                    , CHANGELOG
+                   , compat/System/OsString/Compat/Include.hs
                    , src/Path/Include.hs
                    , src/Path/Internal/Include.hs
                    , src/OsPath/Include.hs
                    , src/OsPath/Internal/Include.hs
-                   , src/System/OsString/Compat/Include.hs
                    , test/Common/Include.hs
                    , test-ospath/Common/Include.hs
                    , validity-test-ospath/Include.hs
@@ -79,11 +79,11 @@ library
                    , template-haskell
 
   if flag(old-os-string)
-    build-depends:   filepath   >= 1.5.0.0
-                   , os-string  >= 2.0.0
-  else
     build-depends:   filepath   >= 1.4.100.0
                    , os-string  < 2.0.0
+  else
+    build-depends:   filepath   >= 1.5.0.0
+                   , os-string  >= 2.0.0
 
 library compat
   import: language
@@ -97,11 +97,11 @@ library compat
   build-depends:     base       >= 4.12    && < 5
 
   if flag(old-os-string)
-    build-depends:   filepath   >= 1.5.0.0
-                   , os-string  >= 2.0.0
-  else
     build-depends:   filepath   >= 1.4.100.0
                    , os-string  < 2.0.0
+  else
+    build-depends:   filepath   >= 1.5.0.0
+                   , os-string  >= 2.0.0
 
 test-suite test
   import: language
