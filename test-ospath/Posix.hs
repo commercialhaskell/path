@@ -3,6 +3,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE QuasiQuotes #-}
 
+{-# OPTIONS_GHC -Wno-deprecations #-}
+
 -- | Test suite.
 
 module Posix (spec) where

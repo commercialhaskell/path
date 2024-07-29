@@ -13,15 +13,14 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macOS-latest, windows-latest]
-        cabal: ["3.10"]
+        cabal: ["3.12"]
         ghc:
           # GHC versions listed as current stable releases
           - "9.2.8"
-          - "9.4.7"
-          - "9.6.3"
-        # GHC 9.8 only works with cabal-install >= 3.10.2.0, which is not
-        # available from haskell-actions/setup (or on Hackage)
-        # - "9.8.1"
+          - "9.4.8"
+          - "9.6.6"
+          - "9.8.2"
+          - "9.10.1"
 
     steps:
     - uses: actions/checkout@v4

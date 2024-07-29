@@ -3,6 +3,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell     #-}
 
+{-# OPTIONS_GHC -Wno-deprecations #-}
+
 -- | Test suite.
 
 module Windows (spec) where

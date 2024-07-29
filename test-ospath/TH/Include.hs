@@ -5,6 +5,8 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
+
+{-# OPTIONS_GHC -Wno-deprecations #-}
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 
 -- | Test functions to check the template haskell bits.
