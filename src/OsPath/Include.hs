@@ -27,6 +27,8 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
 
+{-# OPTIONS_GHC -Wno-deprecations #-}
+
 module OsPath.PLATFORM_NAME
   (-- * Types
    Path
@@ -121,6 +123,7 @@ import           System.OsString.PLATFORM_NAME (PLATFORM_STRING)
 import qualified System.OsString.PLATFORM_NAME as OsString
 
 import           OsPath.Internal.PLATFORM_NAME
+import qualified System.OsString.Compat.PLATFORM_NAME as OsString.Compat
 
 --------------------------------------------------------------------------------
 -- Types
@@ -279,10 +282,10 @@ infixr 5 </>
 stripProperPrefix :: MonadThrow m
          => Path b Dir -> Path b t -> m (Path Rel t)
 stripProperPrefix (Path p) (Path l) =
-  case OsString.stripPrefix p l of
+  case OsString.Compat.stripPrefix p l of
     Nothing -> throwM (NotAProperPrefix p l)
     Just result
-      | OsString.null result -> throwM (NotAProperPrefix p l)
+      | OsString.Compat.null result -> throwM (NotAProperPrefix p l)
       | otherwise -> return (Path result)
 
 -- | Determines if the path in the first parameter is a proper prefix of the
@@ -326,7 +329,7 @@ replaceProperPrefix src dst fp = (dst </>) <$> stripProperPrefix src fp
 --
 parent :: Path b t -> Path b Dir
 parent (Path fp)
-  | OsString.null fp = Path OsString.empty
+  | OsString.Compat.null fp = Path OsString.Compat.empty
   | OsPath.isDrive fp = Path fp
   | otherwise =
       Path
@@ -339,7 +342,7 @@ parent (Path fp)
 splitDrive :: Path Abs t -> (Path Abs Dir, Maybe (Path Rel t))
 splitDrive (Path fp) =
     let (d, rest) = OsPath.splitDrive fp
-        mRest = if OsString.null rest then Nothing else Just (Path rest)
+        mRest = if OsString.Compat.null rest then Nothing else Just (Path rest)
     in  (Path d, mRest)
 
 -- | Get the drive from an absolute path. On POSIX, @/@ is a drive.
@@ -379,8 +382,8 @@ filename (Path l) =
 --
 dirname :: Path b Dir -> Path Rel Dir
 dirname (Path l)
-  | OsString.null l = Path OsString.empty
-  | OsPath.isDrive l = Path OsString.empty
+  | OsString.Compat.null l = Path OsString.Compat.empty
+  | OsPath.isDrive l = Path OsString.Compat.empty
   | otherwise = Path (last (OsPath.splitPath l))
 
 -- | 'splitExtension' is the inverse of 'addExtension'. It splits the given
@@ -417,28 +420,28 @@ dirname (Path l)
 -- @since 0.7.0
 splitExtension :: MonadThrow m => Path b File -> m (Path b File, PLATFORM_STRING)
 splitExtension (Path ospath) =
-    if OsString.null nameDot
-       || OsString.null name
-       || OsString.null ext
+    if OsString.Compat.null nameDot
+       || OsString.Compat.null name
+       || OsString.Compat.null ext
        || name == [OsString.pstr|.|]
        || name == [OsString.pstr|..|]
        then throwM $ HasNoExtension ospath
        else return ( Path (normalizeDrive drv <> dir <> name)
-                   , OsString.singleton OsPath.extSeparator <> ext
+                   , OsString.Compat.singleton OsPath.extSeparator <> ext
                    )
     where
 
     -- trailing separators are ignored for the split and considered part of the
     -- second component in the split.
     splitLast isSep str =
-        let (withoutTrailingSeps, trailingSeps) = OsString.spanEnd isSep str
-            (oneSep, rest) = OsString.breakEnd isSep withoutTrailingSeps
+        let (withoutTrailingSeps, trailingSeps) = OsString.Compat.spanEnd isSep str
+            (oneSep, rest) = OsString.Compat.breakEnd isSep withoutTrailingSeps
         in (oneSep, rest <> trailingSeps)
 
     (drv, ospathRel) = OsPath.splitDrive ospath
     (dir, file)      = splitLast OsPath.isPathSeparator ospathRel
     (nameDot, ext)   = splitLast OsPath.isExtSeparator file
-    name             = OsString.init nameDot
+    name             = OsString.Compat.init nameDot
 
 -- | Get extension from given file path. Throws 'HasNoExtension' exception if
 -- the file does not have an extension.  The following laws hold:
@@ -481,26 +484,26 @@ addExtension :: MonadThrow m
   -> Path b File       -- ^ Old file name
   -> m (Path b File)   -- ^ New file name with the desired extension added at the end
 addExtension ext (Path path) = do
-    (sep, xtn) <- case OsString.uncons ext of
+    (sep, xtn) <- case OsString.Compat.uncons ext of
         Nothing -> throwM $ InvalidExtension ext
         Just result -> pure result
 
-    let withoutTrailingSeps = OsString.dropWhileEnd OsPath.isExtSeparator xtn
+    let withoutTrailingSeps = OsString.Compat.dropWhileEnd OsPath.isExtSeparator xtn
 
     -- Has to start with a "."
     unless (OsPath.isExtSeparator sep) $
         throwM $ InvalidExtension ext
 
     -- Cannot have path separators
-    when (OsString.any OsPath.isPathSeparator xtn) $
+    when (OsString.Compat.any OsPath.isPathSeparator xtn) $
         throwM $ InvalidExtension ext
 
     -- All "."s is not a valid extension
-    when (OsString.null withoutTrailingSeps) $
+    when (OsString.Compat.null withoutTrailingSeps) $
         throwM $ InvalidExtension ext
 
     -- Cannot have "."s except in trailing position
-    when (OsString.any OsPath.isExtSeparator withoutTrailingSeps) $
+    when (OsString.Compat.any OsPath.isExtSeparator withoutTrailingSeps) $
         throwM $ InvalidExtension ext
 
     -- Must be valid as a filename
