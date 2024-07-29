@@ -1,3 +1,4 @@
+cabal-version:       1.18
 name:                path
 version:             0.9.5
 synopsis:            Support for well-typed paths
@@ -9,8 +10,7 @@ maintainer:          Chris Done <chrisdone@fpcomplete.com>
 copyright:           2015–2018 FP Complete
 category:            System, Filesystem
 build-type:          Simple
-cabal-version:       1.18
-tested-with:         GHC==8.6.5, GHC==8.8.4, GHC==8.10.1
+tested-with:         GHC==9.2.8, GHC==9.4.8, GHC==9.6.6, GHC==9.8.2, GHC==9.10.1
 extra-source-files:  README.md
                    , CHANGELOG
                    , src/Path/Include.hs
@@ -42,7 +42,7 @@ library
                    , OsPath.Internal.Posix
                    , OsPath.Internal.Windows
   build-depends:     aeson      >= 1.0.0.0
-                   , base       >= 4.12     && < 5
+                   , base       >= 4.12    && < 5
                    , deepseq
                    , exceptions >= 0.4     && < 0.11
                    , filepath   >= 1.5.0.0
@@ -77,7 +77,6 @@ test-suite test
                    , exceptions
                    , filepath
                    , hspec      >= 2.0     && < 3
-                   , mtl        >= 2.0     && < 3
                    , path
                    , template-haskell
   if flag(dev)
@@ -96,13 +95,10 @@ test-suite test-ospath
                    , TH.Posix
                    , TH.Windows
   hs-source-dirs:    test-ospath
-  build-depends:     aeson
-                   , base
-                   , bytestring
+  build-depends:     base
                    , exceptions
                    , filepath
                    , hspec      >= 2.0     && < 3
-                   , mtl        >= 2.0     && < 3
                    , os-string
                    , path
                    , template-haskell
@@ -118,17 +114,12 @@ test-suite validity-test
   other-modules:     Path.Gen
   hs-source-dirs:    validity-test
   build-depends:     QuickCheck
-                   , aeson
                    , base
-                   , bytestring
                    , filepath
                    , genvalidity >= 1.0
-                   , genvalidity-property >= 0.4
                    , genvalidity-hspec >= 0.7
                    , hspec      >= 2.0     && < 3
-                   , mtl        >= 2.0     && < 3
                    , path
-                   , validity   >= 0.8.0.0
   default-language:  Haskell2010
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
 
@@ -141,18 +132,13 @@ test-suite validity-test-ospath
                    , Windows
   hs-source-dirs:    validity-test-ospath
   build-depends:     QuickCheck
-                   , aeson
                    , base
-                   , bytestring
                    , filepath
                    , genvalidity >= 1.0
-                   , genvalidity-property >= 0.4
                    , genvalidity-hspec >= 0.7
                    , hspec      >= 2.0     && < 3
-                   , mtl        >= 2.0     && < 3
                    , os-string
                    , path
-                   , validity   >= 0.8.0.0
                    , validity-bytestring >=0.4.1.0
   default-language:  Haskell2010
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
