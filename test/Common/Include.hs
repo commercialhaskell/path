@@ -1,7 +1,7 @@
 -- This template expects CPP definitions for:
 --     PLATFORM_NAME = Posix | Windows
 
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE RankNTypes #-}
 
 -- | Test functions that are common to Posix and Windows
 module Common.PLATFORM_NAME
@@ -13,6 +13,7 @@ module Common.PLATFORM_NAME
 
 import Control.Applicative ((<|>))
 import Control.Monad (forM_, void)
+import Control.Monad.Catch (MonadThrow)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as NonEmpty
 import Data.Maybe (fromJust, isNothing)
@@ -83,7 +84,7 @@ operationFilename = do
 operationParent :: Spec
 operationParent = do
   it
-    "parent \"name\" == \".\""
+    "parent relDir == \".\""
     (parent relDir == currentDir)
   it
     "parent \".\" == \".\""
@@ -92,10 +93,10 @@ operationParent = do
   forDrives $ \drive -> do
     let absDir = drive </> relDir
     it
-      "parent (absDir </> \"name\") == absDir"
+      "parent (absDir </> relDir) == absDir"
       (parent (absDir </> relDir) == absDir)
     it
-      "parent \"/name\" == drive"
+      "parent absDir == drive"
       (parent absDir == drive)
     it
       "parent drive == drive"
@@ -107,10 +108,10 @@ operationSplitDrive = forDrives $ \drive -> do
   let absDir = drive </> relDir
       absFile = drive </> relFile
   it
-    "splitDrive \"/dir\" == (drive, Just \"dir\")"
+    "splitDrive absDir == (drive, Just relDir)"
     (splitDrive absDir == (drive, Just relDir))
   it
-    "splitDrive \"/file\" == (drive, Just \"file\")"
+    "splitDrive absFile == (drive, Just relFile)"
     (splitDrive absFile == (drive, Just relFile))
   it
     "splitDrive drive == (drive, Nothing)"
@@ -161,7 +162,7 @@ operationStripProperPrefix = do
       "stripProperPrefix absDir (absDir </> relDir) == relDir"
       (stripProperPrefix absDir (absDir </> relDir) == Just relDir)
     it
-      "stripProperPrefix absDir absDir == _|_"
+      "stripProperPrefix absDir absDir == Nothing"
       (isNothing (stripProperPrefix absDir absDir))
 
 -- | The '</>' operation.
@@ -194,6 +195,7 @@ operationAppend = do
       "AbsDir + RelFile == AbsFile"
       (absDir </> relFile == Path (absDir' FilePath.</> relFile'))
 
+-- | The 'toFilePath operation.
 operationToFilePath :: Spec
 operationToFilePath = do
   let expected = "." ++ [FilePath.pathSeparator]
@@ -204,37 +206,41 @@ operationToFilePath = do
     ("show \".\" == " ++ (show . show) expected)
     (show currentDir == show expected)
 
+-- | Testing operations related to extensions.
 extensionOperations :: Spec
 extensionOperations = do
-    let extension = ".foo"
-    let extensions = extension : [".foo.", ".foo.."]
-
     describe "Only filenames and extensions" $
-      forM_ extensions $ \ext ->
-          forM_ filenames $ \f -> do
-              runTests parseRelFile f ext
+      forM_ filenames $ \file -> do
+        forM_ validExtensions $ \ext -> do
+          runTests parseRelFile file ext
 
     describe "Relative dir paths" $
-      forM_ dirnames $ \d -> do
-          forM_ filenames $ \f -> do
-              let f1 = d ++ [FilePath.pathSeparator] ++ f
-              runTests parseRelFile f1 extension
+      forM_ dirnames $ \dir -> do
+        forM_ filenames $ \file -> do
+          forM_ validExtensions $ \ext -> do
+              let filepath = dir ++ [FilePath.pathSeparator] ++ file
+              runTests parseRelFile filepath ext
 
     describe "Absolute dir paths" $
       forM_ drives_ $ \drive -> do
         forM_ dirnames $ \dir -> do
           forM_ filenames $ \file -> do
-            let filepath = drive ++ dir ++ [FilePath.pathSeparator] ++ file
-            runTests parseAbsFile filepath extension
+            forM_ validExtensions $ \ext -> do
+              let filepath = drive ++ dir ++ [FilePath.pathSeparator] ++ file
+              runTests parseAbsFile filepath ext
 
     -- Invalid extensions
     forM_ invalidExtensions $ \ext -> do
-        it ("throws InvalidExtension when extension is [" ++ ext ++ "]")  $
-            addExtension ext $(mkRelFile "name")
-            `shouldThrow` (== InvalidExtension ext)
+      it ("throws InvalidExtension when extension is " ++ show ext) $
+         addExtension ext (Path "name")
+         `shouldThrow` (== InvalidExtension ext)
 
     where
 
+    runTests :: (forall m . MonadThrow m => FilePath -> m (Path b File))
+             -> FilePath
+             -> FilePath
+             -> Spec
     runTests parse file ext = do
         let maybePathFile = parse file
         let maybePathFileWithExt = parse (file ++ ext)
@@ -245,6 +251,7 @@ extensionOperations = do
                          show file ++ " parsed to " ++ show maybePathFile ++ ", "
                          ++ show (file ++ ext) ++ " parsed to " ++ show maybePathFileWithExt
 
+    filenames :: [FilePath]
     filenames =
         [ "name"
         , "name."
@@ -255,7 +262,11 @@ extensionOperations = do
         , "name..name"
         , "..."
         ]
+
+    dirnames :: [FilePath]
     dirnames = filenames ++ ["."]
+
+    invalidExtensions :: [String]
     invalidExtensions =
         [ ""
         , "."
@@ -270,6 +281,13 @@ extensionOperations = do
         , "...foo"
         , ".foo.bar"
         , ".foo" ++ [FilePath.pathSeparator] ++ "bar"
+        ]
+
+    validExtensions :: [String]
+    validExtensions =
+        [ ".foo"
+        , ".foo."
+        , ".foo.."
         ]
 
 validExtensionsSpec :: String -> Path b File -> Path b File -> Spec
