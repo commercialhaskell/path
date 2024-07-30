@@ -3,19 +3,17 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell     #-}
 
-{-# OPTIONS_GHC -Wno-deprecations #-}
-
 -- | Test suite.
 
 module Windows (spec) where
 
-import qualified System.OsString.Windows as OsString
 import Test.Hspec
 
 import Common.Windows (parseFails, parseSucceeds, parserTest)
 import qualified Common.Windows
 import OsPath.Windows
 import OsPath.Internal.Windows
+import qualified System.OsString.Compat.Windows as OsString
 import TH.Windows ()
 
 -- | Test suite (Windows version).

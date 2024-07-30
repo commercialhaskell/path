@@ -4,7 +4,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 
-{-# OPTIONS_GHC -Wno-deprecations #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 
 -- | Test suite.
@@ -13,13 +12,12 @@ module PLATFORM_NAME where
 import OsPath.PLATFORM_NAME
 import OsPath.Internal.PLATFORM_NAME
 import System.OsPath.PLATFORM_NAME (PLATFORM_PATH)
-import qualified System.OsString.PLATFORM_NAME as OsString
 import Test.Hspec
 import Test.QuickCheck
 import Test.Validity
 
 import OsPath.Gen.PLATFORM_NAME ()
-import qualified System.OsString.Compat.PLATFORM_NAME as OsString.Compat
+import qualified System.OsString.Compat.PLATFORM_NAME as OsString
 
 -- | Test suite entry point, returns exit failure if any test fails.
 main :: IO ()
@@ -78,9 +76,9 @@ operationFilename = do
 operationDirname :: Spec
 operationDirname = do
   forAllDirs "dirname parent </> $(mkRelDir dirname)) == dirname $(mkRelDir dirname)" $ \parent ->
-    forAllValid $ \dir -> if dir == Path OsString.Compat.empty then pure () else dirname (parent </> dir) `shouldBe` dirname dir
+    forAllValid $ \dir -> if dir == Path OsString.empty then pure () else dirname (parent </> dir) `shouldBe` dirname dir
   forSomeDirs "dirname (some:parent </> $(mkRelDir dirname)) == dirname $(mkRelDir dirname)" $ \someParent ->
-    forAllValid $ \dir -> if dir == Path OsString.Compat.empty
+    forAllValid $ \dir -> if dir == Path OsString.empty
                           then pure ()
                           else prjSomeBase dirname (mapSomeBase (</> dir) someParent) `shouldBe` dirname dir
   it "produces a valid path on when passed a valid absolute path" $ do
@@ -126,7 +124,7 @@ operationTakeDrive = do
 operationIsParentOf :: Spec
 operationIsParentOf = do
   forAllParentsAndChildren "isProperPrefixOf parent (parent </> child)" $ \parent child ->
-    if child == Path OsString.Compat.empty
+    if child == Path OsString.empty
       then True -- TODO do we always need this condition?
       else isProperPrefixOf parent (parent </> child)
 
@@ -134,7 +132,7 @@ operationIsParentOf = do
 operationStripDir :: Spec
 operationStripDir = do
   forAllParentsAndChildren "stripProperPrefix parent (parent </> child) = child" $ \parent child ->
-    if child == Path OsString.Compat.empty
+    if child == Path OsString.empty
       then pure () -- TODO do we always need this condition?
       else stripProperPrefix parent (parent </> child) `shouldBe` Just child
   it "produces a valid path on when passed a valid absolute file paths" $ do

@@ -3,7 +3,6 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE StandaloneDeriving #-}
 
-{-# OPTIONS_GHC -Wno-deprecations #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module OsPath.Gen.PLATFORM_NAME where
@@ -20,11 +19,10 @@ import Data.Validity.ByteString ()
 import Data.Word (PLATFORM_WORD)
 import System.OsPath.PLATFORM_NAME (PLATFORM_PATH)
 import qualified System.OsPath.PLATFORM_NAME as OsPath
-import System.OsString.Internal.Types (PLATFORM_CHAR(..))
-import qualified System.OsString.PLATFORM_NAME as OsString
 import Test.QuickCheck
 
-import qualified System.OsString.Compat.PLATFORM_NAME as OsString.Compat
+import System.OsString.Compat.PLATFORM_NAME (PLATFORM_CHAR(..))
+import qualified System.OsString.Compat.PLATFORM_NAME as OsString
 
 instance Validity (Path Abs File) where
   validate p@(Path fp) =
@@ -63,7 +61,7 @@ instance Validity (Path Rel Dir) where
         validateRel p,
         validateDirectory p,
         declare "The path can be identically parsed as a relative directory path if it's not empty." $
-          parseRelDir fp == Just p || OsString.Compat.null fp
+          parseRelDir fp == Just p || OsString.null fp
       ]
 
 instance Validity (SomeBase Dir)
@@ -75,7 +73,7 @@ instance GenValid (Path Abs File) where
   shrinkValid = filter isValid . shrinkValidWith parseAbsFile
 
 instance GenValid (Path Abs Dir) where
-  genValid = (Path . ([OsString.pstr|/|] <>) . (<> OsString.Compat.singleton OsPath.pathSeparator) <$> genValid) `suchThat` isValid
+  genValid = (Path . ([OsString.pstr|/|] <>) . (<> OsString.singleton OsPath.pathSeparator) <$> genValid) `suchThat` isValid
   shrinkValid = filter isValid . shrinkValidWith parseAbsDir
 
 instance GenValid (Path Rel File) where
@@ -83,7 +81,7 @@ instance GenValid (Path Rel File) where
   shrinkValid = filter isValid . shrinkValidWith parseRelFile
 
 instance GenValid (Path Rel Dir) where
-  genValid = (Path . (<> OsString.Compat.singleton OsPath.pathSeparator) <$> genValid) `suchThat` isValid
+  genValid = (Path . (<> OsString.singleton OsPath.pathSeparator) <$> genValid) `suchThat` isValid
   shrinkValid = filter isValid . shrinkValidWith parseRelDir
 
 instance GenValid (SomeBase Dir) where
@@ -97,7 +95,7 @@ instance GenValid (SomeBase File) where
 validateCommon :: Path b t -> Validation
 validateCommon (Path fp) = mconcat
   [ declare "System.FilePath considers the path valid if it's not empty." $
-      OsPath.isValid fp || OsString.Compat.null fp
+      OsPath.isValid fp || OsString.null fp
   , declare "The path does not contain a '..' path component." $
       not (hasParentDir fp)
   ]
@@ -105,7 +103,7 @@ validateCommon (Path fp) = mconcat
 validateDirectory :: Path b Dir -> Validation
 validateDirectory (Path fp) = mconcat
   [ declare "The path has a trailing path separator if it's not empty." $
-      OsPath.hasTrailingPathSeparator fp || OsString.Compat.null fp
+      OsPath.hasTrailingPathSeparator fp || OsString.null fp
   ]
 
 validateFile :: Path b File -> Validation
@@ -115,7 +113,7 @@ validateFile (Path fp) = mconcat
   , declare "The path does not equal \".\"" $
       fp /= [OsString.pstr|.|]
   , declare "The path does not end in /." $
-      not ([OsString.pstr|/.|] `OsString.Compat.isSuffixOf` fp)
+      not ([OsString.pstr|/.|] `OsString.isSuffixOf` fp)
   ]
 
 validateAbs :: Path Abs t -> Validation
@@ -156,7 +154,7 @@ instance GenValid PLATFORM_PATH where
             . OsPath.unpack
             $ relative
           shrinkedWithDrive =
-            if OsString.Compat.null drive
+            if OsString.null drive
             then []
             else map (drive <>) shrinkedWithoutDrive
       in

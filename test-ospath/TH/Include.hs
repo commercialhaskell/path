@@ -6,7 +6,6 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-{-# OPTIONS_GHC -Wno-deprecations #-}
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 
 -- | Test functions to check the template haskell bits.
@@ -14,10 +13,10 @@ module TH.PLATFORM_NAME where
 
 import qualified Language.Haskell.TH.Syntax as TH
 import System.OsPath.PLATFORM_NAME (PLATFORM_PATH)
-import qualified System.OsString.PLATFORM_NAME as OsString
 
 import OsPath.Internal.PLATFORM_NAME
 import OsPath.PLATFORM_NAME
+import qualified System.OsString.Compat.PLATFORM_NAME as OsString
 
 -- | This is a helper type class that checks that splices produce a 'Path' with
 --   all type variables instantiated to a type.
