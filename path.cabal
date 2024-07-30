@@ -13,7 +13,7 @@ build-type:          Simple
 tested-with:         GHC==9.2.8, GHC==9.4.8, GHC==9.6.6, GHC==9.8.2, GHC==9.10.1
 extra-source-files:  README.md
                    , CHANGELOG
-                   , compat/System/OsString/Compat/Include.hs
+                   , os-string-compat/System/OsString/Compat/Include.hs
                    , src/Path/Include.hs
                    , src/Path/Internal/Include.hs
                    , src/OsPath/Include.hs
@@ -74,21 +74,15 @@ library
                    , deepseq
                    , exceptions >= 0.4     && < 0.11
                    , hashable   >= 1.2     && < 1.5
-                   , path:compat
+                   , path:os-string-compat
                    , text
                    , template-haskell
+                   , filepath   >= 1.4.100.0
 
-  if flag(old-os-string)
-    build-depends:   filepath   >= 1.4.100.0
-                   , os-string  < 2.0.0
-  else
-    build-depends:   filepath   >= 1.5.0.0
-                   , os-string  >= 2.0.0
-
-library compat
+library os-string-compat
   import: language
 
-  hs-source-dirs:    compat
+  hs-source-dirs:    os-string-compat
   visibility:        private
 
   exposed-modules:   System.OsString.Compat.Posix
@@ -100,8 +94,7 @@ library compat
     build-depends:   filepath   >= 1.4.100.0
                    , os-string  < 2.0.0
   else
-    build-depends:   filepath   >= 1.5.0.0
-                   , os-string  >= 2.0.0
+    build-depends:   os-string  >= 2.0.0
 
 test-suite test
   import: language
@@ -147,9 +140,8 @@ test-suite test-ospath
                    , exceptions
                    , filepath
                    , hspec      >= 2.0     && < 3
-                   , os-string
                    , path
-                   , path:compat
+                   , path:os-string-compat
                    , template-haskell
 
 test-suite validity-test
@@ -189,9 +181,8 @@ test-suite validity-test-ospath
                    , genvalidity >= 1.0
                    , genvalidity-hspec >= 0.7
                    , hspec      >= 2.0     && < 3
-                   , os-string
                    , path
-                   , path:compat
+                   , path:os-string-compat
                    , validity-bytestring >=0.4.1.0
 
 source-repository head

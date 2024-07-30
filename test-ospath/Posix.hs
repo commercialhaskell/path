@@ -3,19 +3,17 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE QuasiQuotes #-}
 
-{-# OPTIONS_GHC -Wno-deprecations #-}
-
 -- | Test suite.
 
 module Posix (spec) where
 
-import qualified System.OsString.Posix as OsString
 import Test.Hspec
 
 import Common.Posix (parseFails, parseSucceeds, parserTest)
 import qualified Common.Posix
 import OsPath.Posix
 import OsPath.Internal.Posix
+import qualified System.OsString.Compat.Posix as OsString
 import TH.Posix ()
 
 -- | Test suite (Posix version).

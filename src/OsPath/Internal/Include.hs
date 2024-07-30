@@ -9,11 +9,7 @@
 {-# LANGUAGE DeriveDataTypeable  #-}
 {-# LANGUAGE QuasiQuotes         #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving  #-}
 {-# LANGUAGE TemplateHaskell     #-}
-
-{-# OPTIONS_GHC -Wno-deprecations #-}
-{-# OPTIONS_GHC -Wno-orphans #-}
 
 -- | Internal types and functions.
 
@@ -55,10 +51,9 @@ import Data.Hashable
 import qualified Language.Haskell.TH.Syntax as TH
 import System.OsPath.PLATFORM_NAME (PLATFORM_PATH)
 import qualified System.OsPath.PLATFORM_NAME as OsPath
-import System.OsString.Internal.Types (PLATFORM_STRING(..))
-import qualified System.OsString.PLATFORM_NAME as OsString
 
-import qualified System.OsString.Compat.PLATFORM_NAME as OsString.Compat
+import System.OsString.Compat.PLATFORM_NAME (PLATFORM_STRING)
+import qualified System.OsString.Compat.PLATFORM_NAME as OsString
 
 -- | Path of some base and type.
 --
@@ -142,7 +137,7 @@ instance forall b t. (Typeable b, Typeable t) => TH.Lift (Path b t) where
 -- the filepath package.
 toOsPath :: Path b t -> PLATFORM_PATH
 toOsPath (Path ospath)
-    | OsString.Compat.null ospath = relRoot
+    | OsString.null ospath = relRoot
     | otherwise = ospath
 
 --------------------------------------------------------------------------------
@@ -167,16 +162,16 @@ isValidAbsFile ospath =
 isValidRelDir :: PLATFORM_PATH -> Bool
 isValidRelDir ospath =
   not (OsPath.isAbsolute ospath) &&
-  not (OsString.Compat.null ospath) &&
+  not (OsString.null ospath) &&
   not (hasParentDir ospath) &&
-  not (OsString.Compat.all OsPath.isPathSeparator ospath) &&
+  not (OsString.all OsPath.isPathSeparator ospath) &&
   OsPath.isValid ospath
 
 -- | Is the PLATFORM_PATH_SINGLE a valid relative file?
 isValidRelFile :: PLATFORM_PATH -> Bool
 isValidRelFile ospath =
   not (OsPath.isAbsolute ospath) &&
-  not (OsString.Compat.null ospath) &&
+  not (OsString.null ospath) &&
   not (hasParentDir ospath) &&
   not (OsPath.hasTrailingPathSeparator ospath) &&
   ospath /= [OsPath.pstr|.|] &&
@@ -187,16 +182,16 @@ isValidRelFile ospath =
 hasParentDir :: PLATFORM_PATH -> Bool
 hasParentDir ospath =
      (ospath' == [OsString.pstr|..|]) ||
-     (prefix' `OsString.Compat.isPrefixOf` ospath') ||
-     (infix' `OsString.Compat.isInfixOf` ospath') ||
-     (suffix' `OsString.Compat.isSuffixOf` ospath')
+     (prefix' `OsString.isPrefixOf` ospath') ||
+     (infix' `OsString.isInfixOf` ospath') ||
+     (suffix' `OsString.isSuffixOf` ospath')
   where
     prefix' = [OsString.pstr|..|] <> pathSep
     infix' = pathSep <> [OsString.pstr|..|] <> pathSep
     suffix' = pathSep <> [OsString.pstr|..|]
 
 #if IS_WINDOWS
-    ospath' = OsString.Compat.map normSep ospath
+    ospath' = OsString.map normSep ospath
     normSep c
       | OsPath.isPathSeparator c = OsPath.pathSeparator
       | otherwise = c
@@ -210,33 +205,33 @@ hasParentDir ospath =
 -- | Normalizes seps only at the beginning of a path.
 normalizeLeadingSeps :: PLATFORM_PATH -> PLATFORM_PATH
 normalizeLeadingSeps path = normLeadingSep <> rest
-  where (leadingSeps, rest) = OsString.Compat.span OsPath.isPathSeparator path
+  where (leadingSeps, rest) = OsString.span OsPath.isPathSeparator path
         normLeadingSep
-          | OsString.Compat.null leadingSeps = OsString.Compat.empty
-          | otherwise = OsString.Compat.singleton OsPath.pathSeparator
+          | OsString.null leadingSeps = OsString.empty
+          | otherwise = OsString.singleton OsPath.pathSeparator
 
 -- | Normalizes seps only at the end of a path.
 normalizeTrailingSeps :: PLATFORM_PATH -> PLATFORM_PATH
 normalizeTrailingSeps path = rest <> normTrailingSep
-  where (rest, trailingSeps) = OsString.Compat.spanEnd OsPath.isPathSeparator path
+  where (rest, trailingSeps) = OsString.spanEnd OsPath.isPathSeparator path
         normTrailingSep
-          | OsString.Compat.null trailingSeps = OsString.Compat.empty
-          | otherwise = OsString.Compat.singleton OsPath.pathSeparator
+          | OsString.null trailingSeps = OsString.empty
+          | otherwise = OsString.singleton OsPath.pathSeparator
 
 -- | Replaces consecutive path seps with single sep and replaces alt sep with
 --   standard sep.
 normalizeAllSeps :: PLATFORM_PATH -> PLATFORM_PATH
-normalizeAllSeps = go OsString.Compat.empty
+normalizeAllSeps = go OsString.empty
   where go !acc ospath
-          | OsString.Compat.null ospath = acc
+          | OsString.null ospath = acc
           | otherwise =
             let (leadingSeps, withoutLeadingSeps) =
-                  OsString.Compat.span OsPath.isPathSeparator ospath
+                  OsString.span OsPath.isPathSeparator ospath
                 (name, rest) =
-                  OsString.Compat.break OsPath.isPathSeparator withoutLeadingSeps
-                sep = if OsString.Compat.null leadingSeps
-                      then OsString.Compat.empty
-                      else OsString.Compat.singleton OsPath.pathSeparator
+                  OsString.break OsPath.isPathSeparator withoutLeadingSeps
+                sep = if OsString.null leadingSeps
+                      then OsString.empty
+                      else OsString.singleton OsPath.pathSeparator
             in go (acc <> sep <> name) rest
 
 #if IS_WINDOWS
@@ -245,9 +240,9 @@ normalizeAllSeps = go OsString.Compat.empty
 --   paths.
 normalizeWindowsSeps :: PLATFORM_PATH -> PLATFORM_PATH
 normalizeWindowsSeps path = normLeadingSeps <> normalizeAllSeps rest
-  where (leadingSeps, rest) = OsString.Compat.span OsPath.isPathSeparator path
-        normLeadingSeps = OsString.Compat.replicate
-          (min 2 (OsString.Compat.length leadingSeps))
+  where (leadingSeps, rest) = OsString.span OsPath.isPathSeparator path
+        normLeadingSeps = OsString.replicate
+          (min 2 (OsString.length leadingSeps))
           OsPath.pathSeparator
 #endif
 
@@ -268,7 +263,7 @@ normalizeDir =
   where -- Represent a "." in relative dir path as "" internally so that it
         -- composes without having to renormalize the path.
         normalizeRelDir p
-          | p == relRoot = OsString.Compat.empty
+          | p == relRoot = OsString.empty
           | otherwise = p
 
 -- | Applies platform-specific sep normalization following @OsPath.normalise@.
@@ -283,14 +278,15 @@ normalizeFile = normalizeLeadingSeps . OsPath.normalise
 -- Other helper functions
 
 extSep :: PLATFORM_STRING
-extSep = $(TH.lift (OsString.Compat.singleton OsPath.extSeparator))
+extSep = $(TH.lift (OsString.singleton OsPath.extSeparator))
 
 pathSep :: PLATFORM_STRING
-pathSep = $(TH.lift (OsString.Compat.singleton OsPath.pathSeparator))
+pathSep = $(TH.lift (OsString.singleton OsPath.pathSeparator))
 
 -- | Normalized file path representation for the relative path root
 relRoot :: PLATFORM_PATH
-relRoot = $(TH.lift ([OsPath.pstr|.|] <> OsString.Compat.singleton OsPath.pathSeparator))
+relRoot =
+  $(TH.lift ([OsPath.pstr|.|] <> OsString.singleton OsPath.pathSeparator))
 
 isWindows :: Bool
 #if IS_WINDOWS
@@ -299,8 +295,3 @@ isWindows = True
 isWindows = False
 #endif
 {-# INLINE isWindows #-}
-
---------------------------------------------------------------------------------
--- Orphan instances
-
-deriving instance Data PLATFORM_STRING

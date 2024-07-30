@@ -4,32 +4,23 @@
 --     PLATFORM_CHAR = PosixChar | WindowsChar
 --     IS_WINDOWS = 0 | 1
 
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE StandaloneDeriving #-}
+
 {-# OPTIONS_GHC -Wno-deprecations #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module System.OsString.Compat.PLATFORM_NAME
 #if MIN_VERSION_os_string(2,0,0)
-  ( OsString.all
-  , OsString.any
-  , OsString.break
-  , OsString.breakEnd
-  , OsString.dropWhileEnd
-  , OsString.empty
-  , OsString.init
-  , OsString.isInfixOf
-  , OsString.isPrefixOf
-  , OsString.isSuffixOf
-  , OsString.length
-  , OsString.map
-  , OsString.null
-  , OsString.replicate
-  , OsString.singleton
-  , OsString.span
-  , OsString.spanEnd
-  , OsString.stripPrefix
-  , OsString.uncons
+  ( PLATFORM_STRING(..)
+  , PLATFORM_CHAR(..)
+  , module OsString
   )
 #else
-  ( System.OsString.Compat.PLATFORM_NAME.all
+  ( PLATFORM_STRING(..)
+  , PLATFORM_CHAR(..)
+  , OsString.pstr
+  , System.OsString.Compat.PLATFORM_NAME.all
   , System.OsString.Compat.PLATFORM_NAME.any
   , System.OsString.Compat.PLATFORM_NAME.break
   , System.OsString.Compat.PLATFORM_NAME.breakEnd
@@ -52,11 +43,12 @@ module System.OsString.Compat.PLATFORM_NAME
 #endif
   where
 
+import Data.Data (Data)
+import System.OsString.Internal.Types (PLATFORM_STRING(..), PLATFORM_CHAR(..))
 import System.OsString.PLATFORM_NAME as OsString
 
 #if !MIN_VERSION_os_string(2,0,0)
 import Data.Coerce (coerce)
-import System.OsString.Internal.Types (PLATFORM_STRING(..), PLATFORM_CHAR(..))
 
 #if IS_WINDOWS
 import qualified System.OsPath.Data.ByteString.Short.Word16 as BSP
@@ -64,6 +56,8 @@ import qualified System.OsPath.Data.ByteString.Short.Word16 as BSP
 import qualified System.OsPath.Data.ByteString.Short as BSP
 #endif
 #endif
+
+deriving instance Data PLATFORM_STRING
 
 #if !MIN_VERSION_os_string(2,0,0)
 all :: (PLATFORM_CHAR -> Bool) -> PLATFORM_STRING -> Bool

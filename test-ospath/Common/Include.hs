@@ -8,8 +8,6 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-{-# OPTIONS_GHC -Wno-deprecations #-}
-
 -- | Test functions that are common to Posix and Windows
 module Common.PLATFORM_NAME
   (spec
@@ -26,13 +24,12 @@ import qualified Data.List.NonEmpty as NonEmpty
 import Data.Maybe (fromJust, isNothing)
 import System.OsPath.PLATFORM_NAME (PLATFORM_PATH)
 import qualified System.OsPath.PLATFORM_NAME as OsPath
-import System.OsString.PLATFORM_NAME (PLATFORM_STRING)
-import qualified System.OsString.PLATFORM_NAME as OsString
 import Test.Hspec
 
 import OsPath.PLATFORM_NAME
 import OsPath.Internal.PLATFORM_NAME
-import qualified System.OsString.Compat.PLATFORM_NAME as OsString.Compat
+import System.OsString.Compat.PLATFORM_NAME (PLATFORM_STRING)
+import qualified System.OsString.Compat.PLATFORM_NAME as OsString
 
 currentDir :: Path Rel Dir
 currentDir = (fromJust . parseRelDir) [OsString.pstr|.|]
@@ -229,7 +226,8 @@ extensionOperations = do
       forM_ dirnames $ \dir -> do
         forM_ filenames $ \file -> do
           forM_ validExtensions $ \ext -> do
-              let ospath = dir <> OsString.Compat.singleton OsPath.pathSeparator <> file
+              let ospath =
+                    dir <> OsString.singleton OsPath.pathSeparator <> file
               runTests parseRelFile ospath ext
 
     describe "Absolute dir paths" $
