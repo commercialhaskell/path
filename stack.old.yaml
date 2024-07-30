@@ -1,0 +1,13 @@
+resolver: lts-22.31 # GHC 9.6.6
+
+extra-deps:
+  - data-fix-0.3.2
+  - hashable-1.4.3.0
+  - semialign-1.3
+  - text-short-0.1.5
+  - these-1.2
+  - os-string-1.0.0@sha256:f1582da15c52761681da87d98c854a0db54049f34d59f74cfec4cc56ad8fbc05,1852
+
+flags:
+  path:
+    old-os-string: true
