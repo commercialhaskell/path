@@ -77,7 +77,11 @@ library
                    , path:os-string-compat
                    , text
                    , template-haskell
-                   , filepath   >= 1.4.100.0
+
+  if flag(old-os-string)
+    build-depends:   filepath   >= 1.4.100.0 && <1.5
+  else
+    build-depends:   filepath   >= 1.5
 
 library os-string-compat
   import: language
