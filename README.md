@@ -180,7 +180,6 @@ do x <- parseRelFile (fromCabalFileName x)
 ```
 
 That’s really convenient and we take advantage of this at FP Complete a lot.
-The instances
 
 Equality, ordering and printing are simply re-using the `String` instances:
 
@@ -441,7 +440,7 @@ operations relativity or path type.
 
 ### pathtype
 
-Finally, we come to a path library that path is similar to: the
+Finally, we come to a path library that is similar to: the
 [`pathtype`](http://hackage.haskell.org/package/pathtype) library. There are
 the same types of `Path Abs File` / `Path Rel Dir`, etc.
 
@@ -486,7 +485,7 @@ System.Path.Posix> (("." :: Path Rel File) == ("" :: Path Rel File))
 False
 ```
 
-* It has functions like `<.>/addExtension` which lets you insert an
+* It has functions like `<.>/addExtension` which let you insert an
   arbitrary string into a path.
 
 * Some functions let you produce nonsense (could be prevented by a stricter
