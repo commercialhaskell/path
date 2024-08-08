@@ -7,16 +7,15 @@
 
 module Posix (spec) where
 
-import Control.Applicative
-import Control.Monad
 import Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as LBS
-import Data.Maybe
-import Path.Posix
-import Path.Internal.Posix
 import Test.Hspec
 
-import Common.Posix (extensionOperations)
+import Common.Posix (parseFails, parseSucceeds, parserTest)
+import qualified Common.Posix
+import Path.Posix
+import Path.Internal.Posix
+import TH.Posix ()
 
 -- | Test suite (Posix version).
 spec :: Spec
@@ -25,16 +24,7 @@ spec =
      describe "Parsing: Path Rel Dir" parseRelDirSpec
      describe "Parsing: Path Abs File" parseAbsFileSpec
      describe "Parsing: Path Rel File" parseRelFileSpec
-     describe "Operations: (</>)" operationAppend
-     describe "Operations: toFilePath" operationToFilePath
-     describe "Operations: stripProperPrefix" operationStripProperPrefix
-     describe "Operations: isProperPrefixOf" operationIsProperPrefixOf
-     describe "Operations: parent" operationParent
-     describe "Operations: splitDrive" operationSplitDrive
-     describe "Operations: isDrive" operationIsDrive
-     describe "Operations: filename" operationFilename
-     describe "Operations: dirname" operationDirname
-     describe "Operations: extensions" (extensionOperations "/")
+     Common.Posix.spec
      describe "Restrictions" restrictions
      describe "Aeson Instances" aesonInstances
      describe "QuasiQuotes" quasiquotes
@@ -55,151 +45,6 @@ restrictions =
      parseFails "/.."
      parseFails "/foo/../bar/"
      parseFails "/foo/bar/.."
-  where parseFails x =
-          it (show x ++ " should be rejected")
-             (isNothing (void (parseAbsDir x) <|>
-                         void (parseRelDir x) <|>
-                         void (parseAbsFile x) <|>
-                         void (parseRelFile x)))
-        parseSucceeds x with =
-          parserTest parseRelDir x (Just with)
-
--- | The 'dirname' operation.
-operationDirname :: Spec
-operationDirname = do
-  it
-    "dirname ($(mkAbsDir parent) </> $(mkRelFile dirname)) == dirname $(mkRelFile dirname) (unit test)"
-    (dirname ($(mkAbsDir "/home/chris/") </> $(mkRelDir "bar")) ==
-     dirname $(mkRelDir "bar"))
-  it
-    "dirname ($(mkRelDir parent) </> $(mkRelFile dirname)) == dirname $(mkRelFile dirname) (unit test)"
-    (dirname ($(mkRelDir "home/chris/") </> $(mkRelDir "bar")) ==
-     dirname $(mkRelDir "bar"))
-  it
-    "dirname / must be a Rel path"
-    ((parseAbsDir $ show $ dirname (fromJust (parseAbsDir "/"))
-     :: Maybe (Path Abs Dir)) == Nothing)
-
--- | The 'filename' operation.
-operationFilename :: Spec
-operationFilename =
-  do it "filename ($(mkAbsDir parent) </> $(mkRelFile filename)) == filename $(mkRelFile filename) (unit test)"
-          (filename ($(mkAbsDir "/home/chris/") </>
-                             $(mkRelFile "bar.txt")) ==
-                                      filename $(mkRelFile "bar.txt"))
-
-     it "filename ($(mkRelDir parent) </> $(mkRelFile filename)) == filename $(mkRelFile filename) (unit test)"
-             (filename ($(mkRelDir "home/chris/") </>
-                                $(mkRelFile "bar.txt")) ==
-                                         filename $(mkRelFile "bar.txt"))
-
--- | The 'parent' operation.
-operationParent :: Spec
-operationParent =
-  do it "parent (parent </> child) == parent"
-        (parent ($(mkAbsDir "/foo") </>
-                    $(mkRelDir "bar")) ==
-         $(mkAbsDir "/foo"))
-     it "parent \"/\" == \"/\""
-        (parent $(mkAbsDir "/") == $(mkAbsDir "/"))
-     it "parent \"/x\" == \"/\""
-        (parent $(mkAbsDir "/x") == $(mkAbsDir "/"))
-     it "parent \"x\" == \".\""
-        (parent $(mkRelDir "x") == $(mkRelDir "."))
-     it "parent \".\" == \".\""
-        (parent $(mkRelDir ".") == $(mkRelDir "."))
-
--- | The 'splitDrive' operation.
-operationSplitDrive :: Spec
-operationSplitDrive =
-  do it "splitDrive \"/dir\" == (\"/\", Just \"dir\")"
-        (splitDrive $(mkAbsDir "/dir") == ($(mkAbsDir "/"), Just $(mkRelDir "dir")))
-     it "splitDrive \"/file\" == (\"/\", Just \"file\")"
-        (splitDrive $(mkAbsFile "/file") == ($(mkAbsDir "/"), Just $(mkRelFile "file")))
-     it "splitDrive \"/\" == (\"/\", Nothing)"
-        (splitDrive $(mkAbsDir "/") == ($(mkAbsDir "/"), Nothing))
-
--- | The 'isDrive' operation.
-operationIsDrive :: Spec
-operationIsDrive =
-  do it "isDrive \"/\" == True"
-        (isDrive $(mkAbsDir "/") == True)
-     it "isDrive \"/dir\" == False"
-        (isDrive $(mkAbsDir "/dir") == False)
-
--- | The 'isProperPrefixOf' operation.
-operationIsProperPrefixOf :: Spec
-operationIsProperPrefixOf =
-  do it "isProperPrefixOf parent (parent </> child) (absolute)"
-        (isProperPrefixOf
-           $(mkAbsDir "///bar/")
-           ($(mkAbsDir "///bar/") </>
-            $(mkRelFile "bar/foo.txt")))
-
-     it "isProperPrefixOf parent (parent </> child) (relative)"
-        (isProperPrefixOf
-           $(mkRelDir "bar/")
-           ($(mkRelDir "bar/") </>
-            $(mkRelFile "bob/foo.txt")))
-
-     it "not (x `isProperPrefixOf` x)"
-        (not (isProperPrefixOf $(mkRelDir "x") $(mkRelDir "x")))
-
-     it "not (/ `isProperPrefixOf` /)"
-        (not (isProperPrefixOf $(mkAbsDir "/") $(mkAbsDir "/")))
-
--- | The 'stripProperPrefix' operation.
-operationStripProperPrefix :: Spec
-operationStripProperPrefix =
-  do it "stripProperPrefix parent (parent </> child) = child (unit test)"
-        (stripProperPrefix $(mkAbsDir "///bar/")
-                  ($(mkAbsDir "///bar/") </>
-                   $(mkRelFile "bar/foo.txt")) ==
-         Just $(mkRelFile "bar/foo.txt"))
-
-     it "stripProperPrefix parent (parent </> child) = child (unit test)"
-        (stripProperPrefix $(mkRelDir "bar/")
-                  ($(mkRelDir "bar/") </>
-                   $(mkRelFile "bob/foo.txt")) ==
-         Just $(mkRelFile "bob/foo.txt"))
-
-     it "stripProperPrefix parent parent = _|_"
-        (stripProperPrefix $(mkAbsDir "/home/chris/foo")
-                  $(mkAbsDir "/home/chris/foo") ==
-         Nothing)
-
--- | The '</>' operation.
-operationAppend :: Spec
-operationAppend =
-  do it "AbsDir + RelDir = AbsDir"
-        ($(mkAbsDir "/home/") </>
-         $(mkRelDir "chris") ==
-         $(mkAbsDir "/home/chris/"))
-     it "AbsDir + RelFile = AbsFile"
-        ($(mkAbsDir "/home/") </>
-         $(mkRelFile "chris/test.txt") ==
-         $(mkAbsFile "/home/chris/test.txt"))
-     it "RelDir + RelDir = RelDir"
-        ($(mkRelDir "home/") </>
-         $(mkRelDir "chris") ==
-         $(mkRelDir "home/chris"))
-     it ". + . = ."
-        ($(mkRelDir "./") </> $(mkRelDir ".") == $(mkRelDir "."))
-     it ". + x = x"
-        ($(mkRelDir ".") </> $(mkRelDir "x") == $(mkRelDir "x"))
-     it "x + . = x"
-        ($(mkRelDir "x") </> $(mkRelDir "./") == $(mkRelDir "x"))
-     it "RelDir + RelFile = RelFile"
-        ($(mkRelDir "home/") </>
-         $(mkRelFile "chris/test.txt") ==
-         $(mkRelFile "home/chris/test.txt"))
-
-operationToFilePath :: Spec
-operationToFilePath =
-  do it "toFilePath $(mkRelDir \".\") == \"./\""
-        (toFilePath $(mkRelDir ".") == "./")
-     it "show $(mkRelDir \".\") == \"\\\"./\\\"\""
-        (show $(mkRelDir ".") == "\"./\"")
 
 -- | Tests for the tokenizer.
 parseAbsDirSpec :: Spec
@@ -291,22 +136,6 @@ parseRelFileSpec =
 
   where failing x = parserTest parseRelFile x Nothing
         succeeding x with = parserTest parseRelFile x (Just with)
-
--- | Parser test.
-parserTest :: (Show a1,Show a,Eq a1)
-           => (a -> Maybe a1) -> a -> Maybe a1 -> SpecWith ()
-parserTest parser input expected =
-  it ((case expected of
-         Nothing -> "Failing: "
-         Just{} -> "Succeeding: ") ++
-      "Parsing " ++
-      show input ++
-      " " ++
-      case expected of
-        Nothing -> "should fail."
-        Just x -> "should succeed with: " ++ show x)
-     (actual `shouldBe` expected)
-  where actual = parser input
 
 -- | Tests for the 'ToJSON' and 'FromJSON' instances
 --

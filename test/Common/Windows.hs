@@ -1,24 +1,16 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE QuasiQuotes #-}
-#define PLATFORM_NAME   Windows
-#define IS_WINDOWS      True
+
+#define PLATFORM_NAME Windows
 #include "Include.hs"
 
-qqAbsDir :: FilePath
-qqAbsDir = foo [absdir|C:\foo\|]
-
-qqAbsFile :: FilePath
-qqAbsFile = foo [absdir|C:\foo|]
-
-thAbsDir :: FilePath
-thAbsDir = foo $(mkAbsDir "C:\\foo\\")
-
-thAbsFile :: FilePath
-thAbsFile = foo $(mkAbsFile "C:\\foo")
-
-liftAbsDir :: FilePath
-liftAbsDir = foo $(TH.lift (Path "C:\\foo\\" :: Path Abs Dir))
-
-liftAbsFile :: FilePath
-liftAbsFile = foo $(TH.lift (Path "C:\\foo" :: Path Abs File))
-
+-- See https://learn.microsoft.com/en-us/dotnet/standard/io/file-path-formats
+drives_ :: NonEmpty FilePath
+drives_ = NonEmpty.fromList
+  [ "C:\\" -- Common
+  , "C:/" -- Common
+  , "\\\\host" -- UNC
+  --, "\\\\.\\C:\\" -- DOS Device Path
+  , "\\\\?\\C:\\" -- DOS Device Path
+  --, "\\\\?\\UNC\\" -- DOS Device Path
+  --, "\\\\.\\UNC\\" -- DOS Device Path
+  ]

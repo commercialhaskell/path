@@ -1,7 +1,12 @@
 -- This template expects CPP definitions for:
 --     PLATFORM_NAME = Posix | Windows
+--     PLATFORM_PATH = PosixPath | WindowsPath
+--     PLATFORM_STRING = PosixString | WindowsString
 
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 -- | Test functions that are common to Posix and Windows
 module Common.PLATFORM_NAME
@@ -17,23 +22,26 @@ import Control.Monad.Catch (MonadThrow)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as NonEmpty
 import Data.Maybe (fromJust, isNothing)
-import qualified System.FilePath.PLATFORM_NAME as FilePath
+import System.OsPath.PLATFORM_NAME (PLATFORM_PATH)
+import qualified System.OsPath.PLATFORM_NAME as OsPath
 import Test.Hspec
 
-import Path.Internal.PLATFORM_NAME
-import Path.PLATFORM_NAME
+import OsPath.PLATFORM_NAME
+import OsPath.Internal.PLATFORM_NAME
+import System.OsString.Compat.PLATFORM_NAME (PLATFORM_STRING)
+import qualified System.OsString.Compat.PLATFORM_NAME as OsString
 
 currentDir :: Path Rel Dir
-currentDir = (fromJust . parseRelDir) "."
+currentDir = (fromJust . parseRelDir) [OsString.pstr|.|]
 
 drives :: NonEmpty (Path Abs Dir)
 drives = (fromJust . traverse parseAbsDir) drives_
 
 relDir :: Path Rel Dir
-relDir = (fromJust . parseRelDir) "directory"
+relDir = (fromJust . parseRelDir) [OsString.pstr|directory|]
 
 relFile :: Path Rel File
-relFile = (fromJust . parseRelFile) "file"
+relFile = (fromJust . parseRelFile) [OsString.pstr|file|]
 
 spec :: Spec
 spec = do
@@ -41,7 +49,7 @@ spec = do
   describe "Operations: dirname" operationDirname
   describe "Operations: filename" operationFilename
   describe "Operations: parent" operationParent
-  describe "Operations: toFilePath" operationToFilePath
+  describe "Operations: toOsPath" operationToOsPath
   describe "Operations: isProperPrefixOf" operationIsProperPrefixOf
   describe "Operations: stripProperPrefix" operationStripProperPrefix
   describe "Operations: isDrive" operationIsDrive
@@ -65,7 +73,7 @@ operationDirname = do
       (dirname (absDir </> relDir) == dirname relDir)
     it
       "dirname of a drive must be a Rel path"
-      (isNothing (parseAbsDir . toFilePath . dirname $ drive))
+      (isNothing (parseAbsDir . toOsPath . dirname $ drive))
 
 -- | The 'filename' operation.
 operationFilename :: Spec
@@ -96,7 +104,7 @@ operationParent = do
       "parent (absDir </> relDir) == absDir"
       (parent (absDir </> relDir) == absDir)
     it
-      "parent absDir == drive"
+      "parent \"/name\" == drive"
       (parent absDir == drive)
     it
       "parent drive == drive"
@@ -153,13 +161,13 @@ operationIsProperPrefixOf = do
 operationStripProperPrefix :: Spec
 operationStripProperPrefix = do
   it
-    "stripProperPrefix relDir (relDir </> relDir) == relDir"
+    "stripProperPrefix relDir (relDir </> relDir) == Just relDir"
     (stripProperPrefix relDir (relDir </> relDir) == Just relDir)
 
   forDrives $ \drive -> do
     let absDir = drive </> relDir
     it
-      "stripProperPrefix absDir (absDir </> relDir) == relDir"
+      "stripProperPrefix absDir (absDir </> relDir) == Just relDir"
       (stripProperPrefix absDir (absDir </> relDir) == Just relDir)
     it
       "stripProperPrefix absDir absDir == Nothing"
@@ -172,7 +180,7 @@ operationAppend = do
       Path relFile' = relFile
   it
     "RelDir + RelDir == RelDir"
-     (relDir </> relDir == Path (relDir' FilePath.</> relDir'))
+     (relDir </> relDir == Path (relDir' OsPath.</> relDir'))
   it
     "\".\" + \".\" == \".\""
     (currentDir </> currentDir == currentDir)
@@ -184,24 +192,24 @@ operationAppend = do
     (relDir </> currentDir == relDir)
   it
     "RelDir + RelFile == RelFile"
-    (relDir </> relFile == Path (relDir' FilePath.</> relFile'))
+    (relDir </> relFile == Path (relDir' OsPath.</> relFile'))
 
   forDrives $ \drive -> do
     let absDir@(Path absDir') = drive </> relDir
     it
       "AbsDir + RelDir == AbsDir"
-      (absDir </> relDir == Path (absDir' FilePath.</> relDir'))
+      (absDir </> relDir == Path (absDir' OsPath.</> relDir'))
     it
       "AbsDir + RelFile == AbsFile"
-      (absDir </> relFile == Path (absDir' FilePath.</> relFile'))
+      (absDir </> relFile == Path (absDir' OsPath.</> relFile'))
 
--- | The 'toFilePath operation.
-operationToFilePath :: Spec
-operationToFilePath = do
-  let expected = "." ++ [FilePath.pathSeparator]
+-- | The 'toOsPath' operation.
+operationToOsPath :: Spec
+operationToOsPath = do
+  let expected = relRoot
   it
-    ("toFilePath \".\" == " ++ show expected)
-    (toFilePath currentDir == expected)
+    ("toOsPath \".\" == " ++ show expected)
+    (toOsPath currentDir == expected)
   it
     ("show \".\" == " ++ (show . show) expected)
     (show currentDir == show expected)
@@ -218,87 +226,88 @@ extensionOperations = do
       forM_ dirnames $ \dir -> do
         forM_ filenames $ \file -> do
           forM_ validExtensions $ \ext -> do
-              let filepath = dir ++ [FilePath.pathSeparator] ++ file
-              runTests parseRelFile filepath ext
+              let ospath =
+                    dir <> OsString.singleton OsPath.pathSeparator <> file
+              runTests parseRelFile ospath ext
 
     describe "Absolute dir paths" $
       forM_ drives_ $ \drive -> do
         forM_ dirnames $ \dir -> do
           forM_ filenames $ \file -> do
             forM_ validExtensions $ \ext -> do
-              let filepath = drive ++ dir ++ [FilePath.pathSeparator] ++ file
-              runTests parseAbsFile filepath ext
+              let ospath = drive <> dir <> pathSep <> file
+              runTests parseAbsFile ospath ext
 
     -- Invalid extensions
     forM_ invalidExtensions $ \ext -> do
-      it ("throws InvalidExtension when extension is " ++ show ext) $
-         addExtension ext (Path "name")
+      it ("throws InvalidExtension when extension is " ++ show ext)  $
+         addExtension ext (Path [OsString.pstr|name|])
          `shouldThrow` (== InvalidExtension ext)
 
     where
 
-    runTests :: (forall m . MonadThrow m => FilePath -> m (Path b File))
-             -> FilePath
-             -> FilePath
+    runTests :: (forall m . MonadThrow m => PLATFORM_PATH -> m (Path b File))
+             -> PLATFORM_PATH
+             -> PLATFORM_STRING
              -> Spec
     runTests parse file ext = do
         let maybePathFile = parse file
-        let maybePathFileWithExt = parse (file ++ ext)
+        let maybePathFileWithExt = parse (file <> ext)
         case (maybePathFile, maybePathFileWithExt) of
             (Just pathFile, Just pathFileWithExt) -> validExtensionsSpec ext pathFile pathFileWithExt
-            _ -> it ("Files " ++ show file ++ " and/or " ++ show (file ++ ext) ++ " should parse successfully.") $
+            _ -> it ("Files " ++ show file ++ " and/or " ++ show (file <> ext) ++ " should parse successfully.") $
                      expectationFailure $
                          show file ++ " parsed to " ++ show maybePathFile ++ ", "
-                         ++ show (file ++ ext) ++ " parsed to " ++ show maybePathFileWithExt
+                         ++ show (file <> ext) ++ " parsed to " ++ show maybePathFileWithExt
 
-    filenames :: [FilePath]
+    filenames :: [PLATFORM_PATH]
     filenames =
-        [ "name"
-        , "name."
-        , "name.."
-        , ".name"
-        , "..name"
-        , "name.name"
-        , "name..name"
-        , "..."
+        [ [OsString.pstr|name|]
+        , [OsString.pstr|name.|]
+        , [OsString.pstr|name..|]
+        , [OsString.pstr|.name|]
+        , [OsString.pstr|..name|]
+        , [OsString.pstr|name.name|]
+        , [OsString.pstr|name..name|]
+        , [OsString.pstr|...|]
         ]
 
-    dirnames :: [FilePath]
-    dirnames = filenames ++ ["."]
+    dirnames :: [PLATFORM_PATH]
+    dirnames = filenames ++ [ [OsString.pstr|.|] ]
 
-    invalidExtensions :: [String]
+    invalidExtensions :: [PLATFORM_STRING]
     invalidExtensions =
-        [ ""
-        , "."
-        , "x"
-        , ".."
-        , "..."
-        , "xy"
-        , "foo"
-        , "foo."
-        , "foo.."
-        , "..foo"
-        , "...foo"
-        , ".foo.bar"
-        , ".foo" ++ [FilePath.pathSeparator] ++ "bar"
+        [ [OsString.pstr||]
+        , [OsString.pstr|.|]
+        , [OsString.pstr|x|]
+        , [OsString.pstr|..|]
+        , [OsString.pstr|...|]
+        , [OsString.pstr|xy|]
+        , [OsString.pstr|foo|]
+        , [OsString.pstr|foo.|]
+        , [OsString.pstr|foo..|]
+        , [OsString.pstr|..foo|]
+        , [OsString.pstr|...foo|]
+        , [OsString.pstr|.foo.bar|]
+        , [OsString.pstr|.foo|] <> pathSep <> [OsString.pstr|bar|]
         ]
 
-    validExtensions :: [String]
+    validExtensions :: [PLATFORM_STRING]
     validExtensions =
-        [ ".foo"
-        , ".foo."
-        , ".foo.."
+        [ [OsString.pstr|.foo|]
+        , [OsString.pstr|.foo.|]
+        , [OsString.pstr|.foo..|]
         ]
 
-validExtensionsSpec :: String -> Path b File -> Path b File -> Spec
+validExtensionsSpec :: PLATFORM_STRING -> Path b File -> Path b File -> Spec
 validExtensionsSpec ext file fext = do
-    let f = show $ toFilePath file
-    let fx = show $ toFilePath fext
+    let f = show $ toOsPath file
+    let fx = show $ toOsPath fext
 
     it ("addExtension " ++ show ext ++ " " ++ f ++ " == " ++ fx) $
         addExtension ext file `shouldReturn` fext
 
-    it ("fileExtension " ++ fx ++ " == " ++ ext) $
+    it ("fileExtension " ++ fx ++ " == " ++ show ext) $
         fileExtension fext `shouldReturn` ext
 
     it ("replaceExtension " ++ show ext ++ " " ++ fx ++ " == " ++ fx) $
@@ -310,14 +319,14 @@ forDrives f = case drives of
   _ -> forM_ drives $ \drive ->
     describe ("Drive " ++ show drive) (f drive)
 
-parseFails :: FilePath -> Spec
+parseFails :: PLATFORM_PATH -> Spec
 parseFails x = it (show x ++ " should be rejected")
   (isNothing (void (parseAbsDir x) <|>
               void (parseRelDir x) <|>
               void (parseAbsFile x) <|>
               void (parseRelFile x)))
 
-parseSucceeds :: FilePath -> Path Rel Dir -> Spec
+parseSucceeds :: PLATFORM_PATH -> Path Rel Dir -> Spec
 parseSucceeds x with = parserTest parseRelDir x (Just with)
 
 -- | Parser test.

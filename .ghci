@@ -1,2 +1,0 @@
-:set -package HUnit -package hspec
-:set -package template-haskell

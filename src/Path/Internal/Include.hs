@@ -1,6 +1,6 @@
 -- This template expects CPP definitions for:
 --     PLATFORM_NAME = Posix | Windows
---     IS_WINDOWS    = False | True
+--     IS_WINDOWS    = 0 | 1
 
 {-# LANGUAGE CPP                #-}
 {-# LANGUAGE DeriveGeneric      #-}
@@ -15,6 +15,7 @@ module Path.Internal.PLATFORM_NAME
   , relRootFP
   , toFilePath
   , hasParentDir
+  , isWindows
   )
   where
 
@@ -136,3 +137,11 @@ instance forall b t. (Typeable b, Typeable t) => TH.Lift (Path b t) where
 #elif MIN_VERSION_template_haskell(2,16,0)
   liftTyped = TH.unsafeTExpCoerce . TH.lift
 #endif
+
+isWindows :: Bool
+#if IS_WINDOWS
+isWindows = True
+#else
+isWindows = False
+#endif
+{-# INLINE isWindows #-}

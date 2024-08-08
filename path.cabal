@@ -1,95 +1,193 @@
+cabal-version:       3.0
 name:                path
 version:             0.9.5
 synopsis:            Support for well-typed paths
 description:         Support for well-typed paths.
-license:             BSD3
+license:             BSD-3-Clause
 license-file:        LICENSE
 author:              Chris Done <chrisdone@fpcomplete.com>
 maintainer:          Chris Done <chrisdone@fpcomplete.com>
 copyright:           2015–2018 FP Complete
 category:            System, Filesystem
 build-type:          Simple
-cabal-version:       1.18
-tested-with:         GHC==8.6.5, GHC==8.8.4, GHC==8.10.1
+tested-with:         GHC==9.2.8, GHC==9.4.8, GHC==9.6.6, GHC==9.8.2, GHC==9.10.1
 extra-source-files:  README.md
                    , CHANGELOG
+                   , os-string-compat/System/OsString/Compat/Include.hs
                    , src/Path/Include.hs
                    , src/Path/Internal/Include.hs
+                   , src/OsPath/Include.hs
+                   , src/OsPath/Internal/Include.hs
                    , test/Common/Include.hs
+                   , test-ospath/Common/Include.hs
+                   , validity-test-ospath/Include.hs
+                   , validity-test-ospath/OsPath/Gen/Include.hs
 
 flag dev
   description:        Turn on development settings.
   manual:             True
   default:            False
 
+flag old-os-string
+  description:        Use an older version of the os-string library.
+  manual:             False
+  default:            False
+
+common language
+  ghc-options:        -Wall
+
+  if flag(dev)
+    ghc-options:      -Wcompat
+                      -Werror
+                      -Wincomplete-record-updates
+                      -Wincomplete-uni-patterns
+                      -Wnoncanonical-monad-instances
+
+  default-language:  Haskell2010
+
+common rts
+  ghc-options:        -O2
+                      -threaded
+                      -rtsopts
+                      -with-rtsopts=-N
+
 library
+  import: language
+
   hs-source-dirs:    src
+
   exposed-modules:   Path
                    , Path.Posix
                    , Path.Windows
                    , Path.Internal
                    , Path.Internal.Posix
                    , Path.Internal.Windows
-  build-depends:     aeson
-                   , base       >= 4.12     && < 5
+                   , OsPath
+                   , OsPath.Posix
+                   , OsPath.Windows
+                   , OsPath.Internal
+                   , OsPath.Internal.Posix
+                   , OsPath.Internal.Windows
+
+  build-depends:     aeson      >= 1.0.0.0
+                   , base       >= 4.12    && < 5
                    , deepseq
                    , exceptions >= 0.4     && < 0.11
-                   , filepath   < 1.2.0.1  || >= 1.3
                    , hashable   >= 1.2     && < 1.5
+                   , path:os-string-compat
                    , text
                    , template-haskell
-  if flag(dev)
-    ghc-options:      -Wall -Werror
+
+  if flag(old-os-string)
+    build-depends:   filepath   >= 1.4.100.0 && <1.5
   else
-    ghc-options:      -O2 -Wall
-  if flag(dev)
-    ghc-options:      -Wcompat
-                      -Wincomplete-record-updates
-                      -Wincomplete-uni-patterns
-                      -Wnoncanonical-monad-instances
-  default-language:  Haskell2010
+    build-depends:   filepath   >= 1.5
+
+library os-string-compat
+  import: language
+
+  hs-source-dirs:    os-string-compat
+  visibility:        private
+
+  exposed-modules:   System.OsString.Compat.Posix
+                   , System.OsString.Compat.Windows
+
+  build-depends:     base       >= 4.12    && < 5
+
+  if flag(old-os-string)
+    build-depends:   filepath   >= 1.4.100.0
+                   , os-string  < 2.0.0
+  else
+    build-depends:   os-string  >= 2.0.0
 
 test-suite test
+  import: language
+  import: rts
+
   type:              exitcode-stdio-1.0
   main-is:           Main.hs
+
+  hs-source-dirs:    test
+
   other-modules:     Posix
                    , Windows
                    , Common.Posix
                    , Common.Windows
-  hs-source-dirs:    test
+                   , TH.Posix
+                   , TH.Windows
+
   build-depends:     aeson
-                   , base       >= 4.12     && < 5
+                   , base
                    , bytestring
-                   , filepath   < 1.2.0.1  || >= 1.3
+                   , exceptions
+                   , filepath
                    , hspec      >= 2.0     && < 3
-                   , mtl        >= 2.0     && < 3
                    , path
                    , template-haskell
-  if flag(dev)
-    ghc-options:      -Wall -Werror
-  else
-    ghc-options:      -O2 -Wall
-  default-language:  Haskell2010
+
+test-suite test-ospath
+  import: language
+  import: rts
+
+  type:              exitcode-stdio-1.0
+  main-is:           Main.hs
+  hs-source-dirs:    test-ospath
+
+  other-modules:     Posix
+                   , Windows
+                   , Common.Posix
+                   , Common.Windows
+                   , TH.Posix
+                   , TH.Windows
+
+  build-depends:     base
+                   , exceptions
+                   , filepath
+                   , hspec      >= 2.0     && < 3
+                   , path
+                   , path:os-string-compat
+                   , template-haskell
 
 test-suite validity-test
+  import: language
+  import: rts
+
   type:              exitcode-stdio-1.0
-  main-is:           ValidityTest.hs
+  main-is:           Main.hs
+  hs-source-dirs:    validity-test
+
   other-modules:     Path.Gen
-  hs-source-dirs:    test
+
   build-depends:     QuickCheck
-                   , aeson
-                   , base       >= 4.12 && < 5
-                   , bytestring
-                   , filepath   < 1.2.0.1  || >= 1.3
+                   , base
+                   , filepath
                    , genvalidity >= 1.0
-                   , genvalidity-property >= 0.4
                    , genvalidity-hspec >= 0.7
                    , hspec      >= 2.0     && < 3
-                   , mtl        >= 2.0     && < 3
                    , path
-                   , validity   >= 0.8.0.0
-  default-language:  Haskell2010
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+
+test-suite validity-test-ospath
+  import: language
+  import: rts
+
+  type:              exitcode-stdio-1.0
+  main-is:           Main.hs
+  hs-source-dirs:    validity-test-ospath
+
+  other-modules:     OsPath.Gen.Posix
+                   , OsPath.Gen.Windows
+                   , Posix
+                   , Windows
+
+  build-depends:     QuickCheck
+                   , base
+                   , filepath
+                   , genvalidity >= 1.0
+                   , genvalidity-hspec >= 0.7
+                   , hspec      >= 2.0     && < 3
+                   , path
+                   , path:os-string-compat
+                   , validity-bytestring >=0.4.1.0
 
 source-repository head
   type:              git
