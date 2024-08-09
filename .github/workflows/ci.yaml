@@ -70,6 +70,9 @@ jobs:
     strategy:
       matrix:
         ghc: ["9.10.1"]
+        stack-yaml:
+        - "stack.yaml"
+        - "stack.os-string.yaml"
 
     steps:
     - name: Clone project
@@ -83,15 +86,15 @@ jobs:
 
     - name: Install dependencies
       run: |
-        stack build --system-ghc --test --bench --no-run-tests --no-run-benchmarks --only-dependencies
+        stack --stack-yaml "${{ matrix.stack-yaml }}" build --system-ghc --test --bench --no-run-tests --no-run-benchmarks --only-dependencies
 
     - name: Build
       run: |
-        stack build --system-ghc --test --bench --no-run-tests --no-run-benchmarks
+        stack --stack-yaml "${{ matrix.stack-yaml }}" build --system-ghc --test --bench --no-run-tests --no-run-benchmarks
 
     - name: Test the test-suite test
       run: |
-        stack test path:test:test --system-ghc
+        stack --stack-yaml "${{ matrix.stack-yaml }}" test path:test:test --system-ghc
 
   # - name: Test the test-suite validity-test
   #   run: |
