@@ -10,8 +10,16 @@
 {-# OPTIONS_GHC -Wno-deprecations #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module System.OsString.Compat.PLATFORM_NAME
+#define USE_os_string 0
+#if defined MIN_VERSION_os_string
 #if MIN_VERSION_os_string(2,0,0)
+#undef USE_os_string
+#define USE_os_string 1
+#endif
+#endif
+
+module System.OsString.Compat.PLATFORM_NAME
+#if USE_os_string
   ( PLATFORM_STRING(..)
   , PLATFORM_CHAR(..)
   , module OsString
@@ -47,7 +55,7 @@ import Data.Data (Data)
 import System.OsString.Internal.Types (PLATFORM_STRING(..), PLATFORM_CHAR(..))
 import System.OsString.PLATFORM_NAME as OsString
 
-#if !MIN_VERSION_os_string(2,0,0)
+#if !USE_os_string
 import Data.Coerce (coerce)
 
 #if IS_WINDOWS
@@ -59,7 +67,7 @@ import qualified System.OsPath.Data.ByteString.Short as BSP
 
 deriving instance Data PLATFORM_STRING
 
-#if !MIN_VERSION_os_string(2,0,0)
+#if !USE_os_string
 all :: (PLATFORM_CHAR -> Bool) -> PLATFORM_STRING -> Bool
 all = coerce BSP.all
 
