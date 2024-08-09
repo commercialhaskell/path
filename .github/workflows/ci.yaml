@@ -65,7 +65,7 @@ jobs:
   # As of 2024-07-29, the GitHub-hosted runner on ubuntu-latest comes with
   # Stack 2.15.7 and GHC 9.10.1.
   stack:
-    name: stack / ghc ${{ matrix.ghc }}
+    name: "stack / ghc ${{ matrix.ghc }} (${{ matrix.stack-yaml }})"
     runs-on: ubuntu-latest
     strategy:
       matrix:
