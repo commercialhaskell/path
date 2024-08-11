@@ -98,7 +98,6 @@ library os-string-compat
     build-depends:   os-string  >= 2.0.0
   else
     build-depends:   filepath   >= 1.4.100.0
-    --               , os-string  < 2.0.0
 
 test-suite test
   import: language
