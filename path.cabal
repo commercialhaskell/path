@@ -1,6 +1,6 @@
 cabal-version:       3.0
 name:                path
-version:             0.9.5
+version:             0.9.6
 synopsis:            Support for well-typed paths
 description:         Support for well-typed paths.
 license:             BSD-3-Clause
