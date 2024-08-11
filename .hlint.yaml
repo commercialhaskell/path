@@ -1,0 +1,4 @@
+- ignore:
+    name: "Redundant if"
+- ignore:
+    name: "Use unless"

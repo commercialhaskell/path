@@ -158,7 +158,7 @@ aesonInstances =
      it "Decoding \"[\"C:\\foo\\bar\"]\" as a [Path Rel Dir] should fail." $
        decode (LBS.pack "[\"C:\\foo\\bar\"]") `shouldBe` (Nothing :: Maybe [Path Rel Dir])
      it "Encoding \"[\"C:\\foo\\bar\\mu.txt\"]\" should succeed." $
-       encode [Path "C:\\foo\\bar\\mu.txt" :: Path Abs File] `shouldBe` (LBS.pack "[\"C:\\\\foo\\\\bar\\\\mu.txt\"]")
+       encode [Path "C:\\foo\\bar\\mu.txt" :: Path Abs File] `shouldBe` LBS.pack "[\"C:\\\\foo\\\\bar\\\\mu.txt\"]"
 
 -- | Test QuasiQuoters. Make sure they work the same as the $(mk*) constructors.
 quasiquotes :: Spec

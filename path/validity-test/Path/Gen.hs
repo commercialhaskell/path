@@ -123,4 +123,4 @@ genPathyChar :: Gen Char
 genPathyChar = frequency [(2, choose (minBound, maxBound)), (1, elements "./\\")]
 
 shrinkValidWith :: (FilePath -> Maybe (Path a b)) -> Path a b -> [Path a b]
-shrinkValidWith fun (Path f) = filter (/= (Path f)) . mapMaybe fun $ shrinkValid f
+shrinkValidWith fun (Path f) = filter (/= Path f) . mapMaybe fun $ shrinkValid f

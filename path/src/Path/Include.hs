@@ -24,7 +24,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 module Path.PLATFORM_NAME
   (-- * Types
@@ -103,7 +102,7 @@ module Path.PLATFORM_NAME
 import           Control.Applicative (Alternative(..))
 import           Control.DeepSeq (NFData (..))
 import           Control.Exception (Exception(..))
-import           Control.Monad (liftM, when)
+import           Control.Monad (when)
 import           Control.Monad.Catch (MonadThrow(..))
 import           Data.Aeson (FromJSON (..), FromJSONKey(..), ToJSON(..))
 import qualified Data.Aeson.Types as Aeson
@@ -462,10 +461,10 @@ dirname (Path l) = Path (last (FilePath.splitPath l))
 -- @since 0.7.0
 splitExtension :: MonadThrow m => Path b File -> m (Path b File, String)
 splitExtension (Path fpath) =
-    if nameDot == [] || ext == []
+    if null nameDot || null ext
     then throwM $ HasNoExtension fpath
     else let fname = init nameDot
-         in if fname == [] || fname == "." || fname == ".."
+         in if null fname || fname == "." || fname == ".."
             then throwM $ HasNoExtension fpath
             else return ( Path (normalizeDrive drv ++ dir ++ fname)
                         , FilePath.extSeparator : ext
@@ -499,7 +498,7 @@ splitExtension (Path fpath) =
 --
 -- @since 0.5.11
 fileExtension :: MonadThrow m => Path b File -> m String
-fileExtension = (liftM snd) . splitExtension
+fileExtension = fmap snd . splitExtension
 
 -- | Add extension to given file path.
 --
@@ -541,7 +540,7 @@ addExtension ext (Path path) = do
             throwM $ InvalidExtension ex
 
         -- just a "." is not a valid extension
-        when (xs == []) $
+        when (null xs) $
             throwM $ InvalidExtension ex
 
         -- cannot have path separators
@@ -550,7 +549,7 @@ addExtension ext (Path path) = do
 
         -- All "."s is not a valid extension
         let ys = dropWhile FilePath.isExtSeparator (reverse xs)
-        when (ys == []) $
+        when (null ys) $
             throwM $ InvalidExtension ex
 
         -- Cannot have "."s except in trailing position
@@ -586,8 +585,8 @@ addFileExtension :: MonadThrow m
   -> m (Path b File)   -- ^ New file name with the desired extension added at the end
 addFileExtension ext (Path path) =
   if FilePath.isAbsolute path
-    then liftM coercePath (parseAbsFile (FilePath.addExtension path ext))
-    else liftM coercePath (parseRelFile (FilePath.addExtension path ext))
+    then fmap coercePath (parseAbsFile (FilePath.addExtension path ext))
+    else fmap coercePath (parseRelFile (FilePath.addExtension path ext))
   where coercePath :: Path a b -> Path a' b'
         coercePath (Path a) = Path a
 
@@ -636,8 +635,8 @@ setFileExtension :: MonadThrow m
   -> m (Path b File)   -- ^ New file name with the desired extension
 setFileExtension ext (Path path) =
   if FilePath.isAbsolute path
-    then liftM coercePath (parseAbsFile (FilePath.replaceExtension path ext))
-    else liftM coercePath (parseRelFile (FilePath.replaceExtension path ext))
+    then fmap coercePath (parseAbsFile (FilePath.replaceExtension path ext))
+    else fmap coercePath (parseRelFile (FilePath.replaceExtension path ext))
   where coercePath :: Path a b -> Path a' b'
         coercePath (Path a) = Path a
 
