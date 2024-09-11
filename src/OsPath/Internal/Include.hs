@@ -54,6 +54,7 @@ import qualified System.OsPath.PLATFORM_NAME as OsPath
 
 import System.OsString.Compat.PLATFORM_NAME (PLATFORM_STRING)
 import qualified System.OsString.Compat.PLATFORM_NAME as OsString
+import Utils (typeableToType)
 
 -- | Path of some base and type.
 --
@@ -113,16 +114,9 @@ instance Hashable (Path b t) where
 
 instance forall b t. (Typeable b, Typeable t) => TH.Lift (Path b t) where
   lift (Path str) = do
-    let b = TH.ConT $ getTCName (Proxy :: Proxy b)
-        t = TH.ConT $ getTCName (Proxy :: Proxy t)
+    let b = typeableToType (Proxy :: Proxy b)
+        t = typeableToType (Proxy :: Proxy t)
     [| Path $(TH.lift str) :: Path $(pure b) $(pure t) |]
-    where
-      getTCName :: Typeable a => proxy a -> TH.Name
-      getTCName a = TH.Name occ flav
-        where
-        tc   = typeRepTyCon (typeRep a)
-        occ  = TH.OccName (tyConName tc)
-        flav = TH.NameG TH.TcClsName (TH.PkgName (tyConPackage tc)) (TH.ModName (tyConModule tc))
 
 #if MIN_VERSION_template_haskell(2,17,0)
   liftTyped = TH.unsafeCodeCoerce . TH.lift

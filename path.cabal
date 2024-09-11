@@ -69,6 +69,8 @@ library
                    , OsPath.Internal.Posix
                    , OsPath.Internal.Windows
 
+  other-modules:     Utils
+
   build-depends:     aeson      >= 1.0.0.0
                    , base       >= 4.12    && < 5
                    , deepseq
