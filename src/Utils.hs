@@ -16,7 +16,7 @@ typeableToType = typeRepToType . someTypeRep
 
 typeRepToType :: SomeTypeRep -> TH.Type
 typeRepToType rep =
-    uncurry (foldl' f)
+    uncurry (List.foldl' f)
         . first tyConToType
         . splitTyConApp
         $ rep
