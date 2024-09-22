@@ -1,6 +1,7 @@
 -- This template expects CPP definitions for:
 --     PLATFORM_NAME = Posix | Windows
 
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -9,6 +10,7 @@
 -- | Test functions to check the template haskell bits.
 module TH.PLATFORM_NAME where
 
+import Data.Proxy (Proxy)
 import qualified Language.Haskell.TH.Syntax as TH
 
 import Path.Internal.PLATFORM_NAME
@@ -44,3 +46,6 @@ liftRelDir = checkInstantiated $(TH.lift (Path "name/" :: Path Rel Dir))
 
 liftRelFile :: FilePath
 liftRelFile = checkInstantiated $(TH.lift (Path "name" :: Path Rel File))
+
+liftComplex :: FilePath
+liftComplex = toFilePath $(TH.lift (Path "name" :: Path [[Bool]] (Proxy 'True)))

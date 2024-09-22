@@ -2,6 +2,7 @@
 --     PLATFORM_NAME = Posix | Windows
 --     PLATFORM_PATH = PosixPath | WindowsPath
 
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -11,6 +12,7 @@
 -- | Test functions to check the template haskell bits.
 module TH.PLATFORM_NAME where
 
+import Data.Proxy (Proxy)
 import qualified Language.Haskell.TH.Syntax as TH
 import System.OsPath.PLATFORM_NAME (PLATFORM_PATH)
 
@@ -48,3 +50,6 @@ liftRelDir = checkInstantiated $(TH.lift (Path [OsString.pstr|name/|] :: Path Re
 
 liftRelFile :: PLATFORM_PATH
 liftRelFile = checkInstantiated $(TH.lift (Path [OsString.pstr|name|] :: Path Rel File))
+
+liftComplex :: PLATFORM_PATH
+liftComplex = toOsPath $(TH.lift (Path [OsString.pstr|name|] :: Path [[Bool]] (Proxy 'True)))
