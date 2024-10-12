@@ -108,7 +108,7 @@ import           Control.Exception (Exception(..))
 import           Control.Monad (unless, when, (<=<))
 import           Control.Monad.Catch (MonadThrow(..))
 import           Data.Coerce (coerce)
-import           Data.Data (Data, Typeable)
+import           Data.Data (Data)
 import           Data.Hashable (Hashable (..))
 import           Data.Maybe (isJust, isNothing)
 import           GHC.Generics (Generic)
@@ -126,17 +126,17 @@ import qualified System.OsString.Compat.PLATFORM_NAME as OsString
 -- Types
 
 -- | An absolute path.
-data Abs deriving (Typeable, Data)
+data Abs deriving (Data)
 
 -- | A relative path; one without a root. Note that a @..@ path component to
 -- represent the parent directory is not allowed by this library.
-data Rel deriving (Typeable, Data)
+data Rel deriving (Data)
 
 -- | A file path.
-data File deriving (Typeable, Data)
+data File deriving (Data)
 
 -- | A directory path.
-data Dir deriving (Typeable, Data)
+data Dir deriving (Data)
 
 -- | Exceptions that can occur during path operations.
 --
@@ -151,7 +151,7 @@ data PathException
   | NotAProperPrefix PLATFORM_PATH PLATFORM_PATH
   | HasNoExtension PLATFORM_PATH
   | InvalidExtension PLATFORM_STRING
-  deriving (Show,Eq,Typeable)
+  deriving (Show,Eq)
 
 instance Exception PathException where
   displayException (InvalidExtension ext) = concat
@@ -658,7 +658,7 @@ mkRelFile = either (fail . displayException) lift . parseRelFile
 -- directory. Pattern match to find whether the path is absolute or relative.
 data SomeBase t = Abs (Path Abs t)
                 | Rel (Path Rel t)
-  deriving (Typeable, Generic, Eq, Ord)
+  deriving (Generic, Eq, Ord)
 
 instance NFData (SomeBase t) where
   rnf (Abs p) = rnf p

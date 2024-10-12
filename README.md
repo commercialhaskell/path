@@ -91,7 +91,7 @@ Here is the type:
 
 ```haskell
 newtype Path b t = Path FilePath
-  deriving (Data, Typeable, Generic)
+  deriving (Data, Generic)
 ```
 
 The type variables are:
@@ -102,15 +102,15 @@ The type variables are:
 The base types can be filled with these:
 
 ```haskell
-data Abs deriving (Typeable)
-data Rel deriving (Typeable)
+data Abs
+data Rel
 ```
 
 And the type can be filled with these:
 
 ```haskell
-data File deriving (Typeable)
-data Dir deriving (Typeable)
+data File
+data Dir
 ```
 
 (Why not use data kinds like `data Type = File | Dir`? Because that imposes

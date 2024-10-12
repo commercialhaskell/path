@@ -122,17 +122,17 @@ import qualified System.FilePath.PLATFORM_NAME as FilePath
 -- Types
 
 -- | An absolute path.
-data Abs deriving (Typeable, Data)
+data Abs deriving (Data)
 
 -- | A relative path; one without a root. Note that a @..@ path component to
 -- represent the parent directory is not allowed by this library.
-data Rel deriving (Typeable, Data)
+data Rel deriving (Data)
 
 -- | A file path.
-data File deriving (Typeable, Data)
+data File deriving (Data)
 
 -- | A directory path.
-data Dir deriving (Typeable, Data)
+data Dir deriving (Data)
 
 instance FromJSON (Path Abs File) where
   parseJSON = parseJSONWith parseAbsFile
@@ -198,7 +198,7 @@ data PathException
   | NotAProperPrefix FilePath FilePath
   | HasNoExtension FilePath
   | InvalidExtension String
-  deriving (Show,Eq,Typeable)
+  deriving (Show,Eq)
 
 instance Exception PathException where
   displayException (InvalidExtension ext) = concat
@@ -853,7 +853,7 @@ normalizeFilePath
 -- relative.
 data SomeBase t = Abs (Path Abs t)
                 | Rel (Path Rel t)
-  deriving (Typeable, Generic, Eq, Ord)
+  deriving (Generic, Eq, Ord)
 
 instance NFData (SomeBase t) where
   rnf (Abs p) = rnf p

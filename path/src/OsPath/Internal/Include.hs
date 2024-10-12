@@ -70,7 +70,7 @@ import qualified System.OsString.Compat.PLATFORM_NAME as OsString
 -- All directories end in a trailing separator. There are no duplicate
 -- path separators @\/\/@, no @..@, no @.\/@, no @~\/@, etc.
 newtype Path b t = Path PLATFORM_PATH
-  deriving (Data, Typeable, Generic)
+  deriving (Data, Generic)
 
 -- | String equality.
 --

@@ -45,7 +45,7 @@ import qualified System.FilePath.PLATFORM_NAME as FilePath
 -- All directories end in a trailing separator. There are no duplicate
 -- path separators @\/\/@, no @..@, no @.\/@, no @~\/@, etc.
 newtype Path b t = Path FilePath
-  deriving (Data, Typeable, Generic)
+  deriving (Data, Generic)
 
 -- | String equality.
 --
