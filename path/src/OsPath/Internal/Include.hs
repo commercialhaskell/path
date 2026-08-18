@@ -13,7 +13,10 @@
 
 -- | Internal types and functions.
 
-module OsPath.Internal.PLATFORM_NAME
+#ifndef MODULE_NAME
+#define MODULE_NAME OsPath.Internal.PLATFORM_NAME
+#endif
+module MODULE_NAME
   ( -- * The Path type
     Path(..)
   , toOsPath
@@ -49,11 +52,18 @@ import GHC.Generics (Generic)
 import Data.Data
 import Data.Hashable
 import qualified Language.Haskell.TH.Syntax as TH
-import System.OsPath.PLATFORM_NAME (PLATFORM_PATH)
-import qualified System.OsPath.PLATFORM_NAME as OsPath
 
-import System.OsString.Compat.PLATFORM_NAME (PLATFORM_STRING)
-import qualified System.OsString.Compat.PLATFORM_NAME as OsString
+#ifndef OSPATH_MODULE
+#define OSPATH_MODULE System.OsPath.PLATFORM_NAME
+#endif
+import OSPATH_MODULE (PLATFORM_PATH)
+import qualified OSPATH_MODULE as OsPath
+
+#ifndef OSSTRING_COMPAT_MODULE
+#define OSSTRING_COMPAT_MODULE System.OsString.Compat.PLATFORM_NAME
+#endif
+import OSSTRING_COMPAT_MODULE (PLATFORM_STRING)
+import qualified OSSTRING_COMPAT_MODULE as OsString
 
 -- | Path of some base and type.
 --

@@ -4,7 +4,7 @@
 }:
 mkDerivation {
   pname = "path";
-  version = "0.9.6";
+  version = "0.9.7";
   src = ./.;
   libraryHaskellDepends = [
     aeson base deepseq exceptions filepath hashable template-haskell

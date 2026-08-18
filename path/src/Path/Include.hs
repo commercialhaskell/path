@@ -96,6 +96,8 @@ module Path.PLATFORM_NAME
   ,(<.>)
   ,setFileExtension
   ,(-<.>)
+  -- * Platform string quasiquoter
+  ,pstr
   )
   where
 
@@ -184,6 +186,15 @@ fromJSONKeyWith f =
       Right rf -> pure rf
 
 {-# INLINE fromJSONKeyWith #-}
+
+-- | A number of functions in this library take as an argument a "platform string" 
+-- which in this module is just 'FilePath', which is just a 'String'.
+-- This means this quosiquoter basically does nothing, you could just write the raw string.
+-- But if you move to one of the OsPath style modules, if you use the '[pstr|blah|]' quasiquoter, 
+-- it will continue to work and produce the appropriate "platform string" for that module,
+-- whereas using a raw string literal will break.
+pstr :: QuasiQuoter
+pstr = qq lift
 
 -- | Exceptions that can occur during path operations.
 --
