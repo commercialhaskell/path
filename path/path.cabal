@@ -2,7 +2,10 @@ cabal-version:       3.0
 name:                path
 version:             0.9.6
 synopsis:            Support for well-typed paths
-description:         Support for well-typed paths.
+description:
+  Support for well-typed paths. It provides two variants: @Path@ (legacy, based
+  on @String@ internally) and @OsPath@. It is recommended to use @OsPath@ when
+  possible.
 license:             BSD-3-Clause
 license-file:        LICENSE
 author:              Chris Done <chrisdone@fpcomplete.com>
