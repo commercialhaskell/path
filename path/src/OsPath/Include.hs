@@ -5,7 +5,7 @@
 -- directory tree.
 --
 -- __Note__: This module is for working with PLATFORM_NAME style paths. Importing
--- "Path" is usually better.
+-- "OsPath" is usually better.
 --
 -- A path is represented by a number of path components separated by a path
 -- separator which is a @/@ on POSIX systems and can be a @/@ or @\\@ on Windows.
